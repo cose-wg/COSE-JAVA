@@ -1,0 +1,6 @@
+language: java
+
+script:
+  - ant -version
+  - cd Test && ant
+        
