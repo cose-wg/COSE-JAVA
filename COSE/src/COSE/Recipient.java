@@ -44,6 +44,17 @@ public class Recipient extends Message {
             else throw new CoseException("Invalid Recipient structure");
         }
     }
+
+    public CBORObject EncodeToCBORObject() throws CoseException {        
+        CBORObject obj = CBORObject.NewArray();
+        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
+        else obj.Add(CBORObject.FromObject(new byte[0]));
+        
+        obj.Add(objUnprotected);
+        obj.Add(rgbEncrypted);
+        
+        return obj;
+    }
     
     public byte[] Decrypt(int cbitKeyOut, CBORObject algKeyOut) throws CoseException {
         CBORObject alg = FindAttribute(CBORObject.FromObject(1));

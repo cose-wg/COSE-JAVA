@@ -6,10 +6,13 @@
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/Recipient.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/MAC0Message.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/MacCommon.java</file>
+            <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/EncryptCommon.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/Message.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/MACMessage.java</file>
+            <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/HeaderKeys.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/AlgorithmID.java</file>
             <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/Attribute.java</file>
+            <file>file:/C:/Projects/COSE/cose-java/COSE/src/COSE/Encrypt0Message.java</file>
         </group>
     </open-files>
 </project-private>

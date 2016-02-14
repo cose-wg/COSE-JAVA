@@ -14,3 +14,7 @@ hs_err_pid*
 # emacs files
 *~
 *#
+/COSE/dist/
+/Test/dist/
+/COSE/build
+/Test/build

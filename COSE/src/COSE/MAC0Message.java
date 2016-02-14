@@ -41,6 +41,20 @@ public class MAC0Message extends MacCommon {
         if (obj.get(3).getType() == CBORType.ByteString) rgbTag = obj.get(3).GetByteString();
         else throw new CoseException("Invalid MAC structure");
     }   
+ 
+    public CBORObject EncodeToCBORObject() throws CoseException {
+        if (rgbTag == null) throw new CoseException("Compute function not called");
+        
+        CBORObject obj = CBORObject.NewArray();
+        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
+        else obj.Add(CBORObject.FromObject(new byte[0]));
+        
+        obj.Add(objUnprotected);
+        obj.Add(rgbContent);
+        obj.Add(rgbTag);
+        
+        return obj;
+    }
     
     public boolean Validate(byte[] rgbKey) throws CoseException {
         return super.Validate(rgbKey);

@@ -55,6 +55,20 @@ public class MACMessage extends MacCommon {
         }
         else throw new CoseException("Invalid MAC structure");
     }
+
+    public CBORObject EncodeToCBORObject() throws CoseException {
+        if (rgbTag == null) throw new CoseException("Compute function not called");
+        
+        CBORObject obj = CBORObject.NewArray();
+        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
+        else obj.Add(CBORObject.FromObject(new byte[0]));
+        
+        obj.Add(objUnprotected);
+        obj.Add(rgbContent);
+        obj.Add(rgbTag);
+        
+        return obj;
+    }
     
     public Recipient GetRecipient(int iRecipient) {
         return recipientList.get(iRecipient);

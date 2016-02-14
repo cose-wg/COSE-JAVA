@@ -20,7 +20,8 @@ import org.bouncycastle.crypto.params.KeyParameter;
  *
  * @author jimsch
  */
-public class MacCommon extends Message {
+
+public abstract class MacCommon extends Message {
     protected byte[] rgbContent;
     protected byte[] rgbTag;
     protected List<Recipient> recipientList = new ArrayList<Recipient>();

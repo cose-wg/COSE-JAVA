@@ -12,7 +12,7 @@ import com.upokecenter.cbor.CBORType;
  *
  * @author jimsch
  */
-public class Message extends Attribute {
+public abstract class Message extends Attribute {
     protected byte[] externalData = null;
   
     /**
@@ -56,8 +56,15 @@ public class Message extends Attribute {
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
         }
+        
     }
     
+    public byte[] EncodeToBytes() throws CoseException {
+        return EncodeToCBORObject().EncodeToBytes();
+    }
+
+    public abstract CBORObject EncodeToCBORObject() throws CoseException;
+
     public void SetExternal(byte[] rgbData) {
         externalData = rgbData;
     }            
