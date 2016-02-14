@@ -1,5 +1,6 @@
 language: java
 
 script:
-        cd Test; ant test
+        ant -version
+        cd Test; ant
         
