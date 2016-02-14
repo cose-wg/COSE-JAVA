@@ -13,7 +13,7 @@ import com.upokecenter.cbor.CBORType;
  * @author jimsch
  */
 public abstract class Message extends Attribute {
-    protected byte[] externalData = null;
+    protected byte[] externalData = new byte[0];
   
     /**
      * Decode a 
@@ -37,25 +37,29 @@ public abstract class Message extends Attribute {
             }
         }
         
+        Message msg;
+        
         switch (defaultTag) {
             case 0: // Unknown
                 throw new CoseException("Message was not tagged and no default tagging option given");
                 
-            case 994: {
-                MACMessage mac = new MACMessage();
-                mac.DecodeFromCBORObject(messageObject);
-                return mac;
-            }
+            case 993: 
+                msg = new Encrypt0Message();
+                break;
+            case 994: 
+                msg = new MACMessage();
+                break;
             
-            case 996: {
-                MAC0Message mac = new MAC0Message();
-                mac.DecodeFromCBORObject(messageObject);
-                return mac;
-            }
+            case 996: 
+                msg = new MAC0Message();
+                break;
                 
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
         }
+    
+        msg.DecodeFromCBORObject(messageObject);
+        return msg;
         
     }
     
@@ -63,6 +67,7 @@ public abstract class Message extends Attribute {
         return EncodeToCBORObject().EncodeToBytes();
     }
 
+    public abstract void DecodeFromCBORObject(CBORObject messageObject) throws CoseException;
     public abstract CBORObject EncodeToCBORObject() throws CoseException;
 
     public void SetExternal(byte[] rgbData) {

@@ -53,7 +53,7 @@ public abstract class EncryptCommon extends Message {
             case AES_GCM_128:
             case AES_GCM_192:
             case AES_GCM_256:
-                AES_Decrypt(alg, rgbKey);
+                AES_GCM_Decrypt(alg, rgbKey);
                 break;
         }
         
@@ -62,6 +62,8 @@ public abstract class EncryptCommon extends Message {
     
     protected void Encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
         CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+        if (algX == null) throw new CoseException("Algorithm Identifier not found");
+        
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
         int cbitCEK;
         
@@ -88,12 +90,20 @@ public abstract class EncryptCommon extends Message {
             case AES_GCM_128:
             case AES_GCM_192:
             case AES_GCM_256:
-                AES_Encrypt(alg, rgbKey);
+                AES_GCM_Encrypt(alg, rgbKey);
                 break;
         }
     }
     
-    private void AES_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+    public byte[] GetContent() {
+        return rgbContent;
+    }
+    
+    public void SetContent(byte[] rgbData) {
+        rgbContent = rgbData;
+    }
+    
+    private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {
         GCMBlockCipher cipher = new GCMBlockCipher(new AESFastEngine(), new BasicGCMMultiplier());
         KeyParameter contentKey = new KeyParameter(rgbKey);
         
@@ -112,7 +122,7 @@ public abstract class EncryptCommon extends Message {
         rgbContent = C;
     }
 
-    private void AES_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    private void AES_GCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
         GCMBlockCipher cipher = new GCMBlockCipher(new AESFastEngine(), new BasicGCMMultiplier());
         KeyParameter contentKey = new KeyParameter(rgbKey);
         
