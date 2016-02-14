@@ -1,1 +1,5 @@
 language: java
+
+script:
+        cd Test; ant test
+        
