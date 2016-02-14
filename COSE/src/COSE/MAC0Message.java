@@ -1,0 +1,49 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package COSE;
+
+import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author jimsch
+ */
+public class MAC0Message extends MacCommon {
+    
+    public MAC0Message() {
+        super();
+        strContext = "MAC0";
+    }
+    
+    public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
+        if (obj.size() != 4) throw new CoseException("Invalid MAC0 structure");
+        
+        if (obj.get(0).getType() == CBORType.ByteString) {
+            if (obj.get(0).GetByteString().length == 0) objProtected = CBORObject.NewMap();
+            else objProtected = CBORObject.DecodeFromBytes(obj.get(0).GetByteString());
+        }
+        else throw new CoseException("Invalid MAC structure");
+        
+        if (obj.get(1).getType() == CBORType.Map) {
+            objUnprotected = obj.get(1);
+        }
+        else throw new CoseException("Invalid MAC structure");
+        
+        if (obj.get(2).getType() == CBORType.ByteString) rgbContent = obj.get(2).GetByteString();
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid MAC struture");
+        
+        if (obj.get(3).getType() == CBORType.ByteString) rgbTag = obj.get(3).GetByteString();
+        else throw new CoseException("Invalid MAC structure");
+    }   
+    
+    public boolean Validate(byte[] rgbKey) throws CoseException {
+        return super.Validate(rgbKey);
+    }
+            
+}
