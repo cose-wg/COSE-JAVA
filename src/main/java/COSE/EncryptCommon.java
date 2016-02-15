@@ -27,6 +27,7 @@ public abstract class EncryptCommon extends Message {
     
     protected byte[] Decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
         CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+        if (algX == null) throw new CoseException("No encryption algorithm specified");
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
         int cbitCEK;
         
