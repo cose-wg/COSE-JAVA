@@ -5,14 +5,8 @@
  */
 package COSE;
 
-import COSE.AlgorithmID;
-import COSE.CoseException;
-import COSE.Encrypt0Message;
-import COSE.HeaderKeys;
-import COSE.MAC0Message;
-import COSE.MACMessage;
-import COSE.Message;
-import COSE.Recipient;
+import org.junit.*;
+import COSE.*;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.io.Console;
@@ -22,33 +16,38 @@ import java.io.InputStream;
 import java.util.Base64;
 import java.util.stream.Stream;
 import org.bouncycastle.crypto.InvalidCipherTextException;
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  * @author jimsch
  */
-public class Test {
+public class RegressionTest {
 
     public static int CFails = 0;
         
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    @Test
+    public void Regressions() {
              
-        ProcessDirectory("c:\\Projects\\cose\\Examples\\aes-gcm-examples");
-        ProcessDirectory("c:\\Projects\\cose\\Examples\\hmac-examples");
+        ProcessDirectory("Examples/aes-gcm-examples");
+        ProcessDirectory("Examples/hmac-examples");
 
         if (CFails == 0) System.out.print("SUCCEEDED");
         else System.out.print("FAILED");
     }
  
     public static void ProcessDirectory(String folder) {
+        CFails=0;
         File directory = new File(folder);
         File[] contents = directory.listFiles();
         for ( File f : contents) {
+            System.out.print("Check: " + f.getAbsolutePath() + "\n");
             ProcessFile(f.getAbsolutePath());
-        }       
+        }    
+        assertEquals(CFails, 0);
     }
 
     public static void ProcessFile(String test) {

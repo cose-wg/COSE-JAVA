@@ -6,11 +6,7 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
@@ -41,6 +37,7 @@ public class MAC0MessageTest {
     /**
      * Test of DecodeFromCBORObject method, of class MAC0Message.
      */
+    @Ignore
     @Test
     public void testDecodeFromCBORObject() throws Exception {
         System.out.println("DecodeFromCBORObject");
@@ -54,6 +51,7 @@ public class MAC0MessageTest {
     /**
      * Test of Validate method, of class MAC0Message.
      */
+    @Ignore
     @Test
     public void testValidate() throws Exception {
         System.out.println("Validate");
