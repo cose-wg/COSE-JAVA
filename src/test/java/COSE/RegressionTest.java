@@ -32,8 +32,8 @@ public class RegressionTest {
     @Test
     public void Regressions() {
              
-        ProcessDirectory("c:\\Projects\\cose\\Examples\\aes-gcm-examples");
-        ProcessDirectory("c:\\Projects\\cose\\Examples\\hmac-examples");
+        ProcessDirectory("Examples/aes-gcm-examples");
+        ProcessDirectory("Examples/hmac-examples");
 
         if (CFails == 0) System.out.print("SUCCEEDED");
         else System.out.print("FAILED");
@@ -44,6 +44,7 @@ public class RegressionTest {
         File directory = new File(folder);
         File[] contents = directory.listFiles();
         for ( File f : contents) {
+            System.out.print("Check: " + f.getAbsolutePath() + "\n");
             ProcessFile(f.getAbsolutePath());
         }    
         assertEquals(CFails, 0);
