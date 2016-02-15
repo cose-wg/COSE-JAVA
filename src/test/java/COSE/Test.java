@@ -5,6 +5,10 @@
  */
 package COSE;
 
+import COSE.AlgorithmID;
+import COSE.CoseException;
+import COSE.Encrypt0Message;
+import COSE.HeaderKeys;
 import COSE.MAC0Message;
 import COSE.MACMessage;
 import COSE.Message;
@@ -17,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.stream.Stream;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
  *
@@ -25,11 +30,13 @@ import java.util.stream.Stream;
 public class Test {
 
     public static int CFails = 0;
-    
+        
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+             
+        ProcessDirectory("c:\\Projects\\cose\\Examples\\aes-gcm-examples");
         ProcessDirectory("c:\\Projects\\cose\\Examples\\hmac-examples");
 
         if (CFails == 0) System.out.print("SUCCEEDED");
@@ -38,20 +45,20 @@ public class Test {
  
     public static void ProcessDirectory(String folder) {
         File directory = new File(folder);
-    File[] contents = directory.listFiles();
-for ( File f : contents) {
-    ProcessFile(f.getAbsolutePath());
-}       
+        File[] contents = directory.listFiles();
+        for ( File f : contents) {
+            ProcessFile(f.getAbsolutePath());
+        }       
     }
 
     public static void ProcessFile(String test) {
         
         try {
-        InputStream str = new FileInputStream(test);
-        CBORObject foo = CBORObject.ReadJSON(str);
-        
-        ProcessJSON(foo);
-    }
+            InputStream str = new FileInputStream(test);
+            CBORObject foo = CBORObject.ReadJSON(str);
+
+            ProcessJSON(foo);
+        }
         catch(Exception e) {
             
         }
@@ -66,8 +73,56 @@ for ( File f : contents) {
         else if (input.ContainsKey("mac")) {
             VerifyMacTest(control);
         }
+        else if (input.ContainsKey("encrypted")) {
+            VerifyEncryptTest(control);
+        }
     }
     
+    public static void VerifyEncryptTest(CBORObject control) {
+        String strExample = control.get("output").get("cbor").AsString();
+        byte[] rgb =  hexStringToByteArray(strExample);
+        _VerifyEncrypt(control, rgb);
+    }
+    
+    public static void _VerifyEncrypt(CBORObject control, byte[] rgbData) {
+ 	CBORObject pInput = control.get("input");
+	boolean fFail = false;
+	boolean fFailBody = false;
+
+        CBORObject pFail = control.get("fail");
+        if ((pFail != null) && (pFail.getType() == CBORType.Boolean) &&
+              pFail.AsBoolean()) {
+            fFailBody = true;
+        }
+
+        try {
+            Message msg = Message.DecodeFromBytes(rgbData, 0);
+            Encrypt0Message enc0 = (Encrypt0Message)msg;
+
+            CBORObject cnEncrypt = pInput.get("encrypted");
+            SetReceivingAttributes(msg, cnEncrypt, 2);
+
+            CBORObject cnRecipients = cnEncrypt.get("recipients");
+            cnRecipients = cnRecipients.get(0);
+
+            CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+
+            CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
+
+            pFail = cnRecipients.get("fail");
+
+            try {
+            byte[] rgbContent = enc0.Decrypt(kk.GetByteString());
+                if ((pFail != null) && !pFail.AsBoolean()) CFails++;
+            }
+            catch (Exception e) {
+                   if ((pFail != null) && pFail.AsBoolean()) CFails ++;
+            }            
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+    }
     
     public static void VerifyMac0Test(CBORObject control) {
         String strExample = control.get("output").get("cbor").AsString();

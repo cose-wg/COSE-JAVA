@@ -27,8 +27,12 @@ public enum AlgorithmID {
     }    
     public static AlgorithmID FromCBOR(CBORObject obj) {
         for (AlgorithmID alg : AlgorithmID.values()) {
-            if (obj.equals(alg)) return alg;
+            if (obj.equals(alg.value)) return alg;
         }
         return null;
+    }
+    
+    public CBORObject AsCBOR() {
+        return value;
     }
 }

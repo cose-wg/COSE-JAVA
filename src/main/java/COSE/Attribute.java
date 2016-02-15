@@ -16,6 +16,15 @@ public class Attribute {
     protected CBORObject objUnprotected = CBORObject.NewMap();
     protected CBORObject objDontSend = CBORObject.NewMap();
     
+    public void AddProtected(CBORObject label, CBORObject value) {
+        RemoveAttribute(label);
+        objProtected.Add(label, value);
+    }
+    
+    public void AddProtected(HeaderKeys label, CBORObject value) {
+        AddProtected(label.AsCBOR(), value);
+    }
+
     public void AddUnprotected(CBORObject label, CBORObject value) {
         RemoveAttribute(label);
         objUnprotected.Add(label, value);

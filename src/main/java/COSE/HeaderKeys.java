@@ -13,7 +13,7 @@ import com.upokecenter.cbor.CBORObject;
  */
 public enum HeaderKeys {
     Algorithm(1),
-    IV(4);
+    IV(5);
     
     private CBORObject value;
     
