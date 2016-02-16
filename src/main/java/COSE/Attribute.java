@@ -24,6 +24,10 @@ public class Attribute {
     public void AddProtected(HeaderKeys label, CBORObject value) {
         AddProtected(label.AsCBOR(), value);
     }
+    
+    public void AddProtected(HeaderKeys label, byte[] value) {
+        AddProtected(label, CBORObject.FromObject(value));
+    }
 
     public void AddUnprotected(CBORObject label, CBORObject value) {
         RemoveAttribute(label);
@@ -34,6 +38,10 @@ public class Attribute {
         AddUnprotected(label.AsCBOR(), value);
     }
     
+    public void AddUnprotected(HeaderKeys label, byte[] value) {
+        AddUnprotected(label, CBORObject.FromObject(value));
+    }
+
     public CBORObject FindAttribute(CBORObject label) {
         if (objProtected.ContainsKey(label)) return objProtected.get(label);
         if (objUnprotected.ContainsKey(label)) return objUnprotected.get(label);

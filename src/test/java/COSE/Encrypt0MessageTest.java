@@ -6,14 +6,21 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
 import static org.junit.Assert.*;
+import org.junit.rules.ExpectedException;
 
 /**
  *
  * @author jimsch
  */
 public class Encrypt0MessageTest {
+    byte[] rgbKey128 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    byte[] rgbKey256 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,28, 29, 30, 31, 32};
+    byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
+    byte[] rgbIV128 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    byte[] rgbIV96 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     
     public Encrypt0MessageTest() {
     }
@@ -34,75 +41,210 @@ public class Encrypt0MessageTest {
     public void tearDown() {
     }
 
-    /**
-     * Test of DecodeFromCBORObject method, of class Encrypt0Message.
-     */
-    @Ignore
-    @Test
-    public void testDecodeFromCBORObject() throws Exception {
-        System.out.println("DecodeFromCBORObject");
-        CBORObject obj = null;
-        Encrypt0Message instance = new Encrypt0Message();
-        instance.DecodeFromCBORObject(obj);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
-
-    /**
-     * Test of EncodeToCBORObject method, of class Encrypt0Message.
-     */
-    @Ignore
-    @Test
-    public void testEncodeToCBORObject() throws Exception {
-        System.out.println("EncodeToCBORObject");
-        Encrypt0Message instance = new Encrypt0Message();
-        
-        byte[] rgbContent = {'T', 'h', 'i', 's', ' '};
-        byte[] rgbSecret = new byte[128/8];
-        rgbSecret[0] = 'a';
-        rgbSecret[1] = 'b';
-        rgbSecret[3] = 'c';
-        
-        
-        instance.SetContent(rgbContent);
-        instance.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        instance.Encrypt(rgbSecret);
-        CBORObject objOut = instance.EncodeToCBORObject();
-        
-        CBORObject expResult = null;
-        CBORObject result = instance.EncodeToCBORObject();
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     /**
      * Test of Decrypt method, of class Encrypt0Message.
      */
-    @Ignore
     @Test
-    public void testDecrypt() throws Exception {
-        System.out.println("Decrypt");
-        byte[] rgbKey = null;
-        Encrypt0Message instance = new Encrypt0Message();
-        byte[] expResult = null;
-        byte[] result = instance.Decrypt(rgbKey);
-        assertArrayEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
-
-    /**
-     * Test of Encrypt method, of class Encrypt0Message.
-     */
-    @Ignore @Test
-    public void testEncrypt() throws Exception {
-        System.out.println("Encrypt");
-        byte[] rgbKey = null;
-        Encrypt0Message instance = new Encrypt0Message();
-        instance.Encrypt(rgbKey);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testRoundTrip() throws Exception {
+        System.out.println("Round Trip");
+        Encrypt0Message msg = new Encrypt0Message();
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.AddProtected(HeaderKeys.IV, CBORObject.FromObject(rgbIV96));
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+        byte[] rgbMsg = msg.EncodeToBytes();
+        
+        msg = (Encrypt0Message) Message.DecodeFromBytes(rgbMsg, 993);
+        byte[] contentNew = msg.Decrypt(rgbKey128);
+      
+        assertArrayEquals(rgbContent, contentNew);
     }
     
+    @Test
+    public void encryptNoAlgorithm() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("No Algorithm Specified");
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+    }    
+
+    @Test
+    public void encryptUnknownAlgorithm() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Unknown Algorithm Specified");
+        msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+    }    
+
+    @Test
+    public void encryptUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Unsupported Algorithm Specified");
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+    }    
+
+    @Test
+    public void encryptIncorrectKeySize() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Incorrect Key Size");
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey256);
+    }    
+
+    @Test
+    public void encryptNullKey() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(NullPointerException.class);
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.SetContent(rgbContent);
+        msg.Encrypt(null);
+    }    
+
+    @Test
+    public void encryptNoContent() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("No Content Specified");
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.Encrypt(rgbKey128);
+    }    
+
+    @Test
+    public void encryptBadIV() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("IV is incorrectly formed");
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.AddUnprotected(HeaderKeys.IV, CBORObject.FromObject("IV"));
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+    }    
+
+    @Test
+    public void encryptIncorrectIV() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("IV size is incorrect");
+        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.AddUnprotected(HeaderKeys.IV, rgbIV128);
+        msg.SetContent(rgbContent);
+        msg.Encrypt(rgbKey128);
+    }    
+    
+    @Test
+    public void encryptWrongBasis() throws CoseException {
+        CBORObject obj = CBORObject.NewMap();
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Message is not a COSE security Message");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeWrongCount() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeBadProtected() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeBadProtected2() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.FromObject(CBORObject.False));
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeBadUnprotected() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeBadContent() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
+        obj.Add(CBORObject.NewMap());
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
+
+    @Test
+    public void encryptDecodeBadTag() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
+        obj.Add(CBORObject.NewMap());
+        obj.Add(new byte[0]);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid Encrypt0 structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, 993);        
+    }
 }

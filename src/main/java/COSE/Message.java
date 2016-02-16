@@ -14,6 +14,8 @@ import com.upokecenter.cbor.CBORType;
  */
 public abstract class Message extends Attribute {
     protected byte[] externalData = new byte[0];
+    protected boolean emitTag = true;
+    protected int messageTag;
   
     /**
      * Decode a 
@@ -24,7 +26,7 @@ public abstract class Message extends Attribute {
     public static Message DecodeFromBytes(byte[] rgbData, int defaultTag) throws CoseException {
         CBORObject messageObject = CBORObject.DecodeFromBytes(rgbData);
         
-        if (messageObject.getType() != CBORType.Array)  throw new CoseException("Message isnot a COSE security Message");
+        if (messageObject.getType() != CBORType.Array)  throw new CoseException("Message is not a COSE security Message");
         
         if (messageObject.isTagged()) {
             if (messageObject.GetTags().length != 1) throw new CoseException("Malformed message - too many tags");
@@ -46,6 +48,7 @@ public abstract class Message extends Attribute {
             case 993: 
                 msg = new Encrypt0Message();
                 break;
+
             case 994: 
                 msg = new MACMessage();
                 break;
@@ -67,8 +70,19 @@ public abstract class Message extends Attribute {
         return EncodeToCBORObject().EncodeToBytes();
     }
 
-    public abstract void DecodeFromCBORObject(CBORObject messageObject) throws CoseException;
-    public abstract CBORObject EncodeToCBORObject() throws CoseException;
+    protected abstract void DecodeFromCBORObject(CBORObject messageObject) throws CoseException;
+    protected abstract CBORObject EncodeCBORObject() throws CoseException;
+    public CBORObject EncodeToCBORObject() throws CoseException {
+        CBORObject obj;
+        
+        obj = EncodeCBORObject();
+        
+        if (emitTag) {
+            obj = CBORObject.FromObjectAndTag(obj, messageTag);
+        }
+        
+        return obj;
+    }
 
     public void SetExternal(byte[] rgbData) {
         externalData = rgbData;

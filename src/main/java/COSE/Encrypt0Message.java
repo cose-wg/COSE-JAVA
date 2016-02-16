@@ -16,6 +16,7 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 public class Encrypt0Message extends EncryptCommon {
     public Encrypt0Message() {
         context = "Encrypted";
+        messageTag = 993;
     }
     
     public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
@@ -34,7 +35,7 @@ public class Encrypt0Message extends EncryptCommon {
         else throw new CoseException("Invalid Enrypt0 structure");
     }
     
-    public CBORObject EncodeToCBORObject() throws CoseException {
+    protected CBORObject EncodeCBORObject() throws CoseException {
         if (rgbEncrypt == null) throw new CoseException("Encrypt function not called");
         
         CBORObject obj = CBORObject.NewArray();
