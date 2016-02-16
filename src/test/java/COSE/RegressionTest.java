@@ -13,35 +13,44 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import static org.junit.Assert.assertEquals;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.*;
 
 /**
  *
  * @author jimsch
  */
+@RunWith(Parameterized.class)
 public class RegressionTest {
-
-    public static int CFails = 0;
-        
-    /**
-     * @param args the command line arguments
-     */
-    @Test
-    public void Regressions() {
-             
-        ProcessDirectory("Examples/aes-gcm-examples");
-        ProcessDirectory("Examples/hmac-examples");
-
-        if (CFails == 0) System.out.print("SUCCEEDED");
-        else System.out.print("FAILED");
+    @Parameters
+    public static Collection<Object> data() {
+        return Arrays.asList(new Object[] {
+            "Examples/aes-ccm-examples",
+            "Examples/aes-gcm-examples",
+            "Examples/hmac-examples"
+           });
     }
- 
-    public static void ProcessDirectory(String folder) {
+
+    @Parameter // first data value (0) is default
+    public /* NOT private */ String directoryName;
+
+    public int CFails = 0;
+         
+    @Test
+    public void ProcessDirectory() {
         CFails=0;
-        File directory = new File(folder);
+        File directory = new File(directoryName);
+        if (!directory.isDirectory()) {
+            directory = new File("C:\\Projects\\cose\\" + directoryName);
+        }
         File[] contents = directory.listFiles();
         for ( File f : contents) {
             System.out.print("Check: " + f.getAbsolutePath() + "\n");
@@ -50,7 +59,7 @@ public class RegressionTest {
         assertEquals(CFails, 0);
     }
 
-    public static void ProcessFile(String test) {
+    public void ProcessFile(String test) {
         
         try {
             InputStream str = new FileInputStream(test);
@@ -63,7 +72,7 @@ public class RegressionTest {
         }
     }
     
-    public static void ProcessJSON(CBORObject control) {
+    public void ProcessJSON(CBORObject control) {
         CBORObject input = control.get("input");
         
         if (input.ContainsKey("mac0")) {
@@ -77,13 +86,13 @@ public class RegressionTest {
         }
     }
     
-    public static void VerifyEncryptTest(CBORObject control) {
+    public void VerifyEncryptTest(CBORObject control) {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyEncrypt(control, rgb);
     }
     
-    public static void _VerifyEncrypt(CBORObject control, byte[] rgbData) {
+    public void _VerifyEncrypt(CBORObject control, byte[] rgbData) {
  	CBORObject pInput = control.get("input");
 	boolean fFail = false;
 	boolean fFailBody = false;
@@ -123,13 +132,13 @@ public class RegressionTest {
         }
     }
     
-    public static void VerifyMac0Test(CBORObject control) {
+    public void VerifyMac0Test(CBORObject control) {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac0(control, rgb);
     }
     
-    public static void _VerifyMac0(CBORObject control, byte[] rgbData) {
+    public void _VerifyMac0(CBORObject control, byte[] rgbData) {
 	CBORObject pInput = control.get("input");
 	int type;
 	boolean fFail = false;
@@ -172,13 +181,13 @@ public class RegressionTest {
         }
     }
 
-    public static void VerifyMacTest(CBORObject control) {
+    public void VerifyMacTest(CBORObject control) {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac(control, rgb);
     }
     
-    public static void _VerifyMac(CBORObject control, byte[] rgbData) {
+    public void _VerifyMac(CBORObject control, byte[] rgbData) {
 	CBORObject pInput = control.get("input");
 	int type;
 	boolean fFail = false;
@@ -221,7 +230,7 @@ public class RegressionTest {
         }
     }
     
-    public static void SetReceivingAttributes(Message msg, CBORObject cnIn, int base) throws Exception
+    public void SetReceivingAttributes(Message msg, CBORObject cnIn, int base) throws Exception
     {
 	boolean f = false;
 
@@ -233,7 +242,7 @@ public class RegressionTest {
         }
     }
     
-    public static void SetAttributes(Message msg, CBORObject cnAttributes, int which, int msgType, boolean fPublicKey) throws Exception {
+    public void SetAttributes(Message msg, CBORObject cnAttributes, int which, int msgType, boolean fPublicKey) throws Exception {
         if (cnAttributes == null) return;
         
         for (CBORObject attr : cnAttributes.getKeys()) {
@@ -244,7 +253,7 @@ public class RegressionTest {
         }
     }
     
-    public static CBORObject BuildKey(CBORObject keyIn, boolean fPublicKey) {
+    public CBORObject BuildKey(CBORObject keyIn, boolean fPublicKey) {
         CBORObject cnKeyOut = CBORObject.NewMap();
  
         for (CBORObject key : keyIn.getKeys()) {
@@ -292,7 +301,7 @@ public class RegressionTest {
     }
             
             
-    public static byte[] hexStringToByteArray(String s) {
+    public byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {

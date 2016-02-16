@@ -20,6 +20,7 @@ public class MACMessage extends MacCommon {
     public MACMessage() {
         super();
         strContext = "MAC";
+        messageTag = 994;
     }
     
     public List<Recipient> getRecipientList() {
@@ -56,7 +57,7 @@ public class MACMessage extends MacCommon {
         else throw new CoseException("Invalid MAC structure");
     }
 
-    public CBORObject EncodeToCBORObject() throws CoseException {
+    protected CBORObject EncodeCBORObject() throws CoseException {
         if (rgbTag == null) throw new CoseException("Compute function not called");
         
         CBORObject obj = CBORObject.NewArray();

@@ -45,7 +45,7 @@ public class Recipient extends Message {
         }
     }
 
-    public CBORObject EncodeToCBORObject() throws CoseException {        
+    protected CBORObject EncodeCBORObject() throws CoseException {        
         CBORObject obj = CBORObject.NewArray();
         if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
         else obj.Add(CBORObject.FromObject(new byte[0]));
