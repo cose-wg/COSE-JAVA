@@ -37,6 +37,7 @@ public class RegressionTest {
         return Arrays.asList(new Object[] {
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
+            "Examples/cbc-mac-examples",
             "Examples/encrypted-tests",
             "Examples/hmac-examples",
             "Examples/mac0-tests"
