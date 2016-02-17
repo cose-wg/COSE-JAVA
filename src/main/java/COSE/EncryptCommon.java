@@ -7,6 +7,7 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESFastEngine;
@@ -23,7 +24,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
 public abstract class EncryptCommon extends Message {
     protected String context;
     protected byte[] rgbEncrypt;
-    protected byte[] rgbContent;
     SecureRandom random = new SecureRandom();
     
     protected byte[] Decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
@@ -87,14 +87,6 @@ public abstract class EncryptCommon extends Message {
         }
     }
     
-    public byte[] GetContent() {
-        return rgbContent;
-    }
-    
-    public void SetContent(byte[] rgbData) {
-        rgbContent = rgbData;
-    }
-
     private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException
     {
         CCMBlockCipher cipher = new CCMBlockCipher(new AESFastEngine());
@@ -143,7 +135,7 @@ public abstract class EncryptCommon extends Message {
     }
     
  
-    private byte[] AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException
+    private void AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException
     {
         CCMBlockCipher cipher = new CCMBlockCipher(new AESFastEngine());
         KeyParameter ContentKey;
@@ -195,7 +187,7 @@ public abstract class EncryptCommon extends Message {
         int len = cipher.processBytes(rgbContent, 0, rgbContent.length, C, 0);
         len += cipher.doFinal(C, len);
 
-        return C;
+        rgbEncrypt = C;
     }
 
     private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {

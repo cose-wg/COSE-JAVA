@@ -30,25 +30,37 @@ public abstract class MacCommon extends Message {
     protected MacCommon() {
         super();
     }
+
+    protected void Create(byte[] rgbKey) throws CoseException {
+        CBORObject algX = FindAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
+        AlgorithmID alg = AlgorithmID.FromCBOR(algX);
+        
+        switch (alg) {
+            case HMAC_SHA_256_64:
+            case HMAC_SHA_256:
+            case HMAC_SHA_384:
+            case HMAC_SHA_512:
+                rgbTag = HMAC(alg, rgbKey);
+                break;
+                
+            default:
+                throw new CoseException("Unsupported MAC Algorithm");
+        }
+    }
     
     protected boolean Validate(byte[] rgbKey) throws CoseException {
         boolean f;
         int i;
         byte[] rgbTest;
         
-        CBORObject alg = FindAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
-        if (alg.getType() == CBORType.TextString) {
-            throw new CoseException("Unsupported MAC Algorithm");
-        }
-        else if (alg.getType() != CBORType.Number) {
-            throw new CoseException("Malformed MAC algorithm field");
-        } 
+        CBORObject algX = FindAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
+        AlgorithmID alg = AlgorithmID.FromCBOR(algX);
         
-        switch (alg.AsInt32()) {
-            case 4: // HMAC_SHA_256_64
-            case 5: // HMAC_SHA_256
-            case 6: // HMAC_SHA_384
-            case 7: // HMAC_SHA_512
+        switch (alg) {
+            case HMAC_SHA_256_64:
+            case HMAC_SHA_256:
+            case HMAC_SHA_384:
+            case HMAC_SHA_512:
                 rgbTest = HMAC(alg, rgbKey);
                 break;
                 
@@ -77,33 +89,23 @@ public abstract class MacCommon extends Message {
         return obj.EncodeToBytes();
     }
     
-    private byte[] HMAC(CBORObject alg, byte[] rgbKey) throws CoseException {
+    private byte[] HMAC(AlgorithmID alg, byte[] rgbKey) throws CoseException {
         Digest digest;
-        int cbitKey;
-        int cbResult;
         
-        switch (alg.AsInt32()) {
-            case 4: // HMAC_SHA_256_64
-                cbitKey = 256;
-                cbResult = 64/8;
+        switch (alg) {
+            case HMAC_SHA_256_64:
                 digest = new SHA256Digest();
                 break;
                 
-            case 5: // HMAC_SHA_256
-                cbitKey = 256;
-                cbResult = 256/8;
+            case HMAC_SHA_256:
                 digest = new SHA256Digest();
                 break;
                 
-            case 6: // HMAC_SHA_384
-                cbitKey = 384;
-                cbResult =384/8;
+            case HMAC_SHA_384:
                 digest = new SHA384Digest();
                 break;
                 
-            case 7: // HMAC_SHA_512
-                cbitKey = 512;
-                cbResult = 512/8;
+            case HMAC_SHA_512:
                 digest = new SHA512Digest();
                 break;
                 
@@ -111,7 +113,7 @@ public abstract class MacCommon extends Message {
                 throw new CoseException("Internal Error");
         }
         
-        if (rgbKey.length != cbitKey/8) throw new CoseException("Key is incorrect size");
+        if (rgbKey.length != alg.getKeySize()/8) throw new CoseException("Key is incorrect size");
         
         HMac hmac = new HMac(digest);
         KeyParameter key = new KeyParameter(rgbKey);
@@ -123,8 +125,8 @@ public abstract class MacCommon extends Message {
         hmac.update(toDigest, 0, toDigest.length);
         hmac.doFinal(resBuf, 0);
 
-        byte[] returnVal = new byte[cbResult];
-        System.arraycopy(resBuf, 0, returnVal, 0, cbResult);
+        byte[] returnVal = new byte[alg.getTagSize()/8];
+        System.arraycopy(resBuf, 0, returnVal, 0, alg.getTagSize()/8);
         return returnVal;
     }
 }

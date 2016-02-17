@@ -7,6 +7,7 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -16,6 +17,7 @@ public abstract class Message extends Attribute {
     protected byte[] externalData = new byte[0];
     protected boolean emitTag = true;
     protected int messageTag;
+    protected byte[] rgbContent;
   
     /**
      * Decode a 
@@ -82,6 +84,18 @@ public abstract class Message extends Attribute {
         }
         
         return obj;
+    }
+
+    public byte[] GetContent() {
+        return rgbContent;
+    }
+    
+    public void SetContent(byte[] rgbData) {
+        rgbContent = rgbData;
+    }
+    
+    public void SetContent(String strData) {
+        rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
 
     public void SetExternal(byte[] rgbData) {
