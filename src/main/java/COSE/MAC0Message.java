@@ -57,6 +57,10 @@ public class MAC0Message extends MacCommon {
         return obj;
     }
     
+    public void Create(byte[] rgbKey) throws CoseException {
+        super.Create(rgbKey);
+    }
+    
     public boolean Validate(byte[] rgbKey) throws CoseException {
         return super.Validate(rgbKey);
     }

@@ -15,8 +15,13 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
  */
 public class Encrypt0Message extends EncryptCommon {
     public Encrypt0Message() {
+        this(true);
+    }
+    
+    public Encrypt0Message(boolean emitTag) {
         context = "Encrypted";
         messageTag = 993;
+        this.emitTag = emitTag;
     }
     
     public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
