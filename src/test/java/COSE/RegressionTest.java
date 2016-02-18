@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -94,7 +95,10 @@ public class RegressionTest {
         else if (input.ContainsKey("encrypted")) {
             VerifyEncryptTest(control);
             BuildEncryptTest(control);
-            
+        }
+        else if (input.ContainsKey("enveloped")) {
+            VerifyEnvelopedTest(control);
+            BuildEnvelopedTest(control);
         }
     }
     
@@ -148,7 +152,7 @@ public class RegressionTest {
             Encrypt0Message enc0 = (Encrypt0Message)msg;
 
             CBORObject cnEncrypt = cnInput.get("encrypted");
-            SetReceivingAttributes(msg, cnEncrypt, 2);
+            SetReceivingAttributes(msg, cnEncrypt);
 
             CBORObject cnRecipients = cnEncrypt.get("recipients");
             cnRecipients = cnRecipients.get(0);
@@ -225,7 +229,7 @@ public class RegressionTest {
             MAC0Message mac0 = (MAC0Message)msg;
 
             CBORObject cnMac = pInput.get("mac0");
-            SetReceivingAttributes(msg, cnMac, 2);
+            SetReceivingAttributes(msg, cnMac);
 
             CBORObject cnRecipients = cnMac.get("recipients");
             cnRecipients = cnRecipients.get(0);
@@ -274,7 +278,7 @@ public class RegressionTest {
             MACMessage mac = (MACMessage)msg;
 
             CBORObject cnMac = pInput.get("mac");
-            SetReceivingAttributes(msg, cnMac, 2);
+            SetReceivingAttributes(msg, cnMac);
 
             CBORObject cnRecipients = cnMac.get("recipients");
             cnRecipients = cnRecipients.get(0);
@@ -299,8 +303,196 @@ public class RegressionTest {
             CFails++;
         }
     }
+
+    boolean DecryptMessage(byte[] rgbEncoded, boolean fFailBody, CBORObject cnEnveloped, CBORObject cnRecipient1, int iRecipient1, CBORObject cnRecipient2, int iRecipient2)
+    {
+	EncryptMessage hEnc;
+	Recipient hRecip;
+	Recipient hRecip1;
+	Recipient hRecip2;
+	boolean fRet = false;
+	int type;
+	CBORObject cnkey;
+        Message msg;
+
+        try {
+            try {
+                msg = Message.DecodeFromBytes(rgbEncoded, 992);
+            }
+            catch (CoseException e) {
+                if (fFailBody) return true;
+                throw e;
+            }
+
+            hEnc = (EncryptMessage) msg;
+
+            SetReceivingAttributes(hEnc, cnEnveloped);
+
+            hRecip1 = hEnc.getRecipient(iRecipient1);
+            SetReceivingAttributes(hRecip1, cnRecipient1);
+
+            if (cnRecipient2 != null) {
+                cnkey = BuildKey(cnRecipient2.get("key"), false);
+
+                hRecip2 = hRecip1.getRecipient(iRecipient2);
+
+                SetReceivingAttributes(hRecip2, cnRecipient2);
+                hRecip2.SetKey(cnkey);
+
+                CBORObject cnStatic = cnRecipient2.get("sender_key");
+                if (cnStatic != null) {
+                    if (hRecip2.FindAttribute(HeaderKeys.ECDH_SPK) == null) {
+                        hRecip2.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                    }
+                }
+
+                hRecip = hRecip2;
+            }
+            else {
+                cnkey = BuildKey(cnRecipient1.get("key"), false);
+                hRecip1.SetKey(cnkey);
+
+                CBORObject cnStatic = cnRecipient1.get("sender_key");
+                if (cnStatic != null) {
+                    if (hRecip1.FindAttribute(HeaderKeys.ECDH_SPK) == null) {
+                        hRecip1.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                    }
+                }
+
+                hRecip = hRecip1;
+            }
+
+
+            if (!fFailBody) {
+                fFailBody |= HasFailMarker(cnRecipient1);
+                if (cnRecipient2 != null) fFailBody |= HasFailMarker(cnRecipient2);
+            }
+
+            try {
+                byte[] rgbOut = hEnc.decrypt(hRecip);
+                if (fFailBody) fRet = false;
+                else fRet = true;
+            }
+            catch(Exception e) {
+                if(!fFailBody) fRet = false;
+                else fRet = true;
+            }
+        }
+        catch(Exception e) {
+            fRet = false;
+        }
+
+	return fRet;
+}
+
+    int _ValidateEnveloped(CBORObject cnControl, byte[] rgbEncoded)
+    {
+	CBORObject cnInput = cnControl.get("input");
+	CBORObject cnFail;
+	CBORObject cnEnveloped;
+	CBORObject cnRecipients;
+	int iRecipient;
+	boolean fFailBody = false;
+
+        fFailBody = HasFailMarker(cnControl);
+
+	cnEnveloped = cnInput.get("enveloped");
+	cnRecipients = cnEnveloped.get("recipients");
+        
+	for (iRecipient=0; iRecipient<cnRecipients.size(); iRecipient++) {
+            CBORObject cnRecipient = cnRecipients.get(iRecipient);
+            if (!cnRecipient.ContainsKey("recipients")) {
+                if (!DecryptMessage(rgbEncoded, fFailBody, cnEnveloped, cnRecipient, iRecipient, null, 0)) CFails++;
+            }
+            else {
+                int iRecipient2;
+                CBORObject cnRecipient2 = cnRecipient.get("recipients");
+                for (iRecipient2=0; iRecipient2 < cnRecipient2.size(); iRecipient2++) {
+                    if (!DecryptMessage(rgbEncoded, fFailBody, cnEnveloped, cnRecipients, iRecipient, cnRecipient2, iRecipient2)) CFails++;
+                }
+            }
+	}
+	return 0;
+    }
+
+    int VerifyEnvelopedTest(CBORObject cnControl)
+    {
+        String strExample = cnControl.get("output").get("cbor").AsString();
+        byte[] rgb =  hexStringToByteArray(strExample);
+
+	return _ValidateEnveloped(cnControl, rgb);
+    }
+
+    Recipient BuildRecipient(CBORObject cnRecipient) throws Exception
+    {
+	Recipient hRecip = new Recipient();
+
+	SetSendingAttributes(hRecip, cnRecipient, true);
+
+	CBORObject cnKey = cnRecipient.get("key");
+	if (cnKey != null) {
+            CBORObject pkey = BuildKey(cnKey, true);
+
+            hRecip.SetKey(pkey);
+        }
+
+	cnKey = cnRecipient.get("recipients");
+	if (cnKey != null) {
+            for (int i=0; i<cnKey.size(); i++) {
+		Recipient hRecip2 = BuildRecipient(cnKey.get(i));
+		hRecip.addRecipient(hRecip2);
+            }
+	}
+
+	CBORObject cnSenderKey = cnRecipient.get("sender_key");
+	if (cnSenderKey != null) {
+            CBORObject cnSendKey = BuildKey(cnSenderKey, false);
+            CBORObject cnKid = cnSenderKey.get("kid");
+            hRecip.SetSenderKey(cnSendKey, (cnKid == null) ? 2 : 1);
+	}
+
+	return hRecip;
+    }
+
+    void BuildEnvelopedTest(CBORObject cnControl) throws Exception
+    {
+	int iRecipient;
+
+	//
+	//  We don't run this for all control sequences - skip those marked fail.
+	//
+
+        if (HasFailMarker(cnControl)) return;
+
+	EncryptMessage hEncObj = new EncryptMessage();
+
+	CBORObject cnInputs = cnControl.get("input");
+	CBORObject cnEnveloped = cnInputs.get("enveloped");
+
+	CBORObject cnContent = cnInputs.get("plaintext");
+        
+	hEncObj.SetContent(cnContent.AsString());
+
+	SetSendingAttributes(hEncObj, cnEnveloped, true);
+
+	CBORObject cnRecipients = cnEnveloped.get("recipients");
+
+	for (iRecipient = 0; iRecipient<cnRecipients.size(); iRecipient++) {
+            Recipient hRecip = BuildRecipient(cnRecipients.get(iRecipient));
+
+            hEncObj.addRecipient(hRecip);
+	}
+
+	hEncObj.encrypt();
+
+        byte[] rgb = hEncObj.EncodeToBytes();
+
+	int f = _ValidateEnveloped(cnControl, rgb);
+
+        return;
+    }
     
-    public void SetReceivingAttributes(Message msg, CBORObject cnIn, int base) throws Exception
+    public void SetReceivingAttributes(Message msg, CBORObject cnIn) throws Exception
     {
 	boolean f = false;
 
@@ -341,6 +533,16 @@ public class RegressionTest {
                 case "kid":
                     cnKey= HeaderKeys.KID.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "IV_hex":
+                    cnKey = HeaderKeys.IV.AsCBOR();
+                    cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
+                    break;
+                    
+                case "partialIV_hex":
+                    cnKey = HeaderKeys.PARTIAL_IV.AsCBOR();
+                    cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
                     break;
                     
                 default:
@@ -433,7 +635,7 @@ public class RegressionTest {
          // case "ES512": return AlgorithmID.ECDSA_512.AsCBOR();
          // case "PS256": return AlgorithmID.RSA_PSS_256.AsCBOR();
          // case "PS512": return AlgorithmID.RSA_PSS_512.AsCBOR();
-         // case "direct": return AlgorithmID.Direct.AsCBOR();
+         case "direct": return AlgorithmID.Direct.AsCBOR();
          // case "AES-CMAC-128/64": return AlgorithmID.AES_CMAC_128_64.AsCBOR();
          // case "AES-CMAC-256/64": return AlgorithmID.AES_CMAC_256_64.AsCBOR();
          case "AES-MAC-128/64": return AlgorithmID.AES_CBC_MAC_128_64.AsCBOR();
@@ -469,4 +671,10 @@ public class RegressionTest {
          default: return old;
          }
      }
+
+     public boolean HasFailMarker(CBORObject cn) {
+        CBORObject cnFail = cn.get("fail");
+        if (cnFail != null && cnFail.AsBoolean()) return true;
+        return false;
+    }
 }

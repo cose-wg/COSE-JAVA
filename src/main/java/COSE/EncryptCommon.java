@@ -56,7 +56,7 @@ public abstract class EncryptCommon extends Message {
         return rgbContent;
     }
     
-    protected void Encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
         CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 

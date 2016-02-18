@@ -1,4 +1,4 @@
-# COSE-JAVA Implementation
+# COSE-JAVA Implementation [![Build Status](https://travis-ci.org/cose-wg/COSE-JAVA.svg?branch=master)](https://travis-ci.org/cose-wg/COSE-JAVA)
 
 This project is a JAVA implementation of the IETF CBOR Encoded Message Syntax (COSE).
 There are currently two versions of the COSE document that can be read.
