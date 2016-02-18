@@ -139,7 +139,7 @@ public class Recipient extends Message {
         privateKey = key;
     }
 
-    public void SetSenderKey(CBORObject key) {
+    public void SetSenderKey(CBORObject key, int options) {
         publicKey = key;
     }
 }
