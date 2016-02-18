@@ -47,6 +47,10 @@ public abstract class Message extends Attribute {
             case 0: // Unknown
                 throw new CoseException("Message was not tagged and no default tagging option given");
                 
+            case 992:
+                msg = new EncryptMessage();
+                break;
+                        
             case 993: 
                 msg = new Encrypt0Message();
                 break;

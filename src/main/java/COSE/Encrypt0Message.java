@@ -59,12 +59,7 @@ public class Encrypt0Message extends EncryptCommon {
         return super.Decrypt(rgbKey);
     }
     
-    @Override
     public void Encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
-        super.Encrypt(rgbKey);
-    }
-
-    private Exception CoseException(String encrypt_function_not_called) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        super.encryptWithKey(rgbKey);
     }
 }

@@ -11,22 +11,20 @@ import com.upokecenter.cbor.CBORObject;
  *
  * @author jimsch
  */
-public enum HeaderKeys {
-    Algorithm(1),
-    KID(2),
-    IV(5),
-    PARTIAL_IV(6),
-    ECDH_EPK(-1),
-    ECDH_SPK(-2),
-    ECDH_SKID(-3);
+public enum KeyKeys {
+    KeyType(1),
+    Octet_K(-1);
     
-    private CBORObject value;
+    private final CBORObject value;
     
-    HeaderKeys(int val) {
+    public final static CBORObject KeyType_Octet =  CBORObject.FromObject(4);
+    
+    KeyKeys(int val) {
         this.value = CBORObject.FromObject(val);
     }
     
     public CBORObject AsCBOR() {
         return value;
     }
+    
 }

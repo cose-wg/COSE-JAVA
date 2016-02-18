@@ -30,7 +30,9 @@ public enum AlgorithmID {
     AES_CCM_16_128_128(30, 128, 128),
     AES_CCM_16_128_256(31, 256, 128),
     AES_CCM_64_128_128(32, 128, 128),
-    AES_CCM_64_128_256(33, 256, 128);
+    AES_CCM_64_128_256(33, 256, 128),
+    
+    Direct(-6, 0, 0);
  
     private final CBORObject value;
     private final int cbitKey;

@@ -78,20 +78,21 @@ public class MACMessage extends MacCommon {
     public boolean Validate(Recipient recipientToUse) throws CoseException {
         byte[] rgbKey = null;
         int cbitKey = 0;
-        CBORObject alg = null;
+        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        
         
         for (Recipient recipient : recipientList ) {
             
             if (recipientToUse == null) {
                 try {
-                    rgbKey = recipient.Decrypt(cbitKey, alg);
+                    rgbKey = recipient.decrypt(alg, recipientToUse);
                 }
                 catch(CoseException e) {
                 }
             }
             else if (recipientToUse == recipient) {
                 try {
-                    rgbKey = recipient.Decrypt(cbitKey, alg);
+                    rgbKey = recipient.decrypt(alg, recipientToUse);
                 }
                 catch(CoseException e) {
                 }

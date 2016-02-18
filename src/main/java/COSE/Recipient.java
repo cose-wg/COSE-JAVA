@@ -14,7 +14,8 @@ import java.util.List;
  * @author jimsch
  */
 public class Recipient extends Message {
-    CBORObject myKey;
+    CBORObject privateKey;
+    CBORObject publicKey;
     byte[] rgbEncrypted;
     List<Recipient> recipientList;
     
@@ -56,20 +57,89 @@ public class Recipient extends Message {
         return obj;
     }
     
-    public byte[] Decrypt(int cbitKeyOut, CBORObject algKeyOut) throws CoseException {
-        CBORObject alg = FindAttribute(CBORObject.FromObject(1));
+    public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException {
+        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        byte[] rgbKey = null;
         
-        switch (alg.AsInt32()) {
-            case -6: // Direct
-                if (myKey.get(CBORObject.FromObject(1)).AsInt32() != 4) return null;
-                return myKey.get(CBORObject.FromObject(-1)).GetByteString();
+        if (recip != this) {
+            for (Recipient r : recipientList) {
+                if (recip == r) {
+                    rgbKey = r.decrypt(alg, recip);
+                    if (rgbKey == null) throw new CoseException("Internal error");
+                }
+                else if (r.recipientList.size() != 0) {
+                    rgbKey = r.decrypt(alg, recip);
+                    if (rgbKey != null) break;
+                }
+            }
+        }
+        
+        switch (alg) {
+            case Direct: // Direct
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Mismatch of algorithm and key");
+                return privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
             
             default:
                 throw new CoseException("Unsupported Recipent Algorithm");
         }
     }
     
+    public void encrypt() throws CoseException {
+        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+
+        switch (alg) {
+            case Direct:
+                rgbEncrypted = new byte[0];
+                break;
+                
+            default:
+                throw new CoseException("Unsupported Recipient Algorithm");
+        }
+    }
+
+    public void addRecipient(Recipient recipient) {
+        recipientList.add(recipient);
+    }
+    
+    public List<Recipient> getRecipientList() {
+        return recipientList;
+    }
+
+    public Recipient getRecipient(int iRecipient) {
+        return recipientList.get(iRecipient);
+    }
+    
+    public int getRecipientType() throws CoseException {
+        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        switch (alg) {
+            case Direct:
+                return 1;
+                
+            default:
+                return 9;
+        }
+    }
+    
+    public byte[] getKey(AlgorithmID algCEK) throws CoseException {
+        if (privateKey == null) throw new CoseException("Private key not set for recipient");
+        
+        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        
+        switch (alg) {
+            case Direct:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
+                return privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                
+            default:
+                throw new CoseException("Recipient Algorithm not supported");
+        }
+    }
+        
     public void SetKey(CBORObject key) {
-        myKey = key;
+        privateKey = key;
+    }
+
+    public void SetSenderKey(CBORObject key) {
+        publicKey = key;
     }
 }
