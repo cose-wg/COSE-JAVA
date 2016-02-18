@@ -59,7 +59,7 @@ public class EncryptMessage extends EncryptCommon {
         return super.Decrypt(rgbKey);
     }
     
-    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
         AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
 

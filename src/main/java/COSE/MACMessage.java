@@ -10,6 +10,7 @@ import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
  *
@@ -75,7 +76,7 @@ public class MACMessage extends MacCommon {
         return recipientList.get(iRecipient);
     }
     
-    public boolean Validate(Recipient recipientToUse) throws CoseException {
+    public boolean Validate(Recipient recipientToUse) throws CoseException, InvalidCipherTextException {
         byte[] rgbKey = null;
         int cbitKey = 0;
         AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));

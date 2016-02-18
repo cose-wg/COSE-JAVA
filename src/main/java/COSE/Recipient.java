@@ -8,6 +8,9 @@ package COSE;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.util.List;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.engines.AESWrapEngine;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
  *
@@ -57,7 +60,7 @@ public class Recipient extends Message {
         return obj;
     }
     
-    public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException {
+    public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException, InvalidCipherTextException {
         AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
         
@@ -79,6 +82,13 @@ public class Recipient extends Message {
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Mismatch of algorithm and key");
                 return privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
             
+            case AES_KW_128:
+            case AES_KW_192:
+            case AES_KW_256:
+               if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                return AES_KeyWrap_Decrypt(alg, rgbKey);
+
             default:
                 throw new CoseException("Unsupported Recipent Algorithm");
         }
@@ -86,10 +96,19 @@ public class Recipient extends Message {
     
     public void encrypt() throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        byte[] rgbKey;
 
         switch (alg) {
             case Direct:
                 rgbEncrypted = new byte[0];
+                break;
+                
+            case AES_KW_128:
+            case AES_KW_192:
+            case AES_KW_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                rgbEncrypted = AES_KeyWrap_Encrypt(alg, rgbKey);
                 break;
                 
             default:
@@ -120,7 +139,7 @@ public class Recipient extends Message {
         }
     }
     
-    public byte[] getKey(AlgorithmID algCEK) throws CoseException {
+    public byte[] getKey(AlgorithmID algCEK) throws CoseException, Exception {
         if (privateKey == null) throw new CoseException("Private key not set for recipient");
         
         AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
@@ -129,6 +148,11 @@ public class Recipient extends Message {
             case Direct:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
                 return privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                
+            case AES_KW_128:
+            case AES_KW_192:
+            case AES_KW_256:
+                throw new Exception("Internal Error");
                 
             default:
                 throw new CoseException("Recipient Algorithm not supported");
@@ -142,4 +166,25 @@ public class Recipient extends Message {
     public void SetSenderKey(CBORObject key, int options) {
         publicKey = key;
     }
+    
+    private byte[] AES_KeyWrap_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException
+    {
+        if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is not the correct size");
+
+        AESWrapEngine foo = new AESWrapEngine();
+        KeyParameter parameters = new KeyParameter(rgbKey);
+        foo.init(true, parameters);
+        return foo.wrap(rgbContent, 0, rgbContent.length);
+    }
+    
+    private byte[] AES_KeyWrap_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException
+    {
+        if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is not the correct size");
+
+        AESWrapEngine foo = new AESWrapEngine();
+        KeyParameter parameters = new KeyParameter(rgbKey);
+        foo.init(false, parameters);
+        return foo.unwrap(rgbEncrypted, 0, rgbEncrypted.length);
+    }
+    
 }
