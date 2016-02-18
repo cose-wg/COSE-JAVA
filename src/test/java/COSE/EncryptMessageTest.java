@@ -65,7 +65,7 @@ public class EncryptMessageTest {
     }
 
     @Test
-    public void encryptNoRecipients() throws CoseException, InvalidCipherTextException {
+    public void encryptNoRecipients() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         
         thrown.expect(CoseException.class);
@@ -76,7 +76,7 @@ public class EncryptMessageTest {
     }    
     
     @Test
-    public void encryptNoAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptNoAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
@@ -87,7 +87,7 @@ public class EncryptMessageTest {
     }    
 
     @Test
-    public void encryptUnknownAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptUnknownAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
@@ -99,7 +99,7 @@ public class EncryptMessageTest {
     }    
 
     @Test
-    public void encryptUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
@@ -111,7 +111,7 @@ public class EncryptMessageTest {
     }    
 
     @Test
-    public void encryptNoContent() throws CoseException, InvalidCipherTextException {
+    public void encryptNoContent() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
@@ -122,7 +122,7 @@ public class EncryptMessageTest {
     }    
 
     @Test
-    public void encryptBadIV() throws CoseException, InvalidCipherTextException {
+    public void encryptBadIV() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
@@ -135,7 +135,7 @@ public class EncryptMessageTest {
     }    
 
     @Test
-    public void encryptIncorrectIV() throws CoseException, InvalidCipherTextException {
+    public void encryptIncorrectIV() throws CoseException, InvalidCipherTextException, Exception {
         EncryptMessage msg = new EncryptMessage();
         msg.addRecipient(recipient128);
         
