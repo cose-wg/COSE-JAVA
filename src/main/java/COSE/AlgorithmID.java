@@ -32,6 +32,9 @@ public enum AlgorithmID {
     AES_CCM_64_128_128(32, 128, 128),
     AES_CCM_64_128_256(33, 256, 128),
     
+    AES_KW_128(-3, 128, 64),
+    AES_KW_192(-4, 192, 64),
+    AES_KW_256(-5, 256, 64),
     Direct(-6, 0, 0);
  
     private final CBORObject value;

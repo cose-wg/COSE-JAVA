@@ -33,15 +33,25 @@ import org.junit.runners.Parameterized.*;
  */
 @RunWith(Parameterized.class)
 public class RegressionTest {
-    @Parameters
+    @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
+            "Examples/aes-wrap-examples",
             "Examples/cbc-mac-examples",
+            // "Examples/ecdh-direct-examples",
+            // "Examples/ecdh-wrap-examples",
+            // "Examples/ecdsa-examples",
             "Examples/encrypted-tests",
+            "Examples/enveloped-tests",
+            // "Examples/hkdf-hmac-sha-examples",
             "Examples/hmac-examples",
-            "Examples/mac0-tests"
+            "Examples/mac-tests",
+            "Examples/mac0-tests",
+            // "Examples/sign-tests",
+            // "Examples/sign1-tests",
+            // "Examples/spec-examples",
            });
     }
 
@@ -263,19 +273,23 @@ public class RegressionTest {
     
     public void _VerifyMac(CBORObject control, byte[] rgbData) {
 	CBORObject pInput = control.get("input");
-	int type;
 	boolean fFail = false;
 	boolean fFailBody = false;
 
         try {
-            CBORObject pFail = control.get("fail");
-            if ((pFail != null) && (pFail.getType() == CBORType.Boolean) &&
-                  pFail.AsBoolean()) {
-                fFailBody = true;
-            }
+            Message msg = null;
+            MACMessage mac = null;
+            fFailBody = HasFailMarker(control);
 
-            Message msg = Message.DecodeFromBytes(rgbData, 0);
-            MACMessage mac = (MACMessage)msg;
+            try {
+                msg = Message.DecodeFromBytes(rgbData, 994);
+                mac = (MACMessage)msg;
+            }
+            catch (CoseException e) {
+                if (e.getMessage().startsWith("Passed in tag does not match actual tag") && fFailBody) return;
+                CFails++;
+                return;
+            }
 
             CBORObject cnMac = pInput.get("mac");
             SetReceivingAttributes(msg, cnMac);
@@ -287,17 +301,17 @@ public class RegressionTest {
             Recipient recipient = mac.GetRecipient(0);
             recipient.SetKey(cnKey);
 
-            pFail = cnRecipients.get("fail");
-
-            boolean f = mac.Validate(recipient);
-
-            if (f) {
-               if ((pFail != null) && pFail.AsBoolean()) CFails ++;
+            fFail = HasFailMarker(cnRecipients);
+            try {
+                boolean f = mac.Validate(recipient);
+                if (f && (fFail || fFailBody)) CFails++;
+                else if (!f && !(fFail || fFailBody)) CFails++;
             }
-            else {
-                if ((pFail != null) && !pFail.AsBoolean()) CFails++;
+            catch (Exception e) {
+                if (fFail || fFailBody) return;
+                CFails++;
+                return;
             }
-
         }
         catch (Exception e) {
             CFails++;
@@ -621,9 +635,9 @@ public class RegressionTest {
          case "A128GCM": return AlgorithmID.AES_GCM_128.AsCBOR();
          case "A192GCM": return AlgorithmID.AES_GCM_192.AsCBOR();
          case "A256GCM": return AlgorithmID.AES_GCM_256.AsCBOR();
-         // case "A128KW": return AlgorithmID.AES_KW_128.AsCBOR();
-         // case "A192KW": return AlgorithmID.AES_KW_192.AsCBOR();
-         // case "A256KW": return AlgorithmID.AES_KW_256.AsCBOR();
+         case "A128KW": return AlgorithmID.AES_KW_128.AsCBOR();
+         case "A192KW": return AlgorithmID.AES_KW_192.AsCBOR();
+         case "A256KW": return AlgorithmID.AES_KW_256.AsCBOR();
          // case "RSA-OAEP": return AlgorithmID.RSA_OAEP.AsCBOR();
          // case "RSA-OAEP-256": return AlgorithmID.RSA_OAEP_256.AsCBOR();
          case "HS256": return AlgorithmID.HMAC_SHA_256.AsCBOR();
