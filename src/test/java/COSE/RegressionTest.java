@@ -644,9 +644,9 @@ public class RegressionTest {
          case "HS256/64": return AlgorithmID.HMAC_SHA_256_64.AsCBOR();
          case "HS384": return AlgorithmID.HMAC_SHA_384.AsCBOR();
          case "HS512": return AlgorithmID.HMAC_SHA_512.AsCBOR();
-         // case "ES256": return AlgorithmID.ECDSA_256.AsCBOR();
-         // case "ES384": return AlgorithmID.ECDSA_384.AsCBOR();
-         // case "ES512": return AlgorithmID.ECDSA_512.AsCBOR();
+         case "ES256": return AlgorithmID.ECDSA_256.AsCBOR();
+         case "ES384": return AlgorithmID.ECDSA_384.AsCBOR();
+         case "ES512": return AlgorithmID.ECDSA_512.AsCBOR();
          // case "PS256": return AlgorithmID.RSA_PSS_256.AsCBOR();
          // case "PS512": return AlgorithmID.RSA_PSS_512.AsCBOR();
          case "direct": return AlgorithmID.Direct.AsCBOR();
