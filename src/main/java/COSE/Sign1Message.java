@@ -56,7 +56,7 @@ public class Sign1Message extends SignCommon {
         
         CBORObject obj = CBORObject.NewArray();
         obj.Add(contextString);
-        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
+        if (objProtected.size() > 0) obj.Add(rgbProtected);
         else obj.Add(CBORObject.FromObject(new byte[0]));
         obj.Add(externalData);
         obj.Add(rgbContent);
@@ -67,7 +67,7 @@ public class Sign1Message extends SignCommon {
         
         CBORObject obj = CBORObject.NewArray();
         obj.Add(contextString);
-        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
+        if (objProtected.size() > 0) obj.Add(rgbProtected);
         else obj.Add(CBORObject.FromObject(new byte[0]));
         obj.Add(externalData);
         obj.Add(rgbContent);
@@ -80,7 +80,10 @@ public class Sign1Message extends SignCommon {
         
         if (messageObject.get(0).getType() == CBORType.ByteString) {
             if (messageObject.get(0).GetByteString().length == 0) objProtected = CBORObject.NewMap();
-            else objProtected = CBORObject.DecodeFromBytes(messageObject.get(0).GetByteString());
+            else {
+                rgbProtected = messageObject.get(0).GetByteString();
+                objProtected = CBORObject.DecodeFromBytes(rgbProtected);
+            }
         }
         else throw new CoseException("Invalid Sign1 structure");
         
