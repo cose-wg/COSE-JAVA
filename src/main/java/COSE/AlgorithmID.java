@@ -35,7 +35,10 @@ public enum AlgorithmID {
     AES_KW_128(-3, 128, 64),
     AES_KW_192(-4, 192, 64),
     AES_KW_256(-5, 256, 64),
-    Direct(-6, 0, 0);
+    Direct(-6, 0, 0),
+    ECDSA_256(-7, 0, 0),
+    ECDSA_384(-35, 0, 0),
+    ECDSA_512(-36, 0, 0);
  
     private final CBORObject value;
     private final int cbitKey;

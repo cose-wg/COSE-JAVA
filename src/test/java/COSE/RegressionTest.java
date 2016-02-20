@@ -42,15 +42,15 @@ public class RegressionTest {
             "Examples/cbc-mac-examples",
             // "Examples/ecdh-direct-examples",
             // "Examples/ecdh-wrap-examples",
-            // "Examples/ecdsa-examples",
+            "Examples/ecdsa-examples",
             "Examples/encrypted-tests",
             "Examples/enveloped-tests",
             // "Examples/hkdf-hmac-sha-examples",
             "Examples/hmac-examples",
             "Examples/mac-tests",
             "Examples/mac0-tests",
-            // "Examples/sign-tests",
-            // "Examples/sign1-tests",
+            "Examples/sign-tests",
+            "Examples/sign1-tests",
             // "Examples/spec-examples",
            });
     }
@@ -109,6 +109,14 @@ public class RegressionTest {
         else if (input.ContainsKey("enveloped")) {
             VerifyEnvelopedTest(control);
             BuildEnvelopedTest(control);
+        }
+        else if (input.ContainsKey("sign")) {
+            // ValidateSigned(control);
+            // BuildSignedMessage(control);
+        }
+        else if (input.ContainsKey("sign0")) {
+            ValidateSign0(control);
+            BuildSign0Message(control);
         }
     }
     
@@ -223,7 +231,7 @@ public class RegressionTest {
     }
     
     public void _VerifyMac0(CBORObject control, byte[] rgbData) {
-	CBORObject pInput = control.get("input");
+	CBORObject cnInput = control.get("input");
 	int type;
 	boolean fFail = false;
 	boolean fFailBody = false;
@@ -238,7 +246,7 @@ public class RegressionTest {
             Message msg = Message.DecodeFromBytes(rgbData, 996);
             MAC0Message mac0 = (MAC0Message)msg;
 
-            CBORObject cnMac = pInput.get("mac0");
+            CBORObject cnMac = cnInput.get("mac0");
             SetReceivingAttributes(msg, cnMac);
 
             CBORObject cnRecipients = cnMac.get("recipients");
@@ -272,7 +280,7 @@ public class RegressionTest {
     }
     
     public void _VerifyMac(CBORObject control, byte[] rgbData) {
-	CBORObject pInput = control.get("input");
+	CBORObject cnInput = control.get("input");
 	boolean fFail = false;
 	boolean fFailBody = false;
 
@@ -291,7 +299,7 @@ public class RegressionTest {
                 return;
             }
 
-            CBORObject cnMac = pInput.get("mac");
+            CBORObject cnMac = cnInput.get("mac");
             SetReceivingAttributes(msg, cnMac);
 
             CBORObject cnRecipients = cnMac.get("recipients");
@@ -559,6 +567,11 @@ public class RegressionTest {
                     cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
                     break;
                     
+                case "ctyp":
+                    cnKey = HeaderKeys.CONTENT_TYPE.AsCBOR();
+                    cnValue = cnAttributes.get(attr);
+                    break;
+                    
                 default:
                     throw new Exception("Attribute " + attr.AsString() + " is not part of SetAttributes");
             }
@@ -605,6 +618,20 @@ public class RegressionTest {
                     cnKeyOut.set(CBORObject.FromObject(-1), cnValue);
                     break;
                     
+                case "x":
+                    cnKeyOut.set(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
+                    break;
+                    
+                case "y":
+                    cnKeyOut.set(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
+                    break;
+
+                case "d":
+                    if (!fPublicKey) {
+                        cnKeyOut.set(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
+                    }
+                    break;
+
                 case "k":
                     cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
                     break;
@@ -644,9 +671,9 @@ public class RegressionTest {
          case "HS256/64": return AlgorithmID.HMAC_SHA_256_64.AsCBOR();
          case "HS384": return AlgorithmID.HMAC_SHA_384.AsCBOR();
          case "HS512": return AlgorithmID.HMAC_SHA_512.AsCBOR();
-         // case "ES256": return AlgorithmID.ECDSA_256.AsCBOR();
-         // case "ES384": return AlgorithmID.ECDSA_384.AsCBOR();
-         // case "ES512": return AlgorithmID.ECDSA_512.AsCBOR();
+         case "ES256": return AlgorithmID.ECDSA_256.AsCBOR();
+         case "ES384": return AlgorithmID.ECDSA_384.AsCBOR();
+         case "ES512": return AlgorithmID.ECDSA_512.AsCBOR();
          // case "PS256": return AlgorithmID.RSA_PSS_256.AsCBOR();
          // case "PS512": return AlgorithmID.RSA_PSS_512.AsCBOR();
          case "direct": return AlgorithmID.Direct.AsCBOR();
@@ -691,4 +718,203 @@ public class RegressionTest {
         if (cnFail != null && cnFail.AsBoolean()) return true;
         return false;
     }
-}
+     
+    int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) {
+	CBORObject cnInput = cnControl.get("input");
+	CBORObject pFail;
+	CBORObject cnSign;
+	CBORObject cnSigners;
+	SignMessage	hSig = null;
+	int type;
+	int iSigner;
+	boolean fFail = false;
+	boolean fFailBody = false;
+
+        fFailBody = HasFailMarker(cnControl);
+        
+        try {
+            cnSign = cnInput.get("sign");
+            cnSigners = cnSign.get("signers");
+
+            for (iSigner=0; iSigner < cnSigners.size(); iSigner++) {
+
+                try {
+                    Message msg = Message.DecodeFromBytes(pbEncoded, 991);
+                    hSig = (SignMessage) msg;
+                }
+                catch(Exception e) {
+                    if (fFailBody) return 0;
+                }
+
+                SetReceivingAttributes(hSig, cnSign);
+
+                CBORObject cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
+
+                Signer hSigner = hSig.getSigner(iSigner);
+
+                SetReceivingAttributes(hSigner, cnSigners.get(iSigner));
+
+                hSigner.setKey(cnkey);
+
+                boolean fFailSigner = HasFailMarker(cnSigners.get(iSigner));
+
+                try {
+                    boolean f = hSig.validate(hSigner);
+                    if (!f && (fFail || fFailSigner)) CFails++;
+                }
+                catch (Exception e) {
+                    if (!fFail && !fFailSigner) CFails++;
+                }
+            }
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+        return 0;
+    }
+
+    int ValidateSigned(CBORObject cnControl)
+    {
+        String strExample = cnControl.get("output").get("cbor").AsString();
+        byte[] rgb =  hexStringToByteArray(strExample);
+
+	return _ValidateSigned(cnControl, rgb);
+    }
+
+    int BuildSignedMessage(CBORObject cnControl)
+    {
+	int iSigner;
+        byte[] rgb;
+        
+	//
+	//  We don't run this for all control sequences - skip those marked fail.
+	//
+
+        if (HasFailMarker(cnControl)) return 0;
+
+        try {
+            SignMessage hSignObj = new SignMessage();
+
+            CBORObject cnInputs = cnControl.get("input");
+            CBORObject cnSign = cnInputs.get("sign");
+
+            CBORObject cnContent = cnInputs.get("plaintext");
+            hSignObj.SetContent(cnContent.AsString());
+
+            SetSendingAttributes(hSignObj, cnSign, false);
+
+            CBORObject cnSigners = cnSign.get("signers");
+
+            for (iSigner = 0; iSigner < cnSigners.size(); iSigner++) {
+                CBORObject cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
+
+                Signer hSigner = new Signer();
+
+                SetSendingAttributes(hSigner, cnSigners.get(iSigner), false);
+
+                hSigner.setKey(cnkey);
+
+                hSignObj.AddSigner(hSigner);
+
+            }
+
+            hSignObj.sign();
+
+            rgb = hSignObj.EncodeToBytes();
+        }
+        catch(Exception e) {
+            CFails++;
+            return 0;
+        }
+
+	int f = _ValidateSigned(cnControl, rgb);
+        return f;
+    } 
+    
+int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
+{
+	CBORObject cnInput = cnControl.get("input");
+	CBORObject cnSign;
+	Sign1Message	hSig;
+	int type;
+	boolean fFail;
+
+        try {
+            fFail = HasFailMarker(cnControl);
+
+            cnSign = cnInput.get("sign0");
+
+            try {
+                Message msg = Message.DecodeFromBytes(pbEncoded, 997);
+                hSig = (Sign1Message) msg;
+            }
+            catch (CoseException e) {
+                if (!fFail) CFails++;
+                return 0;
+            }
+
+
+            SetReceivingAttributes(hSig, cnSign);
+
+            CBORObject cnkey = BuildKey(cnSign.get("key"), true);
+
+            boolean fFailInput = HasFailMarker(cnInput);
+
+            try {
+                boolean f = hSig.validate(cnkey);
+                if (f && (fFail || fFailInput)) CFails++;
+                if (!f && !(fFail || fFailInput)) CFails++;
+            }
+            catch (Exception e) {
+                if (!fFail && !fFailInput) CFails++;
+            }
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+	return 0;
+    }
+
+    int ValidateSign0(CBORObject cnControl)  
+    {
+        String strExample = cnControl.get("output").get("cbor").AsString();
+        byte[] rgb =  hexStringToByteArray(strExample);
+
+	return _ValidateSign0(cnControl, rgb);
+    }
+
+    int BuildSign0Message(CBORObject cnControl)
+    {
+        byte[] rgb;
+	//
+	//  We don't run this for all control sequences - skip those marked fail.
+	//
+
+        if (HasFailMarker(cnControl)) return 0;
+
+        try {
+            Sign1Message hSignObj = new Sign1Message();
+
+            CBORObject cnInputs = cnControl.get("input");
+            CBORObject cnSign = cnInputs.get("sign0");
+
+            CBORObject cnContent = cnInputs.get("plaintext");
+            hSignObj.SetContent(cnContent.AsString());
+
+            SetSendingAttributes(hSignObj, cnSign, false);
+
+            CBORObject cnkey = BuildKey(cnSign.get("key"), false);
+
+            hSignObj.sign(cnkey);
+
+            rgb = hSignObj.EncodeToBytes();
+        }
+        catch (Exception e) {
+            CFails++;
+            return 0;
+        }
+
+	int f = _ValidateSign0(cnControl, rgb);
+        return 0;
+    }
+ }

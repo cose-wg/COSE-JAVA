@@ -63,6 +63,10 @@ public abstract class Message extends Attribute {
                 msg = new MAC0Message();
                 break;
                 
+            case 997:
+                msg = new Sign1Message();
+                break;
+                
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
         }

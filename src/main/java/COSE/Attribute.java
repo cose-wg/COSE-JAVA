@@ -15,6 +15,7 @@ public class Attribute {
     protected CBORObject objProtected = CBORObject.NewMap();
     protected CBORObject objUnprotected = CBORObject.NewMap();
     protected CBORObject objDontSend = CBORObject.NewMap();
+    protected byte[] rgbProtected;
     public static final int ProtectedAttributes = 1;
     public static final int UnprotectedAttributes = 2;
     public static final int DontSendAttributes = 4;
