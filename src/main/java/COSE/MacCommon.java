@@ -28,7 +28,6 @@ import org.bouncycastle.crypto.macs.CBCBlockCipherMac;
 public abstract class MacCommon extends Message {
     protected byte[] rgbContent;
     protected byte[] rgbTag;
-    protected List<Recipient> recipientList = new ArrayList<Recipient>();
     protected String strContext;
     
     protected MacCommon() {
@@ -36,7 +35,7 @@ public abstract class MacCommon extends Message {
     }
 
     protected void Create(byte[] rgbKey) throws CoseException {
-        CBORObject algX = FindAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
+        CBORObject algX = findAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
         
         switch (alg) {
@@ -64,7 +63,7 @@ public abstract class MacCommon extends Message {
         int i;
         byte[] rgbTest;
         
-        CBORObject algX = FindAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
+        CBORObject algX = findAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
         
         switch (alg) {

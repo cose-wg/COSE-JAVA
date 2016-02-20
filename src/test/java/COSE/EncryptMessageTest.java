@@ -55,7 +55,7 @@ public class EncryptMessageTest {
         
         byte[] rgbMsg = msg.EncodeToBytes();
         
-        msg = (EncryptMessage) Message.DecodeFromBytes(rgbMsg, 992);
+        msg = (EncryptMessage) Message.DecodeFromBytes(rgbMsg, MessageTag.Encrypt);
         Recipient r = msg.getRecipient(0);
         r.SetKey(cnKey128);
         byte[] contentNew = msg.decrypt(r);
@@ -155,7 +155,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Message is not a COSE security Message");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -167,7 +167,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -182,7 +182,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -197,7 +197,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -212,7 +212,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -227,7 +227,7 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 
     @Test
@@ -242,6 +242,6 @@ public class EncryptMessageTest {
         thrown.expectMessage("Invalid Encrypt structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 992);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt);        
     }
 }

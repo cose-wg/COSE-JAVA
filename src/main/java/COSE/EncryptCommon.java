@@ -26,8 +26,8 @@ public abstract class EncryptCommon extends Message {
     protected byte[] rgbEncrypt;
     SecureRandom random = new SecureRandom();
     
-    protected byte[] Decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
-        CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+    protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
  
@@ -57,7 +57,7 @@ public abstract class EncryptCommon extends Message {
     }
     
     void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
-        CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
         if (rgbContent == null) throw new CoseException("No Content Specified");
@@ -111,7 +111,7 @@ public abstract class EncryptCommon extends Message {
 
         //  The requirements from JWA
 
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         if (cn == null) throw new CoseException("Missing IV during decryption");
         if (cn.getType() != CBORType.ByteString) throw new CoseException("IV is incorrectly formed");
         if (cn.GetByteString().length != cbIV) throw new CoseException("IV size is incorrect");
@@ -163,7 +163,7 @@ public abstract class EncryptCommon extends Message {
         //  The requirements from JWA
 
         byte[] IV = new byte[cbIV];
-        CBORObject cbor = FindAttribute(HeaderKeys.IV);
+        CBORObject cbor = findAttribute(HeaderKeys.IV);
         if (cbor != null) {
             if (cbor.getType() != CBORType.ByteString) throw new CoseException("IV is incorreclty formed.");
             if (cbor.GetByteString().length > cbIV) throw new CoseException("IV is too long.");
@@ -193,7 +193,7 @@ public abstract class EncryptCommon extends Message {
     private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {
         GCMBlockCipher cipher = new GCMBlockCipher(new AESFastEngine(), new BasicGCMMultiplier());
         
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         if (cn == null) throw new CoseException("Missing IV during decryption");
         if (cn.getType() != CBORType.ByteString) throw new CoseException("IV is incorrectly formed");
         if (cn.GetByteString().length != 96/8) throw new CoseException("IV size is incorrect");
@@ -216,7 +216,7 @@ public abstract class EncryptCommon extends Message {
         if (rgbKey.length != alg.getKeySize()/8) throw new CoseException("Key Size is incorrect");
         KeyParameter contentKey = new KeyParameter(rgbKey);
         
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         byte[] IV;
         
         if (cn == null) {

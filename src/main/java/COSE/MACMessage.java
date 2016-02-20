@@ -8,7 +8,6 @@ package COSE;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 
@@ -17,11 +16,12 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
  * @author jimsch
  */
 public class MACMessage extends MacCommon {
-    
+     protected List<Recipient> recipientList = new ArrayList<>();
+   
     public MACMessage() {
         super();
         strContext = "MAC";
-        messageTag = 994;
+        messageTag = MessageTag.MAC;
     }
     
     public List<Recipient> getRecipientList() {
@@ -79,7 +79,7 @@ public class MACMessage extends MacCommon {
     public boolean Validate(Recipient recipientToUse) throws CoseException, InvalidCipherTextException {
         byte[] rgbKey = null;
         int cbitKey = 0;
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
         
         for (Recipient recipient : recipientList ) {

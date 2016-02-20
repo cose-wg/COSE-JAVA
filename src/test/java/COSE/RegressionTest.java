@@ -141,7 +141,7 @@ public class RegressionTest {
 
         CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
-        msg.Encrypt(kk.GetByteString());
+        msg.encrypt(kk.GetByteString());
         
         byte[] rgb = msg.EncodeToBytes();
         
@@ -166,7 +166,7 @@ public class RegressionTest {
         }
 
         try {
-            Message msg = Message.DecodeFromBytes(rgbData, 993);
+            Message msg = Message.DecodeFromBytes(rgbData, MessageTag.Encrypt0);
             Encrypt0Message enc0 = (Encrypt0Message)msg;
 
             CBORObject cnEncrypt = cnInput.get("encrypted");
@@ -182,7 +182,7 @@ public class RegressionTest {
             cnFail = cnRecipients.get("fail");
 
             try {
-                byte[] rgbContent = enc0.Decrypt(kk.GetByteString());
+                byte[] rgbContent = enc0.decrypt(kk.GetByteString());
                 if ((cnFail != null) && !cnFail.AsBoolean()) CFails++;
                 byte[] oldContent = cnInput.get("plaintext").AsString().getBytes(StandardCharsets.UTF_8);
                 assertArrayEquals(oldContent, rgbContent);
@@ -243,7 +243,7 @@ public class RegressionTest {
                 fFailBody = true;
             }
 
-            Message msg = Message.DecodeFromBytes(rgbData, 996);
+            Message msg = Message.DecodeFromBytes(rgbData, MessageTag.MAC0);
             MAC0Message mac0 = (MAC0Message)msg;
 
             CBORObject cnMac = cnInput.get("mac0");
@@ -290,7 +290,7 @@ public class RegressionTest {
             fFailBody = HasFailMarker(control);
 
             try {
-                msg = Message.DecodeFromBytes(rgbData, 994);
+                msg = Message.DecodeFromBytes(rgbData, MessageTag.MAC);
                 mac = (MACMessage)msg;
             }
             catch (CoseException e) {
@@ -339,7 +339,7 @@ public class RegressionTest {
 
         try {
             try {
-                msg = Message.DecodeFromBytes(rgbEncoded, 992);
+                msg = Message.DecodeFromBytes(rgbEncoded, MessageTag.Encrypt);
             }
             catch (CoseException e) {
                 if (fFailBody) return true;
@@ -363,7 +363,7 @@ public class RegressionTest {
 
                 CBORObject cnStatic = cnRecipient2.get("sender_key");
                 if (cnStatic != null) {
-                    if (hRecip2.FindAttribute(HeaderKeys.ECDH_SPK) == null) {
+                    if (hRecip2.findAttribute(HeaderKeys.ECDH_SPK) == null) {
                         hRecip2.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
                     }
                 }
@@ -376,7 +376,7 @@ public class RegressionTest {
 
                 CBORObject cnStatic = cnRecipient1.get("sender_key");
                 if (cnStatic != null) {
-                    if (hRecip1.FindAttribute(HeaderKeys.ECDH_SPK) == null) {
+                    if (hRecip1.findAttribute(HeaderKeys.ECDH_SPK) == null) {
                         hRecip1.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
                     }
                 }
@@ -514,7 +514,7 @@ public class RegressionTest {
         return;
     }
     
-    public void SetReceivingAttributes(Message msg, CBORObject cnIn) throws Exception
+    public void SetReceivingAttributes(Attribute msg, CBORObject cnIn) throws Exception
     {
 	boolean f = false;
 
@@ -522,11 +522,11 @@ public class RegressionTest {
 
         CBORObject cnExternal = cnIn.get("external");
 	if (cnExternal != null) {
-            msg.SetExternal(hexStringToByteArray(cnExternal.AsString()));
+            msg.setExternal(hexStringToByteArray(cnExternal.AsString()));
         }
     }
     
-    void SetSendingAttributes(Message msg, CBORObject cnIn, boolean fPublicKey) throws Exception
+    void SetSendingAttributes(Attribute msg, CBORObject cnIn, boolean fPublicKey) throws Exception
     {
         SetAttributes(msg, cnIn.get("protected"), Attribute.ProtectedAttributes, fPublicKey);
         SetAttributes(msg, cnIn.get("unprotected"), Attribute.UnprotectedAttributes, fPublicKey);
@@ -534,12 +534,12 @@ public class RegressionTest {
 
         CBORObject cnExternal = cnIn.get("external");
         if (cnExternal != null) {
-            msg.SetExternal(hexStringToByteArray(cnExternal.AsString()));
+            msg.setExternal(hexStringToByteArray(cnExternal.AsString()));
         }
     }
 
     
-    public void SetAttributes(Message msg, CBORObject cnAttributes, int which, boolean fPublicKey) throws Exception {
+    public void SetAttributes(Attribute msg, CBORObject cnAttributes, int which, boolean fPublicKey) throws Exception {
         if (cnAttributes == null) return;
         
         CBORObject cnKey;
@@ -739,7 +739,7 @@ public class RegressionTest {
             for (iSigner=0; iSigner < cnSigners.size(); iSigner++) {
 
                 try {
-                    Message msg = Message.DecodeFromBytes(pbEncoded, 991);
+                    Message msg = Message.DecodeFromBytes(pbEncoded, MessageTag.Sign);
                     hSig = (SignMessage) msg;
                 }
                 catch(Exception e) {
@@ -845,7 +845,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             cnSign = cnInput.get("sign0");
 
             try {
-                Message msg = Message.DecodeFromBytes(pbEncoded, 997);
+                Message msg = Message.DecodeFromBytes(pbEncoded, MessageTag.Sign1);
                 hSig = (Sign1Message) msg;
             }
             catch (CoseException e) {

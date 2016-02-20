@@ -23,7 +23,7 @@ public class Sign1Message extends SignCommon {
     public Sign1Message(boolean emitTag) {
         this.emitTag = emitTag;
         this.contextString = "Signature1";
-        this.messageTag = 997;
+        this.messageTag = MessageTag.Sign1;
     }
     
     public void sign(CBORObject cnKey) throws CoseException {

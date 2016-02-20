@@ -14,18 +14,35 @@ import java.nio.charset.StandardCharsets;
  * @author jimsch
  */
 public abstract class Message extends Attribute {
-    protected byte[] externalData = new byte[0];
     protected boolean emitTag = true;
-    protected int messageTag;
+    protected boolean emitContent = true;
+    protected MessageTag messageTag;
     protected byte[] rgbContent;
   
     /**
-     * Decode a 
-     * @param rgbData
-     * @param defaultTag
-     * @return 
+     * Decode a COSE message object.  This function assumes that the message
+     * has a leading CBOR tag to identify the message type.  If this is not
+     * true then use {#link DecodeFromBytes(byte[], MessageTag)}.
+     * 
+     * @param rgbData byte stream to be decoded
+     * @return the decoded message object
+     * @throws CoseException on a decode failure
      */
-    public static Message DecodeFromBytes(byte[] rgbData, int defaultTag) throws CoseException {
+    public static Message DecodeFromBytes(byte[] rgbData) throws CoseException {
+        return DecodeFromBytes(rgbData, MessageTag.Unknown);
+    }
+    
+    /**
+     * Decode a COSE message object. Use a value of {@code MessageTag.Unknown}
+     * to decode a generic structure with tagging.  Use a specific value if
+     * the tagging is absent or if a known structure is passed in.
+     * 
+     * @param rgbData byte stream to be decoded
+     * @param defaultTag assumed message type to be decoded
+     * @return the decoded message object
+     * @throws CoseException on a decode failure.
+     */
+    public static Message DecodeFromBytes(byte[] rgbData, MessageTag defaultTag) throws CoseException {
         CBORObject messageObject = CBORObject.DecodeFromBytes(rgbData);
         
         if (messageObject.getType() != CBORType.Array)  throw new CoseException("Message is not a COSE security Message");
@@ -33,10 +50,10 @@ public abstract class Message extends Attribute {
         if (messageObject.isTagged()) {
             if (messageObject.GetTags().length != 1) throw new CoseException("Malformed message - too many tags");
             
-            if (defaultTag == 0) {
-                defaultTag = messageObject.getOutermostTag().intValue();
+            if (defaultTag == MessageTag.Unknown) {
+                defaultTag = MessageTag.FromInt(messageObject.getOutermostTag().intValue());
             }
-            else if (defaultTag != messageObject.getOutermostTag().intValue()) {
+            else if (defaultTag != MessageTag.FromInt(messageObject.getOutermostTag().intValue())) {
                 throw new CoseException("Passed in tag does not match actual tag");
             }
         }
@@ -44,27 +61,31 @@ public abstract class Message extends Attribute {
         Message msg;
         
         switch (defaultTag) {
-            case 0: // Unknown
+            case Unknown: // Unknown
                 throw new CoseException("Message was not tagged and no default tagging option given");
                 
-            case 992:
+            case Encrypt:
                 msg = new EncryptMessage();
                 break;
                         
-            case 993: 
+            case Encrypt0: 
                 msg = new Encrypt0Message();
                 break;
 
-            case 994: 
+            case MAC: 
                 msg = new MACMessage();
                 break;
             
-            case 996: 
+            case MAC0: 
                 msg = new MAC0Message();
                 break;
                 
-            case 997:
+            case Sign1:
                 msg = new Sign1Message();
+                break;
+                
+            case Sign:
+                msg = new SignMessage();
                 break;
                 
             default:
@@ -88,7 +109,7 @@ public abstract class Message extends Attribute {
         obj = EncodeCBORObject();
         
         if (emitTag) {
-            obj = CBORObject.FromObjectAndTag(obj, messageTag);
+            obj = CBORObject.FromObjectAndTag(obj, messageTag.value);
         }
         
         return obj;
@@ -106,7 +127,4 @@ public abstract class Message extends Attribute {
         rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
 
-    public void SetExternal(byte[] rgbData) {
-        externalData = rgbData;
-    }            
 }
