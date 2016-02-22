@@ -45,7 +45,7 @@ public class Encrypt0MessageTest {
     public ExpectedException thrown = ExpectedException.none();
 
     /**
-     * Test of Decrypt method, of class Encrypt0Message.
+     * Test of decrypt method, of class Encrypt0Message.
      */
     @Test
     public void testRoundTrip() throws Exception {
@@ -54,11 +54,11 @@ public class Encrypt0MessageTest {
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
         msg.AddProtected(HeaderKeys.IV, CBORObject.FromObject(rgbIV96));
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
         byte[] rgbMsg = msg.EncodeToBytes();
         
-        msg = (Encrypt0Message) Message.DecodeFromBytes(rgbMsg, 993);
-        byte[] contentNew = msg.Decrypt(rgbKey128);
+        msg = (Encrypt0Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Encrypt0);
+        byte[] contentNew = msg.decrypt(rgbKey128);
       
         assertArrayEquals(rgbContent, contentNew);
     }
@@ -70,7 +70,7 @@ public class Encrypt0MessageTest {
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Algorithm Specified");
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
     }    
 
     @Test
@@ -81,7 +81,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Unknown Algorithm Specified");
         msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
     }    
 
     @Test
@@ -92,7 +92,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Unsupported Algorithm Specified");
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
     }    
 
     @Test
@@ -103,7 +103,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Incorrect Key Size");
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey256);
+        msg.encrypt(rgbKey256);
     }    
 
     @Test
@@ -113,7 +113,7 @@ public class Encrypt0MessageTest {
         thrown.expect(NullPointerException.class);
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
         msg.SetContent(rgbContent);
-        msg.Encrypt(null);
+        msg.encrypt(null);
     }    
 
     @Test
@@ -123,7 +123,7 @@ public class Encrypt0MessageTest {
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Content Specified");
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
     }    
 
     @Test
@@ -135,7 +135,7 @@ public class Encrypt0MessageTest {
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
         msg.AddUnprotected(HeaderKeys.IV, CBORObject.FromObject("IV"));
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
     }    
 
     @Test
@@ -147,7 +147,71 @@ public class Encrypt0MessageTest {
         msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
         msg.AddUnprotected(HeaderKeys.IV, rgbIV128);
         msg.SetContent(rgbContent);
-        msg.Encrypt(rgbKey128);
+        msg.encrypt(rgbKey128);
+    }    
+    
+    @Test
+    public void encryptNoTag() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message(false, true);
+
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Message.ProtectedAttributes);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.ProtectedAttributes);
+        msg.SetContent(rgbContent);
+        msg.encrypt(rgbKey128);
+        CBORObject cn = msg.EncodeCBORObject();
+        
+        assert(!cn.isTrue());
+    }
+    
+    @Test
+    public void encryptNoEmitContent() throws CoseException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message(true, false);
+
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Message.ProtectedAttributes);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.SetContent(rgbContent);
+        msg.encrypt(rgbKey128);
+        CBORObject cn = msg.EncodeCBORObject();
+        
+        assert(cn.get(2).isNull());
+    }
+    
+    @Test
+    public void noContentForDecrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message(true, false);
+
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("No Encrypted Content Specified");
+        
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Message.ProtectedAttributes);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.SetContent(rgbContent);
+        msg.encrypt(rgbKey128);
+        
+        byte[] rgb = msg.EncodeToBytes();
+        
+        msg = (Encrypt0Message) Message.DecodeFromBytes(rgb);
+        msg.decrypt(rgbKey128);
+        
+    }
+    
+    @Test
+    public void roundTripDetached() throws CoseException, IllegalStateException, InvalidCipherTextException {
+        Encrypt0Message msg = new Encrypt0Message(true, false);
+        
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Message.ProtectedAttributes);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.SetContent(rgbContent);
+        msg.encrypt(rgbKey128);
+        
+        byte[] content = msg.getEncryptedContent();
+        
+        byte[] rgb = msg.EncodeToBytes();
+        
+        msg = (Encrypt0Message) Message.DecodeFromBytes(rgb);
+        msg.setEncryptedContent(content);
+        msg.decrypt(rgbKey128);
+        
     }    
     
     @Test
@@ -158,7 +222,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Message is not a COSE security Message");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -170,7 +234,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -185,7 +249,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -200,7 +264,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -215,7 +279,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -230,7 +294,7 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 
     @Test
@@ -245,6 +309,6 @@ public class Encrypt0MessageTest {
         thrown.expectMessage("Invalid Encrypt0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 993);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Encrypt0);        
     }
 }

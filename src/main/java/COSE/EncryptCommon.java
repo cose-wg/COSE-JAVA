@@ -26,10 +26,11 @@ public abstract class EncryptCommon extends Message {
     protected byte[] rgbEncrypt;
     SecureRandom random = new SecureRandom();
     
-    protected byte[] Decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
-        CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+    protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
+        if (rgbEncrypt == null) throw new CoseException("No Encrypted Content Specified");
  
         switch (alg) {
             case AES_GCM_128:
@@ -57,7 +58,7 @@ public abstract class EncryptCommon extends Message {
     }
     
     void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
-        CBORObject algX = FindAttribute(HeaderKeys.Algorithm.AsCBOR());
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
         if (rgbContent == null) throw new CoseException("No Content Specified");
@@ -111,7 +112,7 @@ public abstract class EncryptCommon extends Message {
 
         //  The requirements from JWA
 
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         if (cn == null) throw new CoseException("Missing IV during decryption");
         if (cn.getType() != CBORType.ByteString) throw new CoseException("IV is incorrectly formed");
         if (cn.GetByteString().length != cbIV) throw new CoseException("IV size is incorrect");
@@ -163,7 +164,7 @@ public abstract class EncryptCommon extends Message {
         //  The requirements from JWA
 
         byte[] IV = new byte[cbIV];
-        CBORObject cbor = FindAttribute(HeaderKeys.IV);
+        CBORObject cbor = findAttribute(HeaderKeys.IV);
         if (cbor != null) {
             if (cbor.getType() != CBORType.ByteString) throw new CoseException("IV is incorreclty formed.");
             if (cbor.GetByteString().length > cbIV) throw new CoseException("IV is too long.");
@@ -193,7 +194,7 @@ public abstract class EncryptCommon extends Message {
     private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {
         GCMBlockCipher cipher = new GCMBlockCipher(new AESFastEngine(), new BasicGCMMultiplier());
         
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         if (cn == null) throw new CoseException("Missing IV during decryption");
         if (cn.getType() != CBORType.ByteString) throw new CoseException("IV is incorrectly formed");
         if (cn.GetByteString().length != 96/8) throw new CoseException("IV size is incorrect");
@@ -216,7 +217,7 @@ public abstract class EncryptCommon extends Message {
         if (rgbKey.length != alg.getKeySize()/8) throw new CoseException("Key Size is incorrect");
         KeyParameter contentKey = new KeyParameter(rgbKey);
         
-        CBORObject cn = FindAttribute(HeaderKeys.IV);
+        CBORObject cn = findAttribute(HeaderKeys.IV);
         byte[] IV;
         
         if (cn == null) {
@@ -248,5 +249,27 @@ public abstract class EncryptCommon extends Message {
         else obj.Add(objProtected.EncodeToBytes());
         obj.Add(CBORObject.FromObject(externalData));
         return obj.EncodeToBytes();
+    }
+    
+    /**
+     * Used to obtain the encrypted content for the cases where detached content
+     * is requested.
+     * 
+     * @return bytes of the encrypted content
+     * @throws CoseException if content has not been encrypted
+     */
+    public byte[] getEncryptedContent() throws CoseException{
+        if (rgbEncrypt == null) throw new CoseException("No Encrypted Content Specified");
+        
+        return rgbEncrypt;
+    }
+    
+    /**
+     * Set the encrypted content for detached content cases.
+     * 
+     * @param rgb encrypted content to be used
+     */
+    public void setEncryptedContent(byte[] rgb) {
+        rgbEncrypt = rgb;
     }
 }

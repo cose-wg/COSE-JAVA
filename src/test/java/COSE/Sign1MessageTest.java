@@ -106,7 +106,7 @@ public class Sign1MessageTest {
         msg.sign(cnKeyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
         
-        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, 997);
+        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
         boolean f = msg.validate(cnKeyPublic);
       
         assert(f);
@@ -124,7 +124,7 @@ public class Sign1MessageTest {
         msg.sign(keyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
         
-        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, 997);
+        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
         boolean f = msg.validate(cnKeyPublic);
       
         assert(f);
@@ -142,7 +142,7 @@ public class Sign1MessageTest {
         msg.sign(keyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
         
-        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, 997);
+        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
         boolean f = msg.validate(keyPublic);
       
         assert(f);
@@ -231,7 +231,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Message is not a COSE security Message");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -243,7 +243,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -258,7 +258,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -273,7 +273,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -288,7 +288,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -303,7 +303,7 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     }
 
     @Test
@@ -318,6 +318,6 @@ public class Sign1MessageTest {
         thrown.expectMessage("Invalid Sign1 structure");
 
         byte[] rgb = obj.EncodeToBytes();
-        Message msg = Message.DecodeFromBytes(rgb, 997);        
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.Sign1);        
     } 
 }

@@ -29,7 +29,7 @@ public abstract class SignCommon extends Message {
     protected String contextString;
     
     byte[] computeSignature(byte[] rgbToBeSigned, CipherParameters key) throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
         CBORObject cn;
         switch (alg) {
@@ -82,7 +82,7 @@ public abstract class SignCommon extends Message {
     }
                 
     byte[] computeSignature(byte[] rgbToBeSigned, CBORObject cnKey) throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
         CBORObject cn;
 
@@ -145,7 +145,7 @@ public abstract class SignCommon extends Message {
     }
     
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, CipherParameters key) throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
         
         switch (alg) {
@@ -191,7 +191,7 @@ public abstract class SignCommon extends Message {
     }
     
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, CBORObject cnKey) throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
         
         switch (alg) {

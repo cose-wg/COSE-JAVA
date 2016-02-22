@@ -16,7 +16,7 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
  * @author jimsch
  */
 public class EncryptMessage extends EncryptCommon {
-     protected List<Recipient> recipientList = new ArrayList<Recipient>();
+     protected List<Recipient> recipientList = new ArrayList<>();
    
     public EncryptMessage() {
         this(true);
@@ -24,7 +24,7 @@ public class EncryptMessage extends EncryptCommon {
     
     public EncryptMessage(boolean emitTag) {
         this.emitTag = emitTag;
-        messageTag= 992;
+        messageTag= MessageTag.Encrypt;
         context = "Enveloped";
     }
     
@@ -42,7 +42,7 @@ public class EncryptMessage extends EncryptCommon {
     
     public byte[] decrypt(Recipient whom) throws CoseException, InvalidCipherTextException {
         byte[] rgbKey = null;
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
         for (Recipient r : recipientList) {
             if (r == whom) {
@@ -56,16 +56,16 @@ public class EncryptMessage extends EncryptCommon {
         }
         
         if (rgbKey == null) throw new CoseException("Recipient key not found");
-        return super.Decrypt(rgbKey);
+        return super.decryptWithKey(rgbKey);
     }
     
     public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
 
         int recipientTypes = 0;
         
-        if (recipientList.size() == 0) throw new CoseException("No recipients supplied");
+        if (recipientList.isEmpty()) throw new CoseException("No recipients supplied");
         for (Recipient r : recipientList) {
             switch (r.getRecipientType()) {
                 case 1:
@@ -94,6 +94,7 @@ public class EncryptMessage extends EncryptCommon {
         }
     }
     
+     @Override
     public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
         if (obj.size() != 4) throw new CoseException("Invalid Encrypt structure");
         
@@ -121,6 +122,7 @@ public class EncryptMessage extends EncryptCommon {
         else throw new CoseException("Invalid Encrypt structure");
     }
 
+     @Override
     protected CBORObject EncodeCBORObject() throws CoseException {
         if (rgbEncrypt == null) throw new CoseException("Compute function not called");
         

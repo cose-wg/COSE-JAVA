@@ -10,26 +10,50 @@ import com.upokecenter.cbor.CBORType;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
- *
- * @author jimsch
+ * The Encrypt0Message object corresponds to the Encrypt COSE message structure.
+ * This message structure provides protected and unprotected attributes.
+ * The structure only allows for the use of a pre-distributed shared secret
+ * to be used to encrypt and decrypt the message.
  */
 public class Encrypt0Message extends EncryptCommon {
+
+    /**
+     * Create a Encrypt0Message object.  This object corresponds to the encrypt
+   message format in COSE.  The leading CBOR tag will be emitted.
+   The message content will be emitted.
+     */
     public Encrypt0Message() {
-        this(true);
+        this(true, true);
     }
     
-    public Encrypt0Message(boolean emitTag) {
+    /**
+     * Create a Encrypt0Message object.  This object corresponds to the encrypt
+   message format in COSE.
+     * 
+     * @param emitTag is the leading CBOR tag emitted
+     * @param emitContent is the content emitted
+     */
+    public Encrypt0Message(boolean emitTag, boolean emitContent) {
         context = "Encrypted";
-        messageTag = 993;
+        messageTag = MessageTag.Encrypt0;
         this.emitTag = emitTag;
+        this.emitContent = emitContent;
     }
     
+    @Override
     public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
         if (obj.size() != 3) throw new CoseException("Invalid Encrypt0 structure");
         
         if (obj.get(0).getType() == CBORType.ByteString) {
-            if (obj.get(0).GetByteString().length == 0) objProtected = CBORObject.NewMap();
-            else objProtected = CBORObject.DecodeFromBytes(obj.get(0).GetByteString());
+            if (obj.get(0).GetByteString().length == 0) {
+                rgbProtected = new byte[0];
+                objProtected = CBORObject.NewMap();
+            }
+            else {
+                rgbProtected = obj.get(0).GetByteString();
+                objProtected = CBORObject.DecodeFromBytes(rgbProtected);
+            }
+            
         }
         else throw new CoseException("Invalid Encrypt0 structure");
         
@@ -37,9 +61,15 @@ public class Encrypt0Message extends EncryptCommon {
         else throw new CoseException("Invalid Encrypt0 structure");
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbEncrypt = obj.get(2).GetByteString();
-        else throw new CoseException("Invalid Enrypt0 structure");
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid Enrypt0 structure");
     }
     
+    /**
+     * Internal function used to construct the CBORObject 
+     * @return the constructed CBORObject
+     * @throws CoseException if the content has not yet been encrypted
+     */
+    @Override
     protected CBORObject EncodeCBORObject() throws CoseException {
         if (rgbEncrypt == null) throw new CoseException("Encrypt function not called");
         
@@ -49,17 +79,33 @@ public class Encrypt0Message extends EncryptCommon {
         
         obj.Add(objUnprotected);
         
-        obj.Add(rgbEncrypt);
+        if (emitContent) obj.Add(rgbEncrypt);
+        else obj.Add(CBORObject.Null);
         
         return obj;
     }
     
-    @Override
-    public byte[] Decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
-        return super.Decrypt(rgbKey);
+    /**
+     * Decrypt the message using the passed in key.
+     * 
+     * @param rgbKey key for decryption
+     * @return the decrypted content
+     * @throws CoseException 
+     * @throws InvalidCipherTextException when the decryption does not authenticate
+     */
+    public byte[] decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+        return super.decryptWithKey(rgbKey);
     }
     
-    public void Encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    /**
+     * Encrypt the message using the passed in key.
+     * 
+     * @param rgbKey key used for encryption
+     * @throws CoseException
+     * @throws IllegalStateException
+     * @throws InvalidCipherTextException
+     */
+    public void encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
         super.encryptWithKey(rgbKey);
     }
 }

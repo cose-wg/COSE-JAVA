@@ -19,9 +19,10 @@ public class MAC0Message extends MacCommon {
     public MAC0Message() {
         super();
         strContext = "MAC0";
-        messageTag = 996;
+        messageTag = MessageTag.MAC0;
     }
     
+    @Override
     public void DecodeFromCBORObject(CBORObject obj) throws CoseException {
         if (obj.size() != 4) throw new CoseException("Invalid MAC0 structure");
         
@@ -43,6 +44,7 @@ public class MAC0Message extends MacCommon {
         else throw new CoseException("Invalid MAC structure");
     }   
  
+    @Override
     protected CBORObject EncodeCBORObject() throws CoseException {
         if (rgbTag == null) throw new CoseException("Compute function not called");
         

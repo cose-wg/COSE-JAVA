@@ -61,7 +61,7 @@ public class Recipient extends Message {
     }
     
     public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException, InvalidCipherTextException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
         
         if (recip != this) {
@@ -95,7 +95,7 @@ public class Recipient extends Message {
     }
     
     public void encrypt() throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey;
 
         switch (alg) {
@@ -129,7 +129,7 @@ public class Recipient extends Message {
     }
     
     public int getRecipientType() throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         switch (alg) {
             case Direct:
                 return 1;
@@ -142,7 +142,7 @@ public class Recipient extends Message {
     public byte[] getKey(AlgorithmID algCEK) throws CoseException, Exception {
         if (privateKey == null) throw new CoseException("Private key not set for recipient");
         
-        AlgorithmID alg = AlgorithmID.FromCBOR(FindAttribute(HeaderKeys.Algorithm));
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
         switch (alg) {
             case Direct:
