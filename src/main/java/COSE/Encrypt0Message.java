@@ -10,8 +10,10 @@ import com.upokecenter.cbor.CBORType;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
- *
- * @author jimsch
+ * The Encrypt0Message object corresponds to the Encrypt COSE message structure.
+ * This message structure provides protected and unprotected attributes.
+ * The structure only allows for the use of a pre-distributed shared secret
+ * to be used to encrypt and decrypt the message.
  */
 public class Encrypt0Message extends EncryptCommon {
 
@@ -59,7 +61,7 @@ public class Encrypt0Message extends EncryptCommon {
         else throw new CoseException("Invalid Encrypt0 structure");
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbEncrypt = obj.get(2).GetByteString();
-        else throw new CoseException("Invalid Enrypt0 structure");
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid Enrypt0 structure");
     }
     
     /**
@@ -78,7 +80,7 @@ public class Encrypt0Message extends EncryptCommon {
         obj.Add(objUnprotected);
         
         if (emitContent) obj.Add(rgbEncrypt);
-        else obj.Add(null);
+        else obj.Add(CBORObject.Null);
         
         return obj;
     }

@@ -30,6 +30,7 @@ public abstract class EncryptCommon extends Message {
         CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
+        if (rgbEncrypt == null) throw new CoseException("No Encrypted Content Specified");
  
         switch (alg) {
             case AES_GCM_128:
@@ -248,5 +249,27 @@ public abstract class EncryptCommon extends Message {
         else obj.Add(objProtected.EncodeToBytes());
         obj.Add(CBORObject.FromObject(externalData));
         return obj.EncodeToBytes();
+    }
+    
+    /**
+     * Used to obtain the encrypted content for the cases where detached content
+     * is requested.
+     * 
+     * @return bytes of the encrypted content
+     * @throws CoseException if content has not been encrypted
+     */
+    public byte[] getEncryptedContent() throws CoseException{
+        if (rgbEncrypt == null) throw new CoseException("No Encrypted Content Specified");
+        
+        return rgbEncrypt;
+    }
+    
+    /**
+     * Set the encrypted content for detached content cases.
+     * 
+     * @param rgb encrypted content to be used
+     */
+    public void setEncryptedContent(byte[] rgb) {
+        rgbEncrypt = rgb;
     }
 }
