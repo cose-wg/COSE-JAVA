@@ -34,7 +34,7 @@ public class Encrypt0Message extends EncryptCommon {
      * @param emitContent is the content emitted
      */
     public Encrypt0Message(boolean emitTag, boolean emitContent) {
-        context = "Encrypted";
+        context = "Encrypt1";
         messageTag = MessageTag.Encrypt0;
         this.emitTag = emitTag;
         this.emitContent = emitContent;
@@ -52,6 +52,7 @@ public class Encrypt0Message extends EncryptCommon {
             else {
                 rgbProtected = obj.get(0).GetByteString();
                 objProtected = CBORObject.DecodeFromBytes(rgbProtected);
+                if (objProtected.getType() != CBORType.Map) throw new CoseException("Invalid Encrypt0 structure");
             }
             
         }
@@ -61,7 +62,7 @@ public class Encrypt0Message extends EncryptCommon {
         else throw new CoseException("Invalid Encrypt0 structure");
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbEncrypt = obj.get(2).GetByteString();
-        else if (!obj.get(2).isNull()) throw new CoseException("Invalid Enrypt0 structure");
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid Encrypt0 structure");
     }
     
     /**
