@@ -243,7 +243,6 @@ public class Encrypt0MessageTest {
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
-        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid Encrypt0 structure");
@@ -256,7 +255,6 @@ public class Encrypt0MessageTest {
     public void encryptDecodeBadProtected2() throws CoseException {
         CBORObject obj = CBORObject.NewArray();
         obj.Add(CBORObject.FromObject(CBORObject.False));
-        obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         
@@ -273,7 +271,6 @@ public class Encrypt0MessageTest {
         obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
-        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid Encrypt0 structure");
@@ -287,7 +284,6 @@ public class Encrypt0MessageTest {
         CBORObject obj = CBORObject.NewArray();
         obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
         obj.Add(CBORObject.NewMap());
-        obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
@@ -303,7 +299,6 @@ public class Encrypt0MessageTest {
         obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
         obj.Add(CBORObject.NewMap());
         obj.Add(new byte[0]);
-        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid Encrypt0 structure");

@@ -25,7 +25,7 @@ public class EncryptMessage extends EncryptCommon {
     public EncryptMessage(boolean emitTag) {
         this.emitTag = emitTag;
         messageTag= MessageTag.Encrypt;
-        context = "Enveloped";
+        context = "Encrypt";
     }
     
     public void addRecipient(Recipient recipient) {
