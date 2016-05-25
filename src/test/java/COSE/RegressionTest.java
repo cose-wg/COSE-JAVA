@@ -111,7 +111,7 @@ public class RegressionTest {
             BuildEnvelopedTest(control);
         }
         else if (input.ContainsKey("sign")) {
-            // ValidateSigned(control);
+            ValidateSigned(control);
             // BuildSignedMessage(control);
         }
         else if (input.ContainsKey("sign0")) {
@@ -727,8 +727,7 @@ public class RegressionTest {
 	SignMessage	hSig = null;
 	int type;
 	int iSigner;
-	boolean fFail = false;
-	boolean fFailBody = false;
+	boolean fFailBody;
 
         fFailBody = HasFailMarker(cnControl);
         
@@ -744,6 +743,7 @@ public class RegressionTest {
                 }
                 catch(Exception e) {
                     if (fFailBody) return 0;
+                    
                 }
 
                 SetReceivingAttributes(hSig, cnSign);
@@ -760,10 +760,10 @@ public class RegressionTest {
 
                 try {
                     boolean f = hSig.validate(hSigner);
-                    if (!f && (fFail || fFailSigner)) CFails++;
+                    if (!f && !(fFailBody || fFailSigner)) CFails++;
                 }
                 catch (Exception e) {
-                    if (!fFail && !fFailSigner) CFails++;
+                    if (!fFailBody && !fFailSigner) CFails++;
                 }
             }
         }

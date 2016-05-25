@@ -5,36 +5,79 @@
  */
 package COSE;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 /**
  *
  * @author jimsch
  */
 public class SignMessage extends Message {
-
+    protected List<Signer> signerList = new ArrayList();
+    protected byte[] rgbBody;
+    protected byte[] rgbProtected;
+    
     @Override
-    protected void DecodeFromCBORObject(CBORObject messageObject) throws CoseException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    protected void DecodeFromCBORObject(CBORObject obj) throws CoseException {
+        if (obj.size() != 4) throw new CoseException("Invalid SignMessage structure");
+        
+        if (obj.get(0).getType() == CBORType.ByteString) {
+            if (obj.get(0).GetByteString().length == 0) {
+                objProtected = CBORObject.NewMap();
+                rgbProtected = new byte[0];
+            }
+            else {
+                rgbProtected = obj.get(0).GetByteString();
+                objProtected = CBORObject.DecodeFromBytes(rgbProtected);
+                if (objProtected.size() == 0) rgbProtected = new byte[0];
+            }
+        }
+        else throw new CoseException("Invalid SignMessage structure");
+        
+        if (obj.get(1).getType() == CBORType.Map) {
+            objUnprotected = obj.get(1);
+        }
+        else throw new CoseException("Invalid SignMessage structure");
+        
+        if (obj.get(2).getType() == CBORType.ByteString) rgbBody = obj.get(2).GetByteString();
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid SignMessage structure");
+        
+        if (obj.get(3).getType() == CBORType.Array) {
+            for (int i=0; i<obj.get(3).size(); i++) {
+                Signer signer = new Signer();
+                signer.DecodeFromCBORObject(obj.get(3).get(i));
+                signerList.add(signer);
+            }
+        }
+        else throw new CoseException("Invalid SignMessage structure");
     }
 
     @Override
     protected CBORObject EncodeCBORObject() throws CoseException {
+        
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
     public void AddSigner(Signer signedBy) {
-        
+        signerList.add(signedBy);
     }
     
     public Signer getSigner(int iSigner) {
-        return null;
+      return signerList.get(iSigner);
     }
     
     public void sign() {
     }
     
-    public boolean validate(Signer signerToUse) {
-        return false;
+    public boolean validate(Signer signerToUse) throws CoseException {
+        for (Signer r : signerList) {
+            if (r == signerToUse) {
+                return r.validate(rgbProtected, rgbBody);
+            }
+        }
+        
+        throw new CoseException("Signer not found");
     }
 }
