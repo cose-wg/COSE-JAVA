@@ -112,7 +112,7 @@ public class RegressionTest {
         }
         else if (input.ContainsKey("sign")) {
             ValidateSigned(control);
-            // BuildSignedMessage(control);
+            BuildSignedMessage(control);
         }
         else if (input.ContainsKey("sign0")) {
             ValidateSign0(control);
