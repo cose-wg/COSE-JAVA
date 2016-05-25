@@ -16,8 +16,11 @@ import com.upokecenter.cbor.CBORType;
  */
 public class SignMessage extends Message {
     protected List<Signer> signerList = new ArrayList();
-    protected byte[] rgbBody;
     protected byte[] rgbProtected;
+    
+    public SignMessage() {
+        messageTag = messageTag.Sign;
+    }
     
     @Override
     protected void DecodeFromCBORObject(CBORObject obj) throws CoseException {
@@ -41,7 +44,7 @@ public class SignMessage extends Message {
         }
         else throw new CoseException("Invalid SignMessage structure");
         
-        if (obj.get(2).getType() == CBORType.ByteString) rgbBody = obj.get(2).GetByteString();
+        if (obj.get(2).getType() == CBORType.ByteString) rgbContent = obj.get(2).GetByteString();
         else if (!obj.get(2).isNull()) throw new CoseException("Invalid SignMessage structure");
         
         if (obj.get(3).getType() == CBORType.Array) {
@@ -56,8 +59,18 @@ public class SignMessage extends Message {
 
     @Override
     protected CBORObject EncodeCBORObject() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
         
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        obj.Add(rgbProtected);
+        obj.Add(objUnprotected);
+        obj.Add(rgbContent);
+        obj.Add(CBORObject.NewArray());
+        
+        for (Signer r : signerList) {
+            obj.get(3).Add(r.EncodeToCBORObject());
+        }
+        
+        return obj;
     }
     
     public void AddSigner(Signer signedBy) {
@@ -68,13 +81,21 @@ public class SignMessage extends Message {
       return signerList.get(iSigner);
     }
     
-    public void sign() {
+    public void sign() throws CoseException {
+        if (rgbProtected == null) {
+            if (objProtected.size() == 0) rgbProtected = new byte[0];
+            else rgbProtected = objProtected.EncodeToBytes();
+        }
+        
+        for (Signer r : signerList) {
+            r.sign(rgbProtected, rgbContent);
+        }
     }
     
     public boolean validate(Signer signerToUse) throws CoseException {
         for (Signer r : signerList) {
             if (r == signerToUse) {
-                return r.validate(rgbProtected, rgbBody);
+                return r.validate(rgbProtected, rgbContent);
             }
         }
         
