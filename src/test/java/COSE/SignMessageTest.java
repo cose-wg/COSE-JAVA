@@ -81,7 +81,7 @@ public class SignMessageTest {
      */
     @Ignore
     @Test
-    public void testSign() {
+    public void testSign() throws CoseException {
         System.out.println("sign");
         SignMessage instance = new SignMessage();
         instance.sign();
