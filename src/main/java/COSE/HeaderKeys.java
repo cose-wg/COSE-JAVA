@@ -16,6 +16,8 @@ public enum HeaderKeys {
     CONTENT_TYPE(3),
     KID(2),
     IV(5),
+    CriticalHeaders(2),
+    CounterSignature(7),
     PARTIAL_IV(6),
     ECDH_EPK(-1),
     ECDH_SPK(-2),

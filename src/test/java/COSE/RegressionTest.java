@@ -572,6 +572,19 @@ public class RegressionTest {
                     cnValue = cnAttributes.get(attr);
                     break;
                     
+                case "crit":
+                    cnKey = HeaderKeys.CriticalHeaders.AsCBOR();
+                    cnValue = CBORObject.NewArray();
+                    for (CBORObject x : cnAttributes.get(attr).getValues()) {
+                        cnValue.Add(HeaderMap(x));
+                    }
+                    break;
+                    
+                case "reserved":
+                    cnKey = attr;
+                    cnValue = cnAttributes.get(attr);
+                    break;
+                    
                 default:
                     throw new Exception("Attribute " + attr.AsString() + " is not part of SetAttributes");
             }
@@ -712,6 +725,14 @@ public class RegressionTest {
          default: return old;
          }
      }
+    
+    static CBORObject HeaderMap(CBORObject obj) {
+        switch (obj.AsString()) {
+            default:
+                return obj;
+                
+        }
+    }
 
      public boolean HasFailMarker(CBORObject cn) {
         CBORObject cnFail = cn.get("fail");
@@ -764,6 +785,11 @@ public class RegressionTest {
                 }
                 catch (Exception e) {
                     if (!fFailBody && !fFailSigner) CFails++;
+                }
+                
+                CBORObject cSignInfo = cnSign.get("countersign");
+                if (cSignInfo != null) {
+                    CheckCounterSignatures(hSig, cSignInfo);
                 }
             }
         }
@@ -819,6 +845,11 @@ public class RegressionTest {
             }
 
             hSignObj.sign();
+            
+            CBORObject cnCounterSign = cnSign.get("countersign");
+            if (cnCounterSign != null) {
+                CreateCounterSignatures(hSignObj, cnCounterSign);
+            }
 
             rgb = hSignObj.EncodeToBytes();
         }
@@ -916,5 +947,85 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 
 	int f = _ValidateSign0(cnControl, rgb);
         return 0;
+    }
+    
+    void CreateCounterSignatures(Message msg, CBORObject cSigInfo)
+    {
+        try {            
+            CBORObject cnResult = CBORObject.NewArray();
+            
+            CBORObject cSigConfig = cSigInfo.get("signers");
+            
+            
+            for (CBORObject csig : cSigConfig.getValues()) {
+                CBORObject cnKey = BuildKey(csig.get("key"), false);
+                
+                CounterSign sig = new CounterSign();
+                
+                SetSendingAttributes(sig, csig, false);
+                
+                sig.setKey(cnKey);
+                
+                sig.Sign(msg);
+                
+                if (cSigConfig.size() == 1) cnResult = sig.EncodeToCBORObject();
+                else cnResult.Add(sig.EncodeToBytes());
+            }
+            
+            msg.addAttribute(HeaderKeys.CounterSignature, cnResult, Attribute.UnprotectedAttributes);
+            
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+    }
+    void CheckCounterSignatures(Message msg, CBORObject cSigInfo)
+    {
+        try {
+            CBORObject cSigs = msg.findAttribute(HeaderKeys.CounterSignature);
+            if (cSigs == null) {
+                CFails++;
+                return;
+            }
+
+            if (cSigs.getType() != CBORType.Array) {
+                CFails++;
+                return;
+            }
+
+            CBORObject cSigConfig = cSigInfo.get("signers");
+            if ((cSigConfig.size() > 1) && (cSigs.size() != cSigConfig.size())) {
+                CFails++;
+                return;
+            }
+
+            int iCSign;
+            for (iCSign=0; iCSign<cSigConfig.size(); iCSign++) {
+                CounterSign sig;
+                if (cSigs.get(0).getType() != CBORType.Array) {
+                    sig = new CounterSign();
+                    sig.DecodeFromCBORObject(cSigs);
+                }
+                else {
+                    sig = new CounterSign(cSigs.get(iCSign).GetByteString());
+                }
+
+                CBORObject cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), false);
+                SetReceivingAttributes(sig, cSigConfig.get(iCSign));
+
+                sig.setKey(cnKey);
+
+                try {
+                    boolean f = sig.Validate(msg);
+                    if (!f) CFails++;
+                }
+                catch (Exception e) {
+                    CFails++;
+                }
+            }
+        }
+        catch(Exception e) {
+            CFails++;
+        }
     }
  }
