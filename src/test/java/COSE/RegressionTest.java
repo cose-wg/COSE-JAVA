@@ -40,7 +40,7 @@ public class RegressionTest {
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
             "Examples/cbc-mac-examples",
-            // "Examples/ecdh-direct-examples",
+            "Examples/ecdh-direct-examples",
             // "Examples/ecdh-wrap-examples",
             "Examples/ecdsa-examples",
             "Examples/encrypted-tests",
@@ -305,7 +305,7 @@ public class RegressionTest {
             CBORObject cnRecipients = cnMac.get("recipients");
             cnRecipients = cnRecipients.get(0);
 
-            CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+            CBORObject cnKey = BuildKey(cnRecipients.get("key"), false);
             Recipient recipient = mac.GetRecipient(0);
             recipient.SetKey(cnKey);
 
@@ -470,7 +470,13 @@ public class RegressionTest {
 	if (cnSenderKey != null) {
             CBORObject cnSendKey = BuildKey(cnSenderKey, false);
             CBORObject cnKid = cnSenderKey.get("kid");
-            hRecip.SetSenderKey(cnSendKey, (cnKid == null) ? 2 : 1);
+            hRecip.SetSenderKey(cnSendKey);
+            if (cnKid == null) {
+                hRecip.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnSenderKey, true), Attribute.UnprotectedAttributes);
+            }
+            else {
+                hRecip.addAttribute(HeaderKeys.ECDH_SKID, cnKid, Attribute.UnprotectedAttributes);
+            }
 	}
 
 	return hRecip;
@@ -708,11 +714,11 @@ public class RegressionTest {
          // case "HKDF-HMAC-SHA-512": return AlgorithmID.HKDF_HMAC_SHA_512.AsCBOR();
          // case "HKDF-AES-128": return AlgorithmID.HKDF_AES_128.AsCBOR();
          // case "HKDF-AES-256": return AlgorithmID.HKDF_AES_256.AsCBOR();
-         // case "ECDH-ES": return AlgorithmID.ECDH_ES_HKDF_256.AsCBOR();
-         // case "ECDH-ES-512": return AlgorithmID.ECDH_ES_HKDF_512.AsCBOR();
-         // case "ECDH-SS": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
-         // case "ECDH-SS-256": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
-         // case "ECDH-SS-512": return AlgorithmID.ECDH_SS_HKDF_512.AsCBOR();
+         case "ECDH-ES": return AlgorithmID.ECDH_ES_HKDF_256.AsCBOR();
+         case "ECDH-ES-512": return AlgorithmID.ECDH_ES_HKDF_512.AsCBOR();
+         case "ECDH-SS": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
+         case "ECDH-SS-256": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
+         case "ECDH-SS-512": return AlgorithmID.ECDH_SS_HKDF_512.AsCBOR();
          // case "ECDH-ES+A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
          // case "ECDH-SS+A128KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_128.AsCBOR();
          // case "ECDH-ES-A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
