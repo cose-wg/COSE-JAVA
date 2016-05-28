@@ -7,10 +7,24 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import static com.upokecenter.cbor.CBORType.Array;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.List;
-import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.*;
+import org.bouncycastle.crypto.agreement.*;
+import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.crypto.engines.AESWrapEngine;
+import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.BigIntegers;
 
 /**
  *
@@ -18,7 +32,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
  */
 public class Recipient extends Message {
     CBORObject privateKey;
-    CBORObject publicKey;
+    // CBORObject publicKey;
     byte[] rgbEncrypted;
     List<Recipient> recipientList;
     
@@ -88,6 +102,18 @@ public class Recipient extends Message {
                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
                 rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
                 return AES_KeyWrap_Decrypt(alg, rgbKey);
+                
+            case ECDH_ES_HKDF_256:
+            case ECDH_SS_HKDF_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbKey, algCEK.getKeySize(), algCEK, new SHA256Digest());
+                
+            case ECDH_ES_HKDF_512:
+            case ECDH_SS_HKDF_512:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbKey, algCEK.getKeySize(), algCEK, new SHA512Digest());
 
             default:
                 throw new CoseException("Unsupported Recipent Algorithm");
@@ -111,6 +137,13 @@ public class Recipient extends Message {
                 rgbEncrypted = AES_KeyWrap_Encrypt(alg, rgbKey);
                 break;
                 
+            case ECDH_ES_HKDF_256:
+            case ECDH_ES_HKDF_512:
+            case ECDH_SS_HKDF_256:
+            case ECDH_SS_HKDF_512:
+                rgbEncrypted = new byte[0];
+                break;
+                
             default:
                 throw new CoseException("Unsupported Recipient Algorithm");
         }
@@ -132,6 +165,10 @@ public class Recipient extends Message {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         switch (alg) {
             case Direct:
+            case ECDH_ES_HKDF_256:
+            case ECDH_ES_HKDF_512:
+            case ECDH_SS_HKDF_256:
+            case ECDH_SS_HKDF_512:
                 return 1;
                 
             default:
@@ -140,6 +177,9 @@ public class Recipient extends Message {
     }
     
     public byte[] getKey(AlgorithmID algCEK) throws CoseException, Exception {
+        byte[] rgbSecret;
+        SecureRandom random;
+        
         if (privateKey == null) throw new CoseException("Private key not set for recipient");
         
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
@@ -154,6 +194,40 @@ public class Recipient extends Message {
             case AES_KW_256:
                 throw new Exception("Internal Error");
                 
+            case ECDH_ES_HKDF_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                ECDH_GenerateEphemeral();
+                rgbSecret = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA256Digest());
+                
+            case ECDH_ES_HKDF_512:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                ECDH_GenerateEphemeral();
+                rgbSecret = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA512Digest());
+                
+            case ECDH_SS_HKDF_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                    byte[] rgbAPU = new byte[256/8];
+                    random = new SecureRandom();
+                    random.nextBytes(rgbAPU);
+                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                }
+                rgbSecret = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA256Digest());
+                
+            case ECDH_SS_HKDF_512:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                    byte[] rgbAPU = new byte[512/8];
+                    random = new SecureRandom();
+                    random.nextBytes(rgbAPU);
+                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                }
+                rgbSecret = ECDH_GenerateSecret(privateKey);
+                return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA512Digest());
+
             default:
                 throw new CoseException("Recipient Algorithm not supported");
         }
@@ -163,8 +237,8 @@ public class Recipient extends Message {
         privateKey = key;
     }
 
-    public void SetSenderKey(CBORObject key, int options) {
-        publicKey = key;
+    public void SetSenderKey(CBORObject key) {
+        senderKey = key;
     }
     
     private byte[] AES_KeyWrap_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException
@@ -187,4 +261,178 @@ public class Recipient extends Message {
         return foo.unwrap(rgbEncrypted, 0, rgbEncrypted.length);
     }
     
+    private CBORObject senderKey;
+    
+    
+    private void ECDH_GenerateEphemeral() throws CoseException
+    {
+        X9ECParameters p = SignCommon.GetCurve(privateKey);
+        ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+
+        ECKeyPairGenerator pGen = new ECKeyPairGenerator();
+        ECKeyGenerationParameters genParam = new ECKeyGenerationParameters(parameters, null);
+        pGen.init(genParam);
+
+        AsymmetricCipherKeyPair p1 = pGen.generateKeyPair();
+
+        CBORObject epk = CBORObject.NewMap();
+        epk.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        epk.Add(KeyKeys.EC2_Curve.AsCBOR(), privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
+        ECPublicKeyParameters priv = (ECPublicKeyParameters) p1.getPublic();
+
+        byte[] rgbEncoded = priv.getQ().normalize().getEncoded(true);
+        byte[] X = new byte[rgbEncoded.length - 1];
+        System.arraycopy(rgbEncoded, 1, X, 0, X.length);
+        epk.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(X));
+        epk.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
+        AddUnprotected(HeaderKeys.ECDH_EPK, epk);
+        
+        CBORObject secretKey = CBORObject.NewMap();
+        secretKey.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        secretKey.Add(KeyKeys.EC2_Curve.AsCBOR(), privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
+        secretKey.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(X));
+        secretKey.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
+        ECPrivateKeyParameters priv1 = (ECPrivateKeyParameters) p1.getPrivate();
+        secretKey.Add(KeyKeys.EC2_D.AsCBOR(), BigIntegers.asUnsignedByteArray( priv1.getD()));
+        
+        senderKey = secretKey;
+    }
+
+    private byte[] ECDH_GenerateSecret(CBORObject key) throws CoseException
+    {
+        CBORObject epk;
+               
+        if (senderKey != null) {
+            epk = key;
+            key = senderKey;
+        }
+        else {
+            epk = findAttribute(HeaderKeys.ECDH_SPK);
+            if (epk == null) {
+                epk = findAttribute(HeaderKeys.ECDH_EPK);
+            }
+            if (epk == null) throw new CoseException("No second party EC key");
+        }
+        
+        if (key.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 Key");
+        if (epk.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 Key");
+        if (epk.get(KeyKeys.EC2_Curve.AsCBOR()) != key.get(KeyKeys.EC2_Curve.AsCBOR())) throw new CoseException("Curves are not the same");
+        
+        X9ECParameters p = SignCommon.GetCurve(epk);
+        ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+        
+        ECPoint pubPoint;
+        
+        CBORObject y = epk.get(KeyKeys.EC2_Y.AsCBOR());
+        byte[] x = epk.get(KeyKeys.EC2_X.AsCBOR()).GetByteString();
+        if (y.getType() == CBORType.Boolean) {
+            byte[] X = epk.get(KeyKeys.EC2_X.AsCBOR()).GetByteString();
+            byte[] rgb = new byte[X.length + 1];
+            System.arraycopy(X, 0, rgb, 1, X.length);
+            rgb[0] = (byte) (2 + (y.AsBoolean() ? 1 : 0));
+            pubPoint = p.getCurve().decodePoint(rgb);
+        }
+        else {
+            pubPoint = p.getCurve().createPoint(new BigInteger(1, x), new BigInteger(1, y.GetByteString()));
+        }
+        
+        ECPublicKeyParameters pub = new ECPublicKeyParameters(pubPoint, parameters);
+        ECPrivateKeyParameters priv = new ECPrivateKeyParameters(new BigInteger(1, key.get(KeyKeys.EC2_D.AsCBOR()).GetByteString()), parameters);
+        BasicAgreement e1 = new ECDHBasicAgreement();
+        e1.init(priv);
+        
+        BigInteger k1 = e1.calculateAgreement(pub);
+        return BigIntegers.asUnsignedByteArray((p.getCurve().getFieldSize()+7)/8, k1);
+    }
+    
+    private byte[] HKDF(byte[] secret, int cbitKey, AlgorithmID algorithmID, Digest digest)
+    {
+        byte[] rgbContext = GetKDFInput(cbitKey, algorithmID);
+        
+        CBORObject obj =  findAttribute(KeyKeys.HKDF_Salt.AsCBOR());
+        
+        //  Perform the Extract phase
+        
+        HMac mac = new HMac(digest);
+        
+        int hashLength = digest.getDigestSize();
+        int c = ((cbitKey + 7)/8 + hashLength-1)/hashLength;
+        
+        byte[] K = new byte[digest.getDigestSize()];
+        if (obj != null) K = obj.GetByteString();
+        KeyParameter key = new KeyParameter(K);
+        mac.init(key);
+        mac.update(secret, 0, secret.length);
+        
+        byte[] rgbExtract = new byte[hashLength];
+        mac.doFinal(rgbExtract, 0);
+        
+        //  Now do the Expand phase
+        
+        byte[] rgbOut = new byte[cbitKey/8];
+        byte[] rgbT = new byte[hashLength * c];
+        mac = new HMac(digest);
+        key = new KeyParameter(rgbExtract);
+        mac.init(key);
+        byte[] rgbLast = new byte[0];
+        byte[] rgbHash2 = new byte[hashLength];
+        
+        for (int i=0; i<c; i++) {
+            mac.reset();
+            mac.update(rgbLast, 0, rgbLast.length);
+            mac.update(rgbContext, 0, rgbContext.length);
+            mac.update((byte) (i + 1));
+            
+            rgbLast = rgbHash2;
+            mac.doFinal(rgbLast, 0);
+            System.arraycopy(rgbLast, 0, rgbT, i*hashLength, hashLength);
+        }
+        
+        System.arraycopy(rgbT, 0, rgbOut, 0, cbitKey/8);
+        return rgbOut;
+    }
+    
+    private byte[] GetKDFInput(int cbitKey, AlgorithmID algorithmID) {
+        CBORObject obj;
+        
+        CBORObject contextArray = CBORObject.NewArray();
+        
+        //  First element is - algorithm ID
+        contextArray.Add(algorithmID.AsCBOR());
+        
+        //  Second item is - Party U info
+        CBORObject info = CBORObject.NewArray();
+        contextArray.Add(info);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_ID.AsCBOR());
+        if (obj != null) info.Add(obj);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR());
+        if (obj != null) info.Add(obj);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_Other.AsCBOR());
+        if (obj != null) info.Add(obj);
+
+        //  third element is - Party V info
+        info = CBORObject.NewArray();
+        contextArray.Add(info);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_ID.AsCBOR());
+        if (obj != null) info.Add(obj);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_nonce.AsCBOR());
+        if (obj != null) info.Add(obj);
+        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_Other.AsCBOR());
+        if (obj != null) info.Add(obj);
+
+        //  fourth element is - Supplimental Public Info
+        info = CBORObject.NewArray();
+        contextArray.Add(info);
+        info.Add(CBORObject.FromObject(cbitKey));
+        if (objProtected.size()== 0) info.Add(new byte[0]);
+        else info.Add(objProtected.EncodeToBytes());
+        obj = findAttribute(KeyKeys.HKDF_SuppPub_Other.AsCBOR());
+        if (obj != null) info.Add(obj);
+
+        //  Fifth element is - Supplimental Private Info
+        obj = findAttribute(KeyKeys.HKDF_SuppPriv_Other.AsCBOR());
+        if (obj != null) contextArray.Add(obj);
+
+        return contextArray.EncodeToBytes();
+    }
 }

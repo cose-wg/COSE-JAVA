@@ -38,7 +38,13 @@ public enum AlgorithmID {
     Direct(-6, 0, 0),
     ECDSA_256(-7, 0, 0),
     ECDSA_384(-35, 0, 0),
-    ECDSA_512(-36, 0, 0);
+    ECDSA_512(-36, 0, 0),
+    
+    ECDH_ES_HKDF_256(-25, 0, 0),
+    ECDH_ES_HKDF_512(-26, 0, 0),
+    ECDH_SS_HKDF_256(-27, 0, 0),
+    ECDH_SS_HKDF_512(-28, 0, 0)
+    ;
  
     private final CBORObject value;
     private final int cbitKey;

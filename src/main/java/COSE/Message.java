@@ -126,5 +126,6 @@ public abstract class Message extends Attribute {
     public void SetContent(String strData) {
         rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
+    
 
 }

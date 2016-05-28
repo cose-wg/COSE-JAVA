@@ -17,7 +17,17 @@ public enum KeyKeys {
     EC2_Curve(-1),
     EC2_X(-2),
     EC2_Y(-3),
-    EC2_D(-4);
+    EC2_D(-4),
+    HKDF_Salt(-20),
+    HKDF_Context_PartyU_ID(-21),
+    HKDF_Context_PartyU_nonce(-22),
+    HKDF_Context_PartyU_Other(-23),
+    HKDF_Context_PartyV_ID(-24),
+    HKDF_Context_PartyV_nonce(-25),
+    HKDF_Context_PartyV_Other(-26),
+    HKDF_SuppPub_Other(-999),
+    HKDF_SuppPriv_Other(-998)
+            ;
     
     private final CBORObject value;
     
