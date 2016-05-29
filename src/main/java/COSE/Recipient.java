@@ -114,7 +114,28 @@ public class Recipient extends Message {
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 return HKDF(rgbKey, algCEK.getKeySize(), algCEK, new SHA512Digest());
-
+                
+            case ECDH_ES_HKDF_256_AES_KW_128:
+            case ECDH_SS_HKDF_256_AES_KW_128:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, new SHA256Digest());
+                return AES_KeyWrap_Decrypt(AlgorithmID.AES_KW_128, rgbKey);
+                
+            case ECDH_ES_HKDF_256_AES_KW_192:
+            case ECDH_SS_HKDF_256_AES_KW_192:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, new SHA256Digest());
+                return AES_KeyWrap_Decrypt(AlgorithmID.AES_KW_192, rgbKey);
+                
+            case ECDH_ES_HKDF_256_AES_KW_256:
+            case ECDH_SS_HKDF_256_AES_KW_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, new SHA256Digest());
+                return AES_KeyWrap_Decrypt(AlgorithmID.AES_KW_256, rgbKey);
+                
             default:
                 throw new CoseException("Unsupported Recipent Algorithm");
         }
@@ -123,6 +144,7 @@ public class Recipient extends Message {
     public void encrypt() throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey;
+        SecureRandom random;
 
         switch (alg) {
             case Direct:
@@ -144,6 +166,69 @@ public class Recipient extends Message {
                 rgbEncrypted = new byte[0];
                 break;
                 
+            case ECDH_ES_HKDF_256_AES_KW_128:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                ECDH_GenerateEphemeral();
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_128, rgbKey);
+                break;
+
+            case ECDH_SS_HKDF_256_AES_KW_128:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                    byte[] rgbAPU = new byte[256/8];
+                    random = new SecureRandom();
+                    random.nextBytes(rgbAPU);
+                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                }
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_128, rgbKey);
+                break;
+                                
+            case ECDH_ES_HKDF_256_AES_KW_192:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                ECDH_GenerateEphemeral();
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_192, rgbKey);
+                break;
+
+            case ECDH_SS_HKDF_256_AES_KW_192:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                    byte[] rgbAPU = new byte[256/8];
+                    random = new SecureRandom();
+                    random.nextBytes(rgbAPU);
+                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                }
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_192, rgbKey);
+                break;
+
+            case ECDH_ES_HKDF_256_AES_KW_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                ECDH_GenerateEphemeral();
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_256, rgbKey);
+                break;
+
+            case ECDH_SS_HKDF_256_AES_KW_256:
+                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
+                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                    byte[] rgbAPU = new byte[256/8];
+                    random = new SecureRandom();
+                    random.nextBytes(rgbAPU);
+                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                }
+                rgbKey = ECDH_GenerateSecret(privateKey);
+                rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, new SHA256Digest());
+                rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_256, rgbKey);
+                break;
+
             default:
                 throw new CoseException("Unsupported Recipient Algorithm");
         }
