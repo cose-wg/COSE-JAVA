@@ -41,7 +41,7 @@ public class RegressionTest {
             "Examples/aes-wrap-examples",
             "Examples/cbc-mac-examples",
             "Examples/ecdh-direct-examples",
-            // "Examples/ecdh-wrap-examples",
+            "Examples/ecdh-wrap-examples",
             "Examples/ecdsa-examples",
             "Examples/encrypted-tests",
             "Examples/enveloped-tests",
@@ -591,11 +591,18 @@ public class RegressionTest {
                     cnValue = cnAttributes.get(attr);
                     break;
                     
+                case "epk":
+                    cnKey = null;
+                    cnValue = null;
+                    break;
+                    
                 default:
                     throw new Exception("Attribute " + attr.AsString() + " is not part of SetAttributes");
             }
-            
-            msg.addAttribute(cnKey, cnValue, which);
+
+            if (cnKey != null) {
+                msg.addAttribute(cnKey, cnValue, which);
+            }
         }
     }
     
@@ -719,14 +726,14 @@ public class RegressionTest {
          case "ECDH-SS": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
          case "ECDH-SS-256": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
          case "ECDH-SS-512": return AlgorithmID.ECDH_SS_HKDF_512.AsCBOR();
-         // case "ECDH-ES+A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
-         // case "ECDH-SS+A128KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_128.AsCBOR();
-         // case "ECDH-ES-A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
-         // case "ECDH-SS-A128KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_128.AsCBOR();
-         // case "ECDH-ES-A192KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_192.AsCBOR();
-         // case "ECDH-SS-A192KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_192.AsCBOR();
-         // case "ECDH-ES-A256KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_256.AsCBOR();
-         // case "ECDH-SS-A256KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_256.AsCBOR();
+         case "ECDH-ES+A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
+         case "ECDH-SS+A128KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_128.AsCBOR();
+         case "ECDH-ES-A128KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_128.AsCBOR();
+         case "ECDH-SS-A128KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_128.AsCBOR();
+         case "ECDH-ES-A192KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_192.AsCBOR();
+         case "ECDH-SS-A192KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_192.AsCBOR();
+         case "ECDH-ES-A256KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_256.AsCBOR();
+         case "ECDH-SS-A256KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_256.AsCBOR();
 
          default: return old;
          }

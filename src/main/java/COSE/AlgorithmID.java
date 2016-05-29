@@ -43,7 +43,13 @@ public enum AlgorithmID {
     ECDH_ES_HKDF_256(-25, 0, 0),
     ECDH_ES_HKDF_512(-26, 0, 0),
     ECDH_SS_HKDF_256(-27, 0, 0),
-    ECDH_SS_HKDF_512(-28, 0, 0)
+    ECDH_SS_HKDF_512(-28, 0, 0),
+    ECDH_ES_HKDF_256_AES_KW_128(-29, 0, 0),
+    ECDH_ES_HKDF_256_AES_KW_192(-30, 0, 0),
+    ECDH_ES_HKDF_256_AES_KW_256(-31, 0, 0),
+    ECDH_SS_HKDF_256_AES_KW_128(-32, 0, 0),
+    ECDH_SS_HKDF_256_AES_KW_192(-33, 0, 0),
+    ECDH_SS_HKDF_256_AES_KW_256(-34, 0, 0),
     ;
  
     private final CBORObject value;
