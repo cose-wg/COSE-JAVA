@@ -868,6 +868,7 @@ public class RegressionTest {
             }
         }
         catch (Exception e) {
+            System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
         }
         return 0;
@@ -1099,6 +1100,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             }
         }
         catch(Exception e) {
+            System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
         }
     }
