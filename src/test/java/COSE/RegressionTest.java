@@ -929,6 +929,8 @@ public class RegressionTest {
             rgb = hSignObj.EncodeToBytes();
         }
         catch(Exception e) {
+           System.out.print("... Exception " + e + "\n");
+             
             CFails++;
             return 0;
         }
