@@ -45,13 +45,13 @@ public class RegressionTest {
             "Examples/ecdsa-examples",
             "Examples/encrypted-tests",
             "Examples/enveloped-tests",
-            // "Examples/hkdf-hmac-sha-examples",
+            "Examples/hkdf-hmac-sha-examples",
             "Examples/hmac-examples",
             "Examples/mac-tests",
             "Examples/mac0-tests",
             "Examples/sign-tests",
             "Examples/sign1-tests",
-            // "Examples/spec-examples",
+            "Examples/spec-examples",
            });
     }
 
@@ -308,6 +308,13 @@ public class RegressionTest {
             CBORObject cnKey = BuildKey(cnRecipients.get("key"), false);
             Recipient recipient = mac.GetRecipient(0);
             recipient.SetKey(cnKey);
+            
+            CBORObject cnStatic = cnRecipients.get("sender_key");
+            if (cnStatic != null) {
+                if (recipient.findAttribute(HeaderKeys.ECDH_SPK) == null) {
+                    recipient.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                }
+            }
 
             fFail = HasFailMarker(cnRecipients);
             try {
@@ -348,8 +355,10 @@ public class RegressionTest {
 
             hEnc = (EncryptMessage) msg;
 
+            //  Set enveloped attributes
             SetReceivingAttributes(hEnc, cnEnveloped);
 
+            //  Set attibutes on base recipient
             hRecip1 = hEnc.getRecipient(iRecipient1);
             SetReceivingAttributes(hRecip1, cnRecipient1);
 
@@ -358,6 +367,7 @@ public class RegressionTest {
 
                 hRecip2 = hRecip1.getRecipient(iRecipient2);
 
+                //  Set attributes on the recipients we are using.
                 SetReceivingAttributes(hRecip2, cnRecipient2);
                 hRecip2.SetKey(cnkey);
 
@@ -430,7 +440,7 @@ public class RegressionTest {
                 int iRecipient2;
                 CBORObject cnRecipient2 = cnRecipient.get("recipients");
                 for (iRecipient2=0; iRecipient2 < cnRecipient2.size(); iRecipient2++) {
-                    if (!DecryptMessage(rgbEncoded, fFailBody, cnEnveloped, cnRecipients, iRecipient, cnRecipient2, iRecipient2)) CFails++;
+                    if (!DecryptMessage(rgbEncoded, fFailBody, cnEnveloped, cnRecipient, iRecipient, cnRecipient2.get(iRecipient2), iRecipient2)) CFails++;
                 }
             }
 	}
@@ -563,6 +573,11 @@ public class RegressionTest {
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
                     
+                case "spk_kid":
+                    cnKey = HeaderKeys.ECDH_SKID.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
                 case "IV_hex":
                     cnKey = HeaderKeys.IV.AsCBOR();
                     cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
@@ -573,6 +588,52 @@ public class RegressionTest {
                     cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
                     break;
                     
+                case "salt":
+                    cnKey = HeaderKeys.HKDF_Salt.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "apu_id":
+                    cnKey = HeaderKeys.HKDF_Context_PartyU_ID.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "apv_id":
+                    cnKey = HeaderKeys.HKDF_Context_PartyV_ID.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "apu_nonce":
+                case "apu_nonce_hex":
+                    cnKey = HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "apv_nonce":
+                    cnKey = HeaderKeys.HKDF_Context_PartyV_nonce.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+
+                case "apu_other":
+                    cnKey = HeaderKeys.HKDF_Context_PartyU_Other.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+
+                case "apv_other":
+                    cnKey = HeaderKeys.HKDF_Context_PartyV_Other.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+
+                case "pub_other":
+                    cnKey = HeaderKeys.HKDF_SuppPub_Other.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+                    
+                case "priv_other":
+                    cnKey = HeaderKeys.HKDF_SuppPriv_Other.AsCBOR();
+                    cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
+                    break;
+
                 case "ctyp":
                     cnKey = HeaderKeys.CONTENT_TYPE.AsCBOR();
                     cnValue = cnAttributes.get(attr);
@@ -703,8 +764,8 @@ public class RegressionTest {
          // case "PS256": return AlgorithmID.RSA_PSS_256.AsCBOR();
          // case "PS512": return AlgorithmID.RSA_PSS_512.AsCBOR();
          case "direct": return AlgorithmID.Direct.AsCBOR();
-         // case "AES-CMAC-128/64": return AlgorithmID.AES_CMAC_128_64.AsCBOR();
-         // case "AES-CMAC-256/64": return AlgorithmID.AES_CMAC_256_64.AsCBOR();
+         //case "AES-CMAC-128/64": return AlgorithmID.AES_CMAC_128_64.AsCBOR();
+         //case "AES-CMAC-256/64": return AlgorithmID.AES_CMAC_256_64.AsCBOR();
          case "AES-MAC-128/64": return AlgorithmID.AES_CBC_MAC_128_64.AsCBOR();
          case "AES-MAC-256/64": return AlgorithmID.AES_CBC_MAC_256_64.AsCBOR();
          case "AES-MAC-128/128": return AlgorithmID.AES_CBC_MAC_128_128.AsCBOR();
@@ -717,10 +778,10 @@ public class RegressionTest {
          case "AES-CCM-64-128/128": return AlgorithmID.AES_CCM_64_128_128.AsCBOR();
          case "AES-CCM-64-256/64": return AlgorithmID.AES_CCM_64_64_256.AsCBOR();
          case "AES-CCM-64-256/128": return AlgorithmID.AES_CCM_64_128_256.AsCBOR();
-         // case "HKDF-HMAC-SHA-256": return AlgorithmID.HKDF_HMAC_SHA_256.AsCBOR();
-         // case "HKDF-HMAC-SHA-512": return AlgorithmID.HKDF_HMAC_SHA_512.AsCBOR();
-         // case "HKDF-AES-128": return AlgorithmID.HKDF_AES_128.AsCBOR();
-         // case "HKDF-AES-256": return AlgorithmID.HKDF_AES_256.AsCBOR();
+         case "HKDF-HMAC-SHA-256": return AlgorithmID.HKDF_HMAC_SHA_256.AsCBOR();
+         case "HKDF-HMAC-SHA-512": return AlgorithmID.HKDF_HMAC_SHA_512.AsCBOR();
+         case "HKDF-AES-128": return AlgorithmID.HKDF_HMAC_AES_128.AsCBOR();
+         case "HKDF-AES-256": return AlgorithmID.HKDF_HMAC_AES_256.AsCBOR();
          case "ECDH-ES": return AlgorithmID.ECDH_ES_HKDF_256.AsCBOR();
          case "ECDH-ES-512": return AlgorithmID.ECDH_ES_HKDF_512.AsCBOR();
          case "ECDH-SS": return AlgorithmID.ECDH_SS_HKDF_256.AsCBOR();
@@ -807,6 +868,7 @@ public class RegressionTest {
             }
         }
         catch (Exception e) {
+            System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
         }
         return 0;
@@ -867,6 +929,8 @@ public class RegressionTest {
             rgb = hSignObj.EncodeToBytes();
         }
         catch(Exception e) {
+           System.out.print("... Exception " + e + "\n");
+             
             CFails++;
             return 0;
         }
@@ -1038,6 +1102,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             }
         }
         catch(Exception e) {
+            System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
         }
     }

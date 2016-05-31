@@ -10,6 +10,7 @@ import com.upokecenter.cbor.CBORType;
 import static com.upokecenter.cbor.CBORType.Array;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.List;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.*;
@@ -53,6 +54,7 @@ public class Recipient extends Message {
         
         if (objRecipient.size() == 4) {
             if (objRecipient.get(3).getType() == CBORType.Array) {
+                recipientList = new ArrayList<>();
                 for (int i=0; i<objRecipient.get(3).size(); i++) {
                     Recipient recipX = new Recipient();
                     recipX.DecodeFromCBORObject(objRecipient.get(3).get(i));
@@ -70,6 +72,13 @@ public class Recipient extends Message {
         
         obj.Add(objUnprotected);
         obj.Add(rgbEncrypted);
+        if (recipientList != null) {
+            CBORObject objR = CBORObject.NewArray();
+            for (Recipient r : recipientList) {
+                objR.Add(r.EncodeCBORObject());
+            }
+            obj.Add(objR);
+        }
         
         return obj;
     }
@@ -83,8 +92,9 @@ public class Recipient extends Message {
                 if (recip == r) {
                     rgbKey = r.decrypt(alg, recip);
                     if (rgbKey == null) throw new CoseException("Internal error");
+                    break;
                 }
-                else if (r.recipientList.size() != 0) {
+                else if (!r.recipientList.isEmpty()) {
                     rgbKey = r.decrypt(alg, recip);
                     if (rgbKey != null) break;
                 }
@@ -96,11 +106,22 @@ public class Recipient extends Message {
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Mismatch of algorithm and key");
                 return privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
             
+            case HKDF_HMAC_SHA_256:
+                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Needs to be an octet key");
+                 return HKDF(privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString(), algCEK.getKeySize(), algCEK, new SHA256Digest());
+
+            case HKDF_HMAC_SHA_512:
+                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Needs to be an octet key");
+                 return HKDF(privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString(), algCEK.getKeySize(), algCEK, new SHA512Digest());
+
             case AES_KW_128:
             case AES_KW_192:
             case AES_KW_256:
-               if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
-                rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                if (rgbKey == null) {
+                    if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
+                    rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                }
+                else if (privateKey != null) throw new CoseException("Key and algorithm do not agree");
                 return AES_KeyWrap_Decrypt(alg, rgbKey);
                 
             case ECDH_ES_HKDF_256:
@@ -141,21 +162,53 @@ public class Recipient extends Message {
         }
     }
     
-    public void encrypt() throws CoseException {
+    public void encrypt() throws CoseException, Exception {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
-        byte[] rgbKey;
+        byte[] rgbKey = null;
         SecureRandom random;
+        
+        int recipientTypes = 0;
+        
+        if (recipientList != null && !recipientList.isEmpty()) {
+            if (privateKey != null) throw new CoseException("Cannot have dependent recipients if key is specified");
+            
+            for (Recipient r : recipientList) {
+                switch (r.getRecipientType()) {
+                    case 1:
+                        if ((recipientTypes & 1) != 0) throw new CoseException("Cannot have two direct recipients");
+                        recipientTypes |= 1;
+                        rgbKey = r.getKey(alg);
+                        break;
+                        
+                    default:
+                        recipientTypes |= 2;
+                        break;
+                }
+            }
+        }
+        
+        if (recipientTypes == 3) throw new CoseException("Do not mix direct and indirect recipients");
+        
+        if (recipientTypes == 2) {
+            rgbKey = new byte[alg.getKeySize()/8];
+            random = new SecureRandom();
+            random.nextBytes(rgbKey);
+        }
 
         switch (alg) {
             case Direct:
+            case HKDF_HMAC_SHA_256:
+            case HKDF_HMAC_SHA_512:
                 rgbEncrypted = new byte[0];
                 break;
                 
             case AES_KW_128:
             case AES_KW_192:
             case AES_KW_256:
-                if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
-                rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                if (rgbKey == null) {
+                    if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Key and algorithm do not agree");
+                    rgbKey = privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString();
+                }
                 rgbEncrypted = AES_KeyWrap_Encrypt(alg, rgbKey);
                 break;
                 
@@ -176,11 +229,11 @@ public class Recipient extends Message {
 
             case ECDH_SS_HKDF_256_AES_KW_128:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                if (findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, new SHA256Digest());
@@ -197,11 +250,11 @@ public class Recipient extends Message {
 
             case ECDH_SS_HKDF_256_AES_KW_192:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                if (findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, new SHA256Digest());
@@ -218,11 +271,11 @@ public class Recipient extends Message {
 
             case ECDH_SS_HKDF_256_AES_KW_256:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                if (findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, new SHA256Digest());
@@ -232,9 +285,17 @@ public class Recipient extends Message {
             default:
                 throw new CoseException("Unsupported Recipient Algorithm");
         }
+        
+        if (recipientList != null) {
+            for (Recipient r : recipientList) {
+                r.SetContent(rgbKey);
+                r.encrypt();
+            }
+        }
     }
 
     public void addRecipient(Recipient recipient) {
+        if (recipientList == null) recipientList = new ArrayList();
         recipientList.add(recipient);
     }
     
@@ -250,6 +311,8 @@ public class Recipient extends Message {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         switch (alg) {
             case Direct:
+            case HKDF_HMAC_SHA_256:
+            case HKDF_HMAC_SHA_512:
             case ECDH_ES_HKDF_256:
             case ECDH_ES_HKDF_512:
             case ECDH_SS_HKDF_256:
@@ -293,25 +356,33 @@ public class Recipient extends Message {
                 
             case ECDH_SS_HKDF_256:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                if (findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
                 }
                 rgbSecret = ECDH_GenerateSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA256Digest());
                 
             case ECDH_SS_HKDF_512:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                if (findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
+                if (findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR()) == null) {
                     byte[] rgbAPU = new byte[512/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
                 }
                 rgbSecret = ECDH_GenerateSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA512Digest());
+                
+            case HKDF_HMAC_SHA_256:
+                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Needs to be an octet key");
+                 return HKDF(privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString(), algCEK.getKeySize(), algCEK, new SHA256Digest());
+                 
+            case HKDF_HMAC_SHA_512:
+                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_Octet) throw new CoseException("Needs to be an octet key");
+                 return HKDF(privateKey.get(KeyKeys.Octet_K.AsCBOR()).GetByteString(), algCEK.getKeySize(), algCEK, new SHA512Digest());
 
             default:
                 throw new CoseException("Recipient Algorithm not supported");
@@ -434,7 +505,7 @@ public class Recipient extends Message {
     {
         byte[] rgbContext = GetKDFInput(cbitKey, algorithmID);
         
-        CBORObject obj =  findAttribute(KeyKeys.HKDF_Salt.AsCBOR());
+        CBORObject obj =  findAttribute(HeaderKeys.HKDF_Salt.AsCBOR());
         
         //  Perform the Extract phase
         
@@ -488,21 +559,21 @@ public class Recipient extends Message {
         //  Second item is - Party U info
         CBORObject info = CBORObject.NewArray();
         contextArray.Add(info);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_ID.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_ID.AsCBOR());
         if (obj != null) info.Add(obj);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_nonce.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR());
         if (obj != null) info.Add(obj);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyU_Other.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_Other.AsCBOR());
         if (obj != null) info.Add(obj);
 
         //  third element is - Party V info
         info = CBORObject.NewArray();
         contextArray.Add(info);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_ID.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_ID.AsCBOR());
         if (obj != null) info.Add(obj);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_nonce.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_nonce.AsCBOR());
         if (obj != null) info.Add(obj);
-        obj = findAttribute(KeyKeys.HKDF_Context_PartyV_Other.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_Other.AsCBOR());
         if (obj != null) info.Add(obj);
 
         //  fourth element is - Supplimental Public Info
@@ -511,11 +582,11 @@ public class Recipient extends Message {
         info.Add(CBORObject.FromObject(cbitKey));
         if (objProtected.size()== 0) info.Add(new byte[0]);
         else info.Add(objProtected.EncodeToBytes());
-        obj = findAttribute(KeyKeys.HKDF_SuppPub_Other.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_SuppPub_Other.AsCBOR());
         if (obj != null) info.Add(obj);
 
         //  Fifth element is - Supplimental Private Info
-        obj = findAttribute(KeyKeys.HKDF_SuppPriv_Other.AsCBOR());
+        obj = findAttribute(HeaderKeys.HKDF_SuppPriv_Other.AsCBOR());
         if (obj != null) contextArray.Add(obj);
 
         return contextArray.EncodeToBytes();
