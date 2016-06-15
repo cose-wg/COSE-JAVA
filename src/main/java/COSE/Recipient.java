@@ -561,20 +561,26 @@ public class Recipient extends Message {
         contextArray.Add(info);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_ID.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyU_Other.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
 
         //  third element is - Party V info
         info = CBORObject.NewArray();
         contextArray.Add(info);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_ID.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_nonce.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
         obj = findAttribute(HeaderKeys.HKDF_Context_PartyV_Other.AsCBOR());
         if (obj != null) info.Add(obj);
+        else info.Add(null);
 
         //  fourth element is - Supplimental Public Info
         info = CBORObject.NewArray();
