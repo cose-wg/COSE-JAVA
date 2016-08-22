@@ -18,6 +18,7 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.macs.CBCBlockCipherMac;
+import java.security.SecureRandom;
 
 
 /**
@@ -26,17 +27,19 @@ import org.bouncycastle.crypto.macs.CBCBlockCipherMac;
  */
 
 public abstract class MacCommon extends Message {
-    protected byte[] rgbContent;
     protected byte[] rgbTag;
     protected String strContext;
+    protected SecureRandom random = new SecureRandom();
     
     protected MacCommon() {
         super();
     }
 
-    protected void Create(byte[] rgbKey) throws CoseException {
+    protected void CreateWithKey(byte[] rgbKey) throws CoseException {
         CBORObject algX = findAttribute(CBORObject.FromObject(1)); //HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
+
+        if (rgbContent == null) throw new CoseException("No Content Specified");
         
         switch (alg) {
             case HMAC_SHA_256_64:

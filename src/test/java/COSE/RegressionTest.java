@@ -101,6 +101,7 @@ public class RegressionTest {
         }
         else if (input.ContainsKey("mac")) {
             VerifyMacTest(control);
+            BuildMacTest(control);
         }
         else if (input.ContainsKey("encrypted")) {
             VerifyEncryptTest(control);
@@ -194,6 +195,44 @@ public class RegressionTest {
         catch (Exception e) {
             if (!fFailBody) CFails++;
         }
+    }
+
+    void BuildMacTest(CBORObject cnControl) throws Exception
+    {
+	int iRecipient;
+
+	//
+	//  We don't run this for all control sequences - skip those marked fail.
+	//
+
+        if (HasFailMarker(cnControl)) return;
+
+	MACMessage hEncObj = new MACMessage();
+
+	CBORObject cnInputs = cnControl.get("input");
+	CBORObject cnEnveloped = cnInputs.get("mac");
+
+	CBORObject cnContent = cnInputs.get("plaintext");
+        
+	hEncObj.SetContent(cnContent.AsString());
+
+	SetSendingAttributes(hEncObj, cnEnveloped, true);
+
+	CBORObject cnRecipients = cnEnveloped.get("recipients");
+
+	for (iRecipient = 0; iRecipient<cnRecipients.size(); iRecipient++) {
+            Recipient hRecip = BuildRecipient(cnRecipients.get(iRecipient));
+
+            hEncObj.addRecipient(hRecip);
+	}
+
+	hEncObj.Create();
+
+        byte[] rgb = hEncObj.EncodeToBytes();
+
+	_VerifyMac(cnControl, rgb);
+
+        return;
     }
     
     public void BuildMac0Test(CBORObject cnControl) throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
@@ -306,7 +345,7 @@ public class RegressionTest {
             cnRecipients = cnRecipients.get(0);
 
             CBORObject cnKey = BuildKey(cnRecipients.get("key"), false);
-            Recipient recipient = mac.GetRecipient(0);
+            Recipient recipient = mac.getRecipient(0);
             recipient.SetKey(cnKey);
             
             CBORObject cnStatic = cnRecipients.get("sender_key");

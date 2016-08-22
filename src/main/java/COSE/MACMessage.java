@@ -10,6 +10,7 @@ import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
 import java.util.List;
 import org.bouncycastle.crypto.InvalidCipherTextException;
+import static org.bouncycastle.math.raw.Mod.random;
 
 /**
  *
@@ -22,6 +23,14 @@ public class MACMessage extends MacCommon {
         super();
         strContext = "MAC";
         messageTag = MessageTag.MAC;
+    }
+ 
+    public void addRecipient(Recipient recipient) {
+        recipientList.add(recipient);
+    }
+
+    public Recipient getRecipient(int iRecipient) {
+        return recipientList.get(iRecipient);
     }
     
     public List<Recipient> getRecipientList() {
@@ -69,13 +78,15 @@ public class MACMessage extends MacCommon {
         obj.Add(rgbContent);
         obj.Add(rgbTag);
         
+        CBORObject cnRecipients = CBORObject.NewArray();
+        for (Recipient r : recipientList){
+            cnRecipients.Add(r.EncodeCBORObject());
+        }
+        obj.Add(cnRecipients);
+                
         return obj;
     }
-    
-    public Recipient GetRecipient(int iRecipient) {
-        return recipientList.get(iRecipient);
-    }
-    
+        
     public boolean Validate(Recipient recipientToUse) throws CoseException, InvalidCipherTextException {
         byte[] rgbKey = null;
         int cbitKey = 0;
@@ -106,5 +117,41 @@ public class MACMessage extends MacCommon {
         }
         throw new CoseException("Usable recipient not found");
     }
+    
+    public void Create() throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
+        byte[] rgbKey = null;
+
+        int recipientTypes = 0;
+        
+        if (recipientList.isEmpty()) throw new CoseException("No recipients supplied");
+        for (Recipient r : recipientList) {
+            switch (r.getRecipientType()) {
+                case 1:
+                    if ((recipientTypes & 1) != 0) throw new CoseException("Cannot have two direct recipients");
+                    recipientTypes |= 1;
+                    rgbKey = r.getKey(alg);
+                    break;
+                    
+                default:
+                    recipientTypes |= 2;
+            }
+        }
+        
+        if (recipientTypes == 3) throw new CoseException("Do not mix direct and indirect recipients");
+        
+        if (recipientTypes == 2) {
+            rgbKey = new byte[alg.getKeySize()/8];
+            random.nextBytes(rgbKey);
+        }
+        
+        super.CreateWithKey(rgbKey);
+        
+        for (Recipient r : recipientList) {
+            r.SetContent(rgbKey);
+            r.encrypt();
+        }
+    }
+
 }
  
