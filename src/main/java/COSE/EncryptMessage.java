@@ -40,6 +40,10 @@ public class EncryptMessage extends EncryptCommon {
         return recipientList.get(iRecipient);
     }
     
+    public int getRecipientCount() {
+        return recipientList.size();
+    }
+    
     public byte[] decrypt(Recipient whom) throws CoseException, InvalidCipherTextException {
         byte[] rgbKey = null;
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
