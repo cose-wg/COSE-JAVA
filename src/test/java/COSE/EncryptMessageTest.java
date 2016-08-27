@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 import org.junit.rules.ExpectedException;
 
 /**
@@ -62,6 +62,17 @@ public class EncryptMessageTest {
         
       
         assertArrayEquals(rgbContent, contentNew);
+    }
+    
+    @Test
+    public void testGetRecipientCount() {
+       EncryptMessage msg = new EncryptMessage();
+       
+       assertEquals(msg.getRecipientCount(), 0);
+       
+       Recipient r = new Recipient();
+       msg.addRecipient(r);
+       assertEquals(msg.getRecipientCount(), 1);
     }
 
     @Test

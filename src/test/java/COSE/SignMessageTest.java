@@ -76,6 +76,17 @@ public class SignMessageTest {
         fail("The test case is a prototype.");
     }
 
+    @Test
+    public void testGetSignerCount() {
+       SignMessage msg = new SignMessage();
+       
+       assertEquals(msg.getSignerCount(), 0);
+       
+       Signer r = new Signer();
+       msg.AddSigner(r);
+       assertEquals(msg.getSignerCount(), 1);
+    }
+
     /**
      * Test of sign method, of class SignMessage.
      */
