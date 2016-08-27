@@ -307,6 +307,10 @@ public class Recipient extends Message {
         return recipientList.get(iRecipient);
     }
     
+    public int getRecipientCount() {
+        return recipientList.size();
+    }
+    
     public int getRecipientType() throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         switch (alg) {

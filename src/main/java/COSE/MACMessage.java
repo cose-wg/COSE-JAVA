@@ -33,6 +33,10 @@ public class MACMessage extends MacCommon {
         return recipientList.get(iRecipient);
     }
     
+    public int getRecipientCount() {
+        return recipientList.size();
+    }
+    
     public List<Recipient> getRecipientList() {
         return recipientList;
     }

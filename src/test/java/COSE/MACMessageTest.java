@@ -83,6 +83,17 @@ public class MACMessageTest {
         assertEquals(expResult, result);
     }
 
+    @Test
+    public void testGetRecipientCount() {
+       MACMessage msg = new MACMessage();
+       
+       assertEquals(msg.getRecipientCount(), 0);
+       
+       Recipient r = new Recipient();
+       msg.addRecipient(r);
+       assertEquals(msg.getRecipientCount(), 1);
+    }
+    
     /**
      * Test of Decrypt method, of class Encrypt0Message.
      */

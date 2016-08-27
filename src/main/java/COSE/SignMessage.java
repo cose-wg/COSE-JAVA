@@ -81,6 +81,10 @@ public class SignMessage extends Message {
       return signerList.get(iSigner);
     }
     
+    public int getSignerCount() {
+        return signerList.size();
+    }
+    
     public void sign() throws CoseException {
         if (rgbProtected == null) {
             if (objProtected.size() == 0) rgbProtected = new byte[0];
