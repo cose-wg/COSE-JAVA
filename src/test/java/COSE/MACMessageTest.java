@@ -202,6 +202,7 @@ public class MACMessageTest {
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid MAC structure");
@@ -214,6 +215,7 @@ public class MACMessageTest {
     public void macDecodeBadProtected2() throws CoseException {
         CBORObject obj = CBORObject.NewArray();
         obj.Add(CBORObject.FromObject(CBORObject.False));
+        obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
@@ -232,6 +234,7 @@ public class MACMessageTest {
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid MAC structure");
@@ -247,6 +250,23 @@ public class MACMessageTest {
         obj.Add(CBORObject.NewMap());
         obj.Add(CBORObject.False);
         obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
+        
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Invalid MAC structure");
+
+        byte[] rgb = obj.EncodeToBytes();
+        Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC);        
+    }
+
+    @Test
+    public void macDecodeBadTag() throws CoseException {
+        CBORObject obj = CBORObject.NewArray();
+        obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
+        obj.Add(CBORObject.NewMap());
+        obj.Add(CBORObject.FromObject(rgbContent));
+        obj.Add(CBORObject.False);
+        obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Invalid MAC structure");
@@ -260,7 +280,8 @@ public class MACMessageTest {
         CBORObject obj = CBORObject.NewArray();
         obj.Add(CBORObject.FromObject(CBORObject.NewArray()).EncodeToBytes());
         obj.Add(CBORObject.NewMap());
-        obj.Add(new byte[0]);
+        obj.Add(CBORObject.FromObject(rgbContent));
+        obj.Add(CBORObject.FromObject(rgbContent));
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
