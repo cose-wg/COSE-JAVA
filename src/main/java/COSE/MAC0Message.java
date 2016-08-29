@@ -38,7 +38,7 @@ public class MAC0Message extends MacCommon {
         else throw new CoseException("Invalid MAC structure");
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbContent = obj.get(2).GetByteString();
-        else if (!obj.get(2).isNull()) throw new CoseException("Invalid MAC struture");
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid MAC structure");
         
         if (obj.get(3).getType() == CBORType.ByteString) rgbTag = obj.get(3).GetByteString();
         else throw new CoseException("Invalid MAC structure");

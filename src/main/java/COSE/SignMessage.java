@@ -85,6 +85,10 @@ public class SignMessage extends Message {
         return signerList.size();
     }
     
+    public List<Signer> getSignerList() {
+        return signerList;
+    }
+    
     public void sign() throws CoseException {
         if (rgbProtected == null) {
             if (objProtected.size() == 0) rgbProtected = new byte[0];
