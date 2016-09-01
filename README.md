@@ -1,4 +1,4 @@
-# COSE-JAVA Implementation [![Build Status](https://travis-ci.org/cose-wg/COSE-JAVA.svg?branch=master)](https://travis-ci.org/cose-wg/COSE-JAVA)
+# COSE-JAVA Implementation [![Build Status](https://travis-ci.org/cose-wg/COSE-JAVA.svg?branch=master)](https://travis-ci.org/cose-wg/COSE-JAVA) [![Maven Central](https://img.shields.io/maven-central/v/com.augustcellars.cose/cose.svg?style=plastic)](https://search.maven.org/#search|ga\1\g%3A%22com.augustcellars%22%20AND%20a%3A%22cose%22)
 
 This project is a JAVA implementation of the IETF CBOR Encoded Message Syntax (COSE).
 There are currently two versions of the COSE document that can be read.
@@ -7,14 +7,31 @@ The IETF also keeps a copy of the spec in the [COSE WG](https://tools.ietf.org/h
 
 The project is implemented using Bouncy Castle for the crypto libraries and uses the PeterO CBOR library for its CBOR implementation.
 
+## How to Install
+
+Starting with version 0.9.0, the Java imlemention is available as an [artifact]((https://search.maven.org/#search|ga|1|g%3A%22com.upokecenter%22%20AND%20a%3A%22cbor%22) in the Central Repository.
+To add this library to a Maven project, add the following to the 'dependencies' section in your pom.xml file:
+
+''' xml
+<dependency>
+  <groupId>com.augustcellars.cose</groupId>
+  <artifactId>cose-java</artifactId>
+  <version>0.9.0</version>
+</dependency>
+'''
+
+In other Java-based environments, the library can be referred to by its group ID ('com.augustcellars.cose'), artifact ID ('cose-java'), and version, as given above.
+
+## Documentation
+
+Still need to figure this out.
+
 ## Contributing
 
 Go ahead, file issues, make pull requests.
 
 ## Building
 
-Right now I am using the NetBeans IDE and should at some point start doing automated check in testing.  Help there is both appreciated and desired.
+Currently setup to build in the NetBeans IDE.  Automated checking is performed using the [COSE Examples](https://github.com/cose-wg/Examples) as part of the suite.
 
-## Documentation
-
-Yes there should be some.  The API for this version, the C version and the C# version should all be very similar.
+The examples are located by the following method. 1) If 'c:\\Projects\\cose\\" exists then it uses that as the directory to look in for the examples. 2) It expects that the examples are in the same directory as the pom.xml file.
