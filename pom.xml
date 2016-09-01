@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.augustcellars.cose-java</groupId>
-    <artifactId>COSE-JAVA</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <groupId>com.augustcellars.cose</groupId>
+    <artifactId>cose-java</artifactId>
+    <version>0.9.0</version>
 
-    <name>COSE library</name>
+    <name>com.augustcellars.cose:cose-java</name>
     <description>A Java implementation that supports the COSE secure message specification.</description>
     <url>https://github.com/cose-wg/cose-java</url>
     <licenses>
       <license>
         <name>BSD3</name>
-        <url>...</url>
+        <url>https://github.com/jimsch/COSE-JAVA/blob/master/LICENSE</url>
       </license>
     </licenses>
 
@@ -31,11 +31,31 @@
       <developerConnection>scm:git:https://github.com/cose-wg/cose-java.git</developerConnection>
       <url>https://github.com/cose-wg/cose-java.git</url>
     </scm>
+
+    <distributionManagement>
+      <snapshotRepository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+    </distributionManagement>
     
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-source-plugin</artifactId>
+              <version>2.2.1</version>
+              <executions>
+                <execution>
+                  <id>attach-sources</id>
+                  <goals>
+                    <goal>jar-no-fork</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
@@ -61,7 +81,7 @@
         <dependency>
             <groupId>com.upokecenter</groupId>
             <artifactId>cbor</artifactId>
-            <version>2.4.0</version>
+            <version>2.4.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.peteroupc</groupId>
@@ -92,7 +112,7 @@
 
     <profiles>
       <profile>
-        <id>release</id>
+        <id>ossrh</id>
         <build>
           <plugins>
             <plugin>
@@ -109,6 +129,7 @@
                 </execution>
               </executions>
             </plugin>
+            
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-javadoc-plugin</artifactId>
@@ -125,6 +146,7 @@
                 </execution>
               </executions>
             </plugin>
+            
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-source-plugin</artifactId>
@@ -138,6 +160,19 @@
                 </execution>
               </executions>
             </plugin>
+
+            <plugin>
+              <groupId>org.sonatype.plugins</groupId>
+              <artifactId>nexus-staging-maven-plugin</artifactId>
+              <version>1.6.7</version>
+              <extensions>true</extensions>
+              <configuration>
+                <serverId>ossrh</serverId>
+                <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              </configuration>
+            </plugin>
+            
           </plugins>
         </build>
       </profile>
