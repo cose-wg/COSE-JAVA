@@ -1,0 +1,24 @@
+-classpath
+'C:/Projects/COSE/COSE-JAVA/target/classes;C:/Users/jimsch/.m2/repository/org/bouncycastle/bcprov-jdk15on/1.54/bcprov-jdk15on-1.54.jar;C:/Users/jimsch/.m2/repository/com/upokecenter/cbor/2.4.1/cbor-2.4.1.jar;C:/Users/jimsch/.m2/repository/com/github/peteroupc/numbers/0.2.1/numbers-0.2.1.jar'
+-encoding
+'UTF-8'
+-protected
+-sourcepath
+'C:/Projects/COSE/COSE-JAVA/src/main/java;C:/Projects/COSE/COSE-JAVA/target/generated-sources/annotations'
+-author
+-bottom
+'COSE for Java documentation, generatedin 2016.'
+-charset
+'UTF-8'
+-d
+'C:/Projects/COSE/COSE-JAVA/target/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'com.augustcellars.cose:cose-java 0.9.1-snapshot API'
+-linkoffline
+'http://docs.oracle.com/javase/7/docs/api' 'C:/Projects/COSE/COSE-JAVA/target/javadoc-bundle-options'
+-use
+-version
+-windowtitle
+'com.augustcellars.cose:cose-java 0.9.1-snapshot API'
