@@ -13,6 +13,10 @@ import com.upokecenter.cbor.CBORObject;
  */
 public enum KeyKeys {
     KeyType(1),
+    Algorithm(3),
+    KeyId(2),
+    Key_Ops(4),
+    Base_IV(5),
     Octet_K(-1),
     EC2_Curve(-1),
     EC2_X(-2),

@@ -10,7 +10,7 @@ import com.upokecenter.cbor.CBORType;
 import java.nio.charset.StandardCharsets;
 
 /**
- *
+ * 
  * @author jimsch
  */
 public abstract class Message extends Attribute {
