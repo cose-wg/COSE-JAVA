@@ -60,7 +60,7 @@ public class Sign1Message extends SignCommon {
         else obj.Add(CBORObject.FromObject(new byte[0]));
         obj.Add(externalData);
         obj.Add(rgbContent);
-        return validateSignature(obj.EncodeToBytes(), rgbSignature, cnKey);
+        return validateSignature(obj.EncodeToBytes(), rgbSignature, new OneKey( cnKey));
     }
     
     public boolean validate(CipherParameters key) throws CoseException {
