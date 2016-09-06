@@ -81,7 +81,7 @@ public abstract class SignCommon extends Message {
         }
     }
                 
-    byte[] computeSignature(byte[] rgbToBeSigned, CBORObject cnKey) throws CoseException {
+    byte[] computeSignature(byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
         CBORObject cn;
@@ -112,12 +112,12 @@ public abstract class SignCommon extends Message {
                 byte[] rgbDigest = new byte[digest.getDigestSize()];
                 digest.doFinal(rgbDigest, 0);
                 
-                cn = cnKey.get(KeyKeys.KeyType.AsCBOR());
+                cn = cnKey.get(KeyKeys.KeyType);
                 if ((cn == null) || (cn != KeyKeys.KeyType_EC2)) throw new CoseException("Must use key with key type EC2");
-                cn = cnKey.get(KeyKeys.EC2_D.AsCBOR());
+                cn = cnKey.get(KeyKeys.EC2_D);
                 if (cn == null) throw new CoseException("Private key required to sign");
                 
-                X9ECParameters p = SignCommon.GetCurve(cnKey);
+                X9ECParameters p = cnKey.GetCurve();
                 ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
                 ECPrivateKeyParameters privKey = new ECPrivateKeyParameters(new BigInteger(1, cn.GetByteString()), parameters);
                 
@@ -227,8 +227,8 @@ public abstract class SignCommon extends Message {
                 
                 X9ECParameters p = cnKey.GetCurve();
                 ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-                BigInteger bnX = new BigInteger(1, cnKey.getValue(KeyKeys.EC2_X).GetByteString());
-                ECPoint point = p.getCurve().createPoint(bnX, new BigInteger(1, cnKey.getValue(KeyKeys.EC2_Y).GetByteString()));
+                BigInteger bnX = new BigInteger(1, cnKey.get(KeyKeys.EC2_X).GetByteString());
+                ECPoint point = p.getCurve().createPoint(bnX, new BigInteger(1, cnKey.get(KeyKeys.EC2_Y).GetByteString()));
                 
                 ECPublicKeyParameters pubKey = new ECPublicKeyParameters(point, parameters);
                 

@@ -48,8 +48,8 @@ public class SignWikiTest {
     //  Create the signer for the message
     Signer signer = new Signer();
     signer.setKey(signingKey);
-    signer.addAttribute(HeaderKeys.Algorithm, signingKey.getValue(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
-    CBORObject o = signingKey.getValue(KeyKeys.KeyId);
+    signer.addAttribute(HeaderKeys.Algorithm, signingKey.get(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
+    CBORObject o = signingKey.get(KeyKeys.KeyId);
     if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UnprotectedAttributes);
 
     msg.AddSigner(signer);
@@ -108,8 +108,8 @@ public class SignWikiTest {
             //  Create the signer for the message
             Signer signer = new Signer();
             signer.setKey(key);
-            signer.addAttribute(HeaderKeys.Algorithm, key.getValue(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
-            CBORObject o = key.getValue(KeyKeys.KeyId);
+            signer.addAttribute(HeaderKeys.Algorithm, key.get(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
+            CBORObject o = key.get(KeyKeys.KeyId);
             if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UnprotectedAttributes);
 
             msg.AddSigner(signer);
@@ -150,12 +150,12 @@ public class SignWikiTest {
                     
                     //  If the key has an algorithm, it must match the one used in the signature
                     
-                    CBORObject keyAlg = k.getValue(KeyKeys.Algorithm);
+                    CBORObject keyAlg = k.get(KeyKeys.Algorithm);
                     if ((keyAlg != null) && !keyAlg.equals(alg)) continue;
                     
                     // If the key has a key_ops field, then it must allow signature verification
                   
-                    CBORObject ops = k.getValue(KeyKeys.Key_Ops);
+                    CBORObject ops = k.get(KeyKeys.Key_Ops);
                     if (ops != null) {
                         if (ops.getType() == CBORType.Number) {
                             if (ops.AsInt32() != 2) continue;
@@ -175,7 +175,7 @@ public class SignWikiTest {
                     
                     //  Compare the key ids and divide into two lists
                     
-                    CBORObject o = k.getValue(KeyKeys.KeyId);
+                    CBORObject o = k.get(KeyKeys.KeyId);
                     if (o != null) {
                         if (kid.equals(o)) {
                             keysWithKid.add(k);

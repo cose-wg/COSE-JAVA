@@ -14,6 +14,7 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+
 /**
  *
  * @author jimsch
@@ -41,11 +42,11 @@ public class OneKey {
         keyMap.Add(keyValue, value);
     }
     
-    public CBORObject getValue(KeyKeys keyValue) {
+    public CBORObject get(KeyKeys keyValue) {
         return keyMap.get(keyValue.AsCBOR());
     }
     
-    public CBORObject getValue(CBORObject keyValue) throws CoseException {
+    public CBORObject get(CBORObject keyValue) throws CoseException {
         if ((keyValue.getType() != CBORType.Number) && (keyValue.getType() != CBORType.TextString)) throw new CoseException("keyValue type is incorrect");
         return keyMap.get(keyValue);
     }
@@ -54,26 +55,40 @@ public class OneKey {
         CBORObject val;
         
         //  Must have a key type
-        val = getValue(KeyKeys.KeyType);
+        val = OneKey.this.get(KeyKeys.KeyType);
         if ((val == null) || (val.getType() != CBORType.Number)) throw new CoseException("Missing or incorrect key type field");
         
         if (val.equals(KeyKeys.KeyType_Octet)) {
-            val = getValue(KeyKeys.Octet_K);
+            val = OneKey.this.get(KeyKeys.Octet_K);
             if ((val== null) || (val.getType() != CBORType.ByteString)) throw new CoseException("Malformed key structure");
         }
         else if (val.equals(KeyKeys.KeyType_EC2)) {
-            val = getValue(KeyKeys.EC2_X);
-            if ((val == null) || (val.getType() != CBORType.ByteString)) throw new CoseException("Malformed key structure");
-            val = getValue(KeyKeys.EC2_Y);
-            if ((val == null) || 
-                ((val.getType() != CBORType.ByteString) && (val.getType() != CBORType.Boolean))) throw new CoseException("Malformed key structure");
+            boolean privateKey = false;
+            
+            val = OneKey.this.get(KeyKeys.EC2_D);
+            if (val != null) {
+                if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+                privateKey = true;
+            }
+            
+            val = OneKey.this.get(KeyKeys.EC2_X);
+            if (val == null) {
+                if (!privateKey) throw new CoseException("Malformed key structure");
+            }
+            else if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+            
+            val = OneKey.this.get(KeyKeys.EC2_Y);
+            if (val == null) {
+                if (!privateKey) throw new CoseException("Malformed key structure");
+            }
+            else if ((val.getType() != CBORType.ByteString) && (val.getType() != CBORType.Boolean)) throw new CoseException("Malformed key structure");
         }
         else throw new CoseException("Unsupported key type");
     }
 
     public X9ECParameters GetCurve() throws CoseException {    
-        if (getValue(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 key");
-        CBORObject cnCurve = getValue(KeyKeys.EC2_Curve);
+        if (OneKey.this.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 key");
+        CBORObject cnCurve = OneKey.this.get(KeyKeys.EC2_Curve);
         
         if (cnCurve == KeyKeys.EC2_P256) return NISTNamedCurves.getByName("P-256");
         if (cnCurve == KeyKeys.EC2_P384) return NISTNamedCurves.getByName("P-384");
