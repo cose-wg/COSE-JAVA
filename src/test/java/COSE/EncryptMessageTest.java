@@ -31,7 +31,7 @@ public class EncryptMessageTest {
     public ExpectedException thrown = ExpectedException.none();
 
     @Before
-    public void setUp() {
+    public void setUp() throws CoseException {
         recipient128 = new Recipient();
         recipient128.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UnprotectedAttributes);
         cnKey128 = CBORObject.NewMap();

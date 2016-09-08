@@ -7,7 +7,6 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import static com.upokecenter.cbor.CBORType.Array;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -28,15 +27,16 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 
 /**
- *
+ * 
  * @author jimsch
  */
 public class Recipient extends Message {
-    CBORObject privateKey;
-    // CBORObject publicKey;
+    OneKey privateKey;
+    private OneKey senderKey;
     byte[] rgbEncrypted;
     List<Recipient> recipientList;
     
+    @Override
     public void DecodeFromCBORObject(CBORObject objRecipient) throws CoseException {
         if ((objRecipient.size() != 3) && (objRecipient.size() !=4)) throw new CoseException("Invalid Recipient structure");
         
@@ -65,6 +65,7 @@ public class Recipient extends Message {
         }
     }
 
+    @Override
     protected CBORObject EncodeCBORObject() throws CoseException {        
         CBORObject obj = CBORObject.NewArray();
         if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
@@ -393,11 +394,33 @@ public class Recipient extends Message {
         }
     }
         
-    public void SetKey(CBORObject key) {
+    /**
+     * Set the key for encrypting/decrypting the recipient key.
+     * 
+     * @param key private key for encrypting or decrypting
+     * @exception CoseException Internal COSE package error.
+     * @deprecated In COSE 0.9.1, use SetKey(OneKey)
+     */
+    @Deprecated
+    public void SetKey(CBORObject key) throws CoseException {
+        privateKey = new OneKey(key);
+    }
+    
+    /**
+     * Set the key for encrypting/decrypting the recipient key.
+     * 
+     * @param key private key for encrypting or decrypting
+     */
+    public void SetKey(OneKey key) {
         privateKey = key;
     }
 
-    public void SetSenderKey(CBORObject key) {
+    @Deprecated
+    public void SetSenderKey(CBORObject key) throws CoseException {
+        senderKey = new OneKey(key);
+    }
+    
+    public void SetSenderKey(OneKey key) {
         senderKey = key;
     }
     
@@ -421,12 +444,10 @@ public class Recipient extends Message {
         return foo.unwrap(rgbEncrypted, 0, rgbEncrypted.length);
     }
     
-    private CBORObject senderKey;
-    
     
     private void ECDH_GenerateEphemeral() throws CoseException
     {
-        X9ECParameters p = SignCommon.GetCurve(privateKey);
+        X9ECParameters p = privateKey.GetCurve();
         ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
 
         ECKeyPairGenerator pGen = new ECKeyPairGenerator();
@@ -447,38 +468,40 @@ public class Recipient extends Message {
         epk.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
         AddUnprotected(HeaderKeys.ECDH_EPK, epk);
         
-        CBORObject secretKey = CBORObject.NewMap();
-        secretKey.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-        secretKey.Add(KeyKeys.EC2_Curve.AsCBOR(), privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
-        secretKey.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(X));
-        secretKey.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
+        OneKey secretKey = new OneKey();
+        secretKey.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);
+        secretKey.add(KeyKeys.EC2_Curve, privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
+        secretKey.add(KeyKeys.EC2_X, CBORObject.FromObject(X));
+        secretKey.add(KeyKeys.EC2_Y, CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
         ECPrivateKeyParameters priv1 = (ECPrivateKeyParameters) p1.getPrivate();
-        secretKey.Add(KeyKeys.EC2_D.AsCBOR(), BigIntegers.asUnsignedByteArray( priv1.getD()));
+        secretKey.add(KeyKeys.EC2_D, CBORObject.FromObject(BigIntegers.asUnsignedByteArray( priv1.getD())));
         
         senderKey = secretKey;
     }
 
-    private byte[] ECDH_GenerateSecret(CBORObject key) throws CoseException
+    private byte[] ECDH_GenerateSecret(OneKey key) throws CoseException
     {
-        CBORObject epk;
+        OneKey epk;
                
         if (senderKey != null) {
             epk = key;
             key = senderKey;
         }
         else {
-            epk = findAttribute(HeaderKeys.ECDH_SPK);
-            if (epk == null) {
-                epk = findAttribute(HeaderKeys.ECDH_EPK);
+            CBORObject cn;
+            cn = findAttribute(HeaderKeys.ECDH_SPK);
+            if (cn == null) {
+                cn = findAttribute(HeaderKeys.ECDH_EPK);
             }
-            if (epk == null) throw new CoseException("No second party EC key");
+            if (cn == null) throw new CoseException("No second party EC key");
+            epk = new OneKey(cn);
         }
         
         if (key.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 Key");
         if (epk.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 Key");
         if (epk.get(KeyKeys.EC2_Curve.AsCBOR()) != key.get(KeyKeys.EC2_Curve.AsCBOR())) throw new CoseException("Curves are not the same");
         
-        X9ECParameters p = SignCommon.GetCurve(epk);
+        X9ECParameters p = epk.GetCurve();
         ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         
         ECPoint pubPoint;

@@ -99,9 +99,13 @@ public abstract class MacCommon extends Message {
     private byte[] BuildContentBytes() {
         CBORObject obj = CBORObject.NewArray();
         
+        if (rgbProtected == null) {
+            if (objProtected.size() == 0) rgbProtected = new byte[0]; 
+            else rgbProtected = objProtected.EncodeToBytes();
+        }
+        
         obj.Add(strContext);
-        if (objProtected.size() > 0) obj.Add(objProtected.EncodeToBytes());
-        else obj.Add(CBORObject.FromObject(new byte[0]));
+        obj.Add(rgbProtected);
         if (externalData != null) obj.Add(CBORObject.FromObject(externalData));
         else obj.Add(CBORObject.FromObject(new byte[0]));
         obj.Add(rgbContent);
