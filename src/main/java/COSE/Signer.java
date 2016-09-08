@@ -82,7 +82,7 @@ public class Signer extends Attribute {
      * @since COSE 0.9.1
      * @param keyIn key to be used for signing or verification
      */
-    public void setKey(OneKey keyIn) {
+    public void setKey(OneKey keyIn) throws CoseException {
         setupKey(keyIn);
     }
     
@@ -92,7 +92,7 @@ public class Signer extends Attribute {
      * 
      * @param key key to be used
      */
-    private void setupKey(OneKey key) {
+    private void setupKey(OneKey key) throws CoseException {
         CBORObject cn2;
         CBORObject cn;
         
@@ -103,13 +103,13 @@ public class Signer extends Attribute {
         cn = key.get(KeyKeys.Algorithm);
         if (cn != null) {
             cn2 = findAttribute(HeaderKeys.Algorithm);
-            if (cn2 == null) addAttribute(HeaderKeys.Algorithm, cn, Attribute.ProtectedAttributes);
+            if (cn2 == null) addAttribute(HeaderKeys.Algorithm, cn, Attribute.PROTECTED);
         }
         
         cn = key.get(KeyKeys.KeyId);
         if (cn != null) {
             cn2 = findAttribute(HeaderKeys.KID);
-            if (cn2 == null) addAttribute(HeaderKeys.KID, cn, Attribute.UnprotectedAttributes);
+            if (cn2 == null) addAttribute(HeaderKeys.KID, cn, Attribute.UNPROTECTED);
         }
     }
     
