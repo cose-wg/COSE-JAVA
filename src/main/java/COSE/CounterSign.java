@@ -29,7 +29,7 @@ public class CounterSign extends Signer {
         DecodeFromCBORObject(obj);
     }
     
-    public byte[] EncodeToBytes() {
+    public byte[] EncodeToBytes() throws CoseException {
         return EncodeToCBORObject().EncodeToBytes();
     }
     

@@ -49,7 +49,7 @@ public class SignerTest {
      */
     @Ignore
     @Test
-    public void testSetKey() {
+    public void testSetKey() throws CoseException {
         System.out.println("setKey");
         CBORObject cnKey = null;
         Signer instance = new Signer();

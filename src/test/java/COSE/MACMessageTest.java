@@ -45,7 +45,7 @@ public class MACMessageTest {
     }
     
     @Before
-    public void setUp() {
+    public void setUp() throws CoseException {
         recipient256 = new Recipient();
         recipient256.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UnprotectedAttributes);
         cnKey256 = CBORObject.NewMap();
