@@ -7,7 +7,6 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESFastEngine;
@@ -27,7 +26,7 @@ public abstract class EncryptCommon extends Message {
     SecureRandom random = new SecureRandom();
     
     protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
-        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
         if (rgbEncrypt == null) throw new CoseException("No Encrypted Content Specified");
@@ -58,7 +57,7 @@ public abstract class EncryptCommon extends Message {
     }
     
     void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
-        CBORObject algX = findAttribute(HeaderKeys.Algorithm.AsCBOR());
+        CBORObject algX = findAttribute(HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
         if (rgbContent == null) throw new CoseException("No Content Specified");
@@ -172,7 +171,7 @@ public abstract class EncryptCommon extends Message {
         }
         else {
             random.nextBytes(IV);
-            AddUnprotected(HeaderKeys.IV, CBORObject.FromObject(IV));
+            addAttribute(HeaderKeys.IV, CBORObject.FromObject(IV), Attribute.UNPROTECTED);
         }
 
         if (rgbKey.length != alg.getKeySize()/8) throw new CoseException("Key Size is incorrect");
@@ -223,7 +222,7 @@ public abstract class EncryptCommon extends Message {
         if (cn == null) {
             IV = new byte[96/8];
             random.nextBytes(IV);
-            AddUnprotected(HeaderKeys.IV, CBORObject.FromObject(IV));
+            addAttribute(HeaderKeys.IV, CBORObject.FromObject(IV), Attribute.UNPROTECTED);
         }
         else {
             if (cn.getType() != CBORType.ByteString) throw new CoseException("IV is incorrectly formed");

@@ -130,4 +130,19 @@ public class AttributeTest {
         assert(null == instance.findAttribute(HeaderKeys.CONTENT_TYPE, Attribute.UNPROTECTED));
         assert(null == instance.findAttribute(HeaderKeys.CONTENT_TYPE, Attribute.DO_NOT_SEND));
     }
+    
+    @Test
+    public void removeAttribute() throws Exception {
+        Attribute instance = new Attribute();
+        
+        instance.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_CBC_MAC_128_128.AsCBOR(), Attribute.PROTECTED);
+        
+        CBORObject cn;
+        cn = instance.findAttribute(HeaderKeys.Algorithm);
+        assertSame(cn, AlgorithmID.AES_CBC_MAC_128_128.AsCBOR());
+        
+        instance.removeAttribute(HeaderKeys.Algorithm);
+        cn = instance.findAttribute(HeaderKeys.Algorithm);
+        assert(cn == null);
+    }
 }

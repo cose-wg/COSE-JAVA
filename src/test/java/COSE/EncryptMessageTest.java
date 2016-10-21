@@ -5,8 +5,9 @@
  */
 package COSE;
 
-import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.*;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
@@ -52,6 +53,9 @@ public class EncryptMessageTest {
         msg.SetContent(rgbContent);
         msg.addRecipient(recipient128);
         msg.encrypt();
+        
+        List<Recipient> rList = msg.getRecipientList();
+        assertEquals(rList.size(), 1);
         
         byte[] rgbMsg = msg.EncodeToBytes();
         
