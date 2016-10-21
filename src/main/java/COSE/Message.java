@@ -10,14 +10,33 @@ import com.upokecenter.cbor.CBORType;
 import java.nio.charset.StandardCharsets;
 
 /**
+ * The Message class provides a common class that all of the COSE message classes
+ * inherit from.  It provides the function used for decoding all of the known
+ * messages.
  * 
  * @author jimsch
  */
+
 public abstract class Message extends Attribute {
+    /**
+     * Is the tag identifying the message emitted?
+     */
     protected boolean emitTag = true;
+    
+    /**
+     * Is the content emitted as part of the message?
+     */
     protected boolean emitContent = true;
-    protected MessageTag messageTag;
-    protected byte[] rgbContent;
+    
+    /**
+     * What message tag identifies this message?
+    */
+    protected MessageTag messageTag = MessageTag.Unknown;
+    
+    /**
+     * What is the plain text content of the message.
+     */
+    protected byte[] rgbContent = null;
   
     /**
      * Decode a COSE message object.  This function assumes that the message
@@ -51,9 +70,9 @@ public abstract class Message extends Attribute {
             if (messageObject.GetTags().length != 1) throw new CoseException("Malformed message - too many tags");
             
             if (defaultTag == MessageTag.Unknown) {
-                defaultTag = MessageTag.FromInt(messageObject.getOutermostTag().intValue());
+                defaultTag = MessageTag.FromInt(messageObject.getInnermostTag().intValue());
             }
-            else if (defaultTag != MessageTag.FromInt(messageObject.getOutermostTag().intValue())) {
+            else if (defaultTag != MessageTag.FromInt(messageObject.getInnermostTag().intValue())) {
                 throw new CoseException("Passed in tag does not match actual tag");
             }
         }
@@ -96,13 +115,41 @@ public abstract class Message extends Attribute {
         return msg;
         
     }
-    
+
+    /**
+     * Encode the message to a byte array.  This function will force cryptographic operations to be executed as needed.
+     * 
+     * @return byte encoded object 
+     * @throws CoseException Internal COSE Exception
+     */
     public byte[] EncodeToBytes() throws CoseException {
         return EncodeToCBORObject().EncodeToBytes();
     }
 
+    /**
+     * Given a CBOR tree, parse the message.  This is an abstract function that is implemented for each different supported COSE message. 
+     * 
+     * @param messageObject CBORObject to be converted to a message.
+     * @throws CoseException 
+     */
+    
     protected abstract void DecodeFromCBORObject(CBORObject messageObject) throws CoseException;
+    
+    /**
+     * Encode the COSE message object to a CBORObject tree.  This function call will force cryptographic operations to be executed as needed.
+     * This is an internal function, as such it does not add the tag on the front and is implemented on a per message object.
+     * 
+     * @return CBORObject representing the message.
+     * @throws CoseException 
+     */
     protected abstract CBORObject EncodeCBORObject() throws CoseException;
+    
+    /**
+     * Encode the COSE message object to a CBORObject tree.  This function call will force cryptographic operations to be executed as needed.
+     * 
+     * @return CBORObject representing the message.
+     * @throws CoseException 
+     */
     public CBORObject EncodeToCBORObject() throws CoseException {
         CBORObject obj;
         
@@ -115,17 +162,40 @@ public abstract class Message extends Attribute {
         return obj;
     }
 
+    /**
+     * Return the content bytes of the message
+     * 
+     * @return bytes of the content
+     */
     public byte[] GetContent() {
         return rgbContent;
     }
     
+    /**
+     * Does the message current have content?
+     * 
+     * @return true if it has content 
+     */
+    public boolean HasContent() {
+        return rgbContent != null;
+    }
+    
+    /**
+     * Set the content bytes of the message.  If the message was transmitted with 
+     * detached content, this must be called before doing cryptographic processing on the message.
+     * 
+     * @param rgbData bytes to set as the content
+     */
     public void SetContent(byte[] rgbData) {
         rgbContent = rgbData;
     }
     
+    /**
+     * Set the content bytes as a text string.  The string will be encoded using UTF8 into a byte string.
+     * 
+     * @param strData string to set as the content
+     */
     public void SetContent(String strData) {
         rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
-    
-
 }

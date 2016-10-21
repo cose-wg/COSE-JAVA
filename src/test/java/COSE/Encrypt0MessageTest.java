@@ -154,8 +154,8 @@ public class Encrypt0MessageTest {
     public void encryptNoTag() throws CoseException, InvalidCipherTextException {
         Encrypt0Message msg = new Encrypt0Message(false, true);
 
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Message.ProtectedAttributes);
-        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.ProtectedAttributes);
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         CBORObject cn = msg.EncodeCBORObject();
@@ -167,8 +167,8 @@ public class Encrypt0MessageTest {
     public void encryptNoEmitContent() throws CoseException, InvalidCipherTextException {
         Encrypt0Message msg = new Encrypt0Message(true, false);
 
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Message.ProtectedAttributes);
-        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.UNPROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         CBORObject cn = msg.EncodeCBORObject();
@@ -183,8 +183,8 @@ public class Encrypt0MessageTest {
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Encrypted Content Specified");
         
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Message.ProtectedAttributes);
-        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.UNPROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         
@@ -199,8 +199,8 @@ public class Encrypt0MessageTest {
     public void roundTripDetached() throws CoseException, IllegalStateException, InvalidCipherTextException {
         Encrypt0Message msg = new Encrypt0Message(true, false);
         
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Message.ProtectedAttributes);
-        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Message.UnprotectedAttributes);
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.UNPROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         

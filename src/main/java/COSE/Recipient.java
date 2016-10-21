@@ -234,7 +234,7 @@ public class Recipient extends Message {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UNPROTECTED);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, new SHA256Digest());
@@ -255,7 +255,7 @@ public class Recipient extends Message {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UNPROTECTED);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, new SHA256Digest());
@@ -276,7 +276,7 @@ public class Recipient extends Message {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UNPROTECTED);
                 }
                 rgbKey = ECDH_GenerateSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, new SHA256Digest());
@@ -365,7 +365,7 @@ public class Recipient extends Message {
                     byte[] rgbAPU = new byte[256/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UNPROTECTED);
                 }
                 rgbSecret = ECDH_GenerateSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA256Digest());
@@ -376,7 +376,7 @@ public class Recipient extends Message {
                     byte[] rgbAPU = new byte[512/8];
                     random = new SecureRandom();
                     random.nextBytes(rgbAPU);
-                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UnprotectedAttributes);
+                    addAttribute(HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR(), CBORObject.FromObject(rgbAPU), Attribute.UNPROTECTED);
                 }
                 rgbSecret = ECDH_GenerateSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, new SHA512Digest());
@@ -466,7 +466,7 @@ public class Recipient extends Message {
         System.arraycopy(rgbEncoded, 1, X, 0, X.length);
         epk.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(X));
         epk.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
-        AddUnprotected(HeaderKeys.ECDH_EPK, epk);
+        addAttribute(HeaderKeys.ECDH_EPK, epk, Attribute.UNPROTECTED);
         
         OneKey secretKey = new OneKey();
         secretKey.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);

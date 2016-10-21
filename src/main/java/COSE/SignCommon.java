@@ -19,6 +19,7 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
@@ -58,7 +59,7 @@ public abstract class SignCommon extends Message {
                 byte[] rgbDigest = new byte[digest.getDigestSize()];
                 digest.doFinal(rgbDigest, 0);
                                 
-                ECDSASigner ecdsa = new ECDSASigner();
+                ECDSASigner ecdsa = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()));
                 ecdsa.init(true, key);
                 BigInteger[] sig = ecdsa.generateSignature(rgbDigest);
                 
@@ -186,7 +187,7 @@ public abstract class SignCommon extends Message {
             }
             
             default:
-                throw new CoseException("Inernal error");
+                throw new CoseException("Internal error");
         }
     }
     

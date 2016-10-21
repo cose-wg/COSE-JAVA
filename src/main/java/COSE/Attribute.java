@@ -22,10 +22,32 @@ import com.upokecenter.cbor.*;
  */
 
 class Attribute {
+    /**
+     * Internal map of protected attributes
+     */
     protected CBORObject objProtected = CBORObject.NewMap();
+    
+    /**
+     * Internal map of unprotected attributes
+    */
     protected CBORObject objUnprotected = CBORObject.NewMap();
+    
+    /**
+     * Internal map of attributes which are not a part of the encoded message.
+     */
     protected CBORObject objDontSend = CBORObject.NewMap();
+    
+    /**
+     * The encoded byte string for the protected attributes.  If this variable is 
+     * set then the message was either decoded or as been cryptographically signed/encrypted/maced.
+     * If it is set, then do not allow objProtected to be modified.
+     */
     protected byte[] rgbProtected;
+    
+    /**
+     * Holder for the external data object that is authenticated as part of the 
+     * message
+     */
     protected byte[] externalData = new byte[0];
     
     /**
@@ -277,18 +299,64 @@ class Attribute {
     }
     
     /**
+     * Return the entire map of protected attributes
+     * 
+     * @return the protected attribute map
+     */
+    public CBORObject getProtectedAttributes() {
+        return objProtected;
+    }
+    
+    /**
+     * Return the entire map of unprotected attributes
+     * 
+     * @return the unprotected attribute map
+     */
+    public CBORObject getUnprotectedAttributes() {
+        return objUnprotected;
+    }
+
+    /**
+     * Return the entire map of do not send attributes
+     * 
+     * @return the do not send attribute map
+     */
+    public CBORObject getDoNotSendAttributes() {
+        return objDontSend;
+    }
+
+    /**
      * Remove an attribute from the set of all attribute maps.
      * 
-     * @param label 
+     * @param label attribute to be removed
      * @exception CoseException if integrity protection would be modified.
      */
-    private void removeAttribute(CBORObject label) throws CoseException {
+    public void removeAttribute(CBORObject label) throws CoseException {
         if (objProtected.ContainsKey(label)) {
             if (rgbProtected != null) throw new CoseException("Operation would modify integrity protected attributes");
             objProtected.Remove(label);
         }
         if (objUnprotected.ContainsKey(label)) objUnprotected.Remove(label);
         if (objDontSend.ContainsKey(label)) objDontSend.Remove(label);
+    }
+    
+    /**
+     * Remove an attribute from the set of all attribute maps.
+     * 
+     * @param label attribute to be removed
+     * @throws CoseException 
+     */
+    public void removeAttribute(HeaderKeys label) throws CoseException {
+        removeAttribute(label.AsCBOR());
+    }
+    
+    /**
+     * Get the optional external data field to be authenticated
+     * 
+     * * @return external authenticated data
+     */
+    public byte[] getExternal() {
+        return externalData;
     }
     
     /**
