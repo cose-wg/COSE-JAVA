@@ -11,12 +11,12 @@ package COSE;
  */
 public enum MessageTag {
     Unknown(0),
-    Encrypt0(993),
-    Encrypt(992),
-    Sign1(997),
-    Sign(991),
-    MAC(994),
-    MAC0(996);
+    Encrypt0(16),
+    Encrypt(96),
+    Sign1(18),
+    Sign(98),
+    MAC(97),
+    MAC0(17);
     
     public final int value;
     
