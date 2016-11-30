@@ -21,7 +21,7 @@ import com.upokecenter.cbor.*;
  * @author jimsch
  */
 
-class Attribute {
+public class Attribute {
     /**
      * Internal map of protected attributes
      */

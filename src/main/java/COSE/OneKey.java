@@ -147,4 +147,57 @@ public class OneKey {
 
         return key;        
     }
+    
+    /**
+     * Create a OneKey object with only the public fields.  Filters out the 
+     * private key fields but leaves all positive number labels and text labels
+     * along with negative number labels that are public fields.
+     * 
+     * @return public version of the key
+     */
+    public OneKey PublicKey()
+    {
+        OneKey newKey = new OneKey();
+        CBORObject val = this.get(KeyKeys.KeyType);
+        if (val.equals(KeyKeys.KeyType_Octet)) {
+            return null;
+        }
+        else if (val.equals(KeyKeys.KeyType_EC2)) {
+            newKey.add(KeyKeys.EC2_Curve, get(KeyKeys.EC2_Curve));
+            newKey.add(KeyKeys.EC2_X, get(KeyKeys.EC2_X));
+            newKey.add(KeyKeys.EC2_Y, get(KeyKeys.EC2_Y));
+        }
+        /*
+        else if (val.equals(KeyKeys.KeyType_OKP)) {
+            newKey.add(KeyKeys.OKP_Curve, get(KeyKeys.OKP_Curve));
+            newKey.add(KeyKeys.OKP_X, get(KeyKeys.OKP_X));
+        }
+        */
+        else {
+            return null;
+        }
+
+        for (CBORObject obj : keyMap.getKeys()) {
+            val = keyMap.get(obj);
+            if (obj.getType() == CBORType.Number) {
+                if (obj.AsInt32() > 0) {
+                    newKey.add(obj, val);
+                }
+            }
+            else if (obj.getType() == CBORType.TextString) {
+                newKey.add(obj, val);
+            }
+        }
+        return newKey;
+    }
+    
+    /**
+     * Encode to a byte string
+     * 
+     * @return encoded object as bytes.
+     */
+    public byte[] EncodeToBytes()
+    {
+        return keyMap.EncodeToBytes();
+    }
 }
