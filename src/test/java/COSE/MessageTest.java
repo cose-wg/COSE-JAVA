@@ -52,8 +52,8 @@ public class MessageTest {
     @Test
     public void testDecodeUnknown() throws Exception {
         Encrypt0Message msg = new Encrypt0Message(false, true);
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.AddProtected(HeaderKeys.IV, CBORObject.FromObject(rgbIV96));
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         byte[] rgbMsg = msg.EncodeToBytes();
@@ -71,8 +71,8 @@ public class MessageTest {
     @Test
     public void testDecodeFromBytes_byteArr_MessageTag() throws Exception {
         Encrypt0Message msg = new Encrypt0Message(true, false);
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.AddProtected(HeaderKeys.IV, CBORObject.FromObject(rgbIV96));
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey128);
         byte[] rgbMsg = msg.EncodeToBytes();

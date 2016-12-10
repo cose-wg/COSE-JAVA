@@ -48,7 +48,7 @@ public class MAC0MessageTest {
     public void testRoundTrip() throws Exception {
         System.out.println("Round Trip");
         MAC0Message msg = new MAC0Message();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create(rgbKey256);
         
@@ -75,7 +75,7 @@ public class MAC0MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unknown Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
+        msg.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create(rgbKey256);
     }    
@@ -86,7 +86,7 @@ public class MAC0MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unsupported MAC Algorithm");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_CCM_16_64_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_CCM_16_64_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create(rgbKey256);
     }    
@@ -97,7 +97,7 @@ public class MAC0MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Content Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.Create(rgbKey256);
     }    
     

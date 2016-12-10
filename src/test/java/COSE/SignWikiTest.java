@@ -48,9 +48,9 @@ public class SignWikiTest {
     //  Create the signer for the message
     Signer signer = new Signer();
     signer.setKey(signingKey);
-    signer.addAttribute(HeaderKeys.Algorithm, signingKey.get(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
+    signer.addAttribute(HeaderKeys.Algorithm, signingKey.get(KeyKeys.Algorithm), Attribute.PROTECTED);
     CBORObject o = signingKey.get(KeyKeys.KeyId);
-    if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UnprotectedAttributes);
+    if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UNPROTECTED);
 
     msg.AddSigner(signer);
 
@@ -108,9 +108,9 @@ public class SignWikiTest {
             //  Create the signer for the message
             Signer signer = new Signer();
             signer.setKey(key);
-            signer.addAttribute(HeaderKeys.Algorithm, key.get(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
+            signer.addAttribute(HeaderKeys.Algorithm, key.get(KeyKeys.Algorithm), Attribute.PROTECTED);
             CBORObject o = key.get(KeyKeys.KeyId);
-            if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UnprotectedAttributes);
+            if (o != null) signer.addAttribute(HeaderKeys.KID, o, Attribute.UNPROTECTED);
 
             msg.AddSigner(signer);
         }

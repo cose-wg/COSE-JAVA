@@ -32,9 +32,9 @@ import org.junit.rules.ExpectedException;
 public class Sign1MessageTest {
     static byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
     
-    static CBORObject cnKeyPublic;
-    static CBORObject cnKeyPublicCompressed;
-    static CBORObject cnKeyPrivate;
+    static OneKey cnKeyPublic;
+    static OneKey cnKeyPublicCompressed;
+    static OneKey cnKeyPrivate;
     static ECPublicKeyParameters keyPublic;
     static ECPrivateKeyParameters keyPrivate;
     
@@ -42,7 +42,7 @@ public class Sign1MessageTest {
     }
     
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws CoseException {
     
         X9ECParameters p = NISTNamedCurves.getByName("P-256");
         
@@ -61,22 +61,25 @@ public class Sign1MessageTest {
     boolean signY = true;
     byte[] rgbD = keyPrivate.getD().toByteArray();
 
-    cnKeyPublic = CBORObject.NewMap();
-        cnKeyPublic.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-        cnKeyPublic.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-        cnKeyPublic.Add(KeyKeys.EC2_X.AsCBOR(), rgbX);
-        cnKeyPublic.Add(KeyKeys.EC2_Y.AsCBOR(), rgbY);
+    CBORObject key = CBORObject.NewMap();
+        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+        key.Add(KeyKeys.EC2_X.AsCBOR(), rgbX);
+        key.Add(KeyKeys.EC2_Y.AsCBOR(), rgbY);
+        cnKeyPublic = new OneKey(key);
         
-        cnKeyPublicCompressed = CBORObject.NewMap();
-        cnKeyPublicCompressed.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-        cnKeyPublicCompressed.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-        cnKeyPublicCompressed.Add(KeyKeys.EC2_X.AsCBOR(), rgbX);
-        cnKeyPublicCompressed.Add(KeyKeys.EC2_Y.AsCBOR(), rgbY);
+        key = CBORObject.NewMap();
+        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+        key.Add(KeyKeys.EC2_X.AsCBOR(), rgbX);
+        key.Add(KeyKeys.EC2_Y.AsCBOR(), rgbY);
+        cnKeyPublicCompressed = new OneKey(key);
 
-        cnKeyPrivate = CBORObject.NewMap();
-        cnKeyPrivate.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-        cnKeyPrivate.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-        cnKeyPrivate.Add(KeyKeys.EC2_D.AsCBOR(), rgbD);
+        key = CBORObject.NewMap();
+        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+        key.Add(KeyKeys.EC2_D.AsCBOR(), rgbD);
+        cnKeyPrivate = new OneKey(key);
     }
     
     @AfterClass
@@ -101,7 +104,7 @@ public class Sign1MessageTest {
     public void testRoundTrip() throws Exception {
         System.out.println("Round Trip");
         Sign1Message msg = new Sign1Message();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(cnKeyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
@@ -119,7 +122,7 @@ public class Sign1MessageTest {
     public void testRoundTripMixed() throws Exception {
         System.out.println("Round Trip");
         Sign1Message msg = new Sign1Message();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(keyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
@@ -137,7 +140,7 @@ public class Sign1MessageTest {
     public void testRoundTripBC() throws Exception {
         System.out.println("Round Trip");
         Sign1Message msg = new Sign1Message();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(keyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
@@ -164,7 +167,7 @@ public class Sign1MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unknown Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
+        msg.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(cnKeyPrivate);
     }    
@@ -175,7 +178,7 @@ public class Sign1MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unsupported Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(cnKeyPrivate);
     }    
@@ -183,10 +186,10 @@ public class Sign1MessageTest {
     @Test
     public void nullKey() throws CoseException, InvalidCipherTextException {
         Sign1Message msg = new Sign1Message();
-        CBORObject key=null;
+        OneKey key=null;
         
         thrown.expect(NullPointerException.class);
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(key);
     }    
@@ -197,7 +200,7 @@ public class Sign1MessageTest {
         CipherParameters key=null;
         
         thrown.expect(NullPointerException.class);
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(key);
     }    
@@ -208,7 +211,7 @@ public class Sign1MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Content Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.sign(cnKeyPrivate);
     }    
     
@@ -218,7 +221,7 @@ public class Sign1MessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Private key required to sign");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.sign(cnKeyPublic);
     }    

@@ -46,7 +46,7 @@ public class Sign1WikiTest {
     
     //  Add the content to the message
     msg.SetContent(ContentToSign);
-    msg.addAttribute(HeaderKeys.Algorithm, signingKey.get(KeyKeys.Algorithm), Attribute.ProtectedAttributes);
+    msg.addAttribute(HeaderKeys.Algorithm, signingKey.get(KeyKeys.Algorithm), Attribute.PROTECTED);
     
     //  Force the message to be signed
     msg.sign(signingKey);

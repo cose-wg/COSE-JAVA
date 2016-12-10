@@ -51,7 +51,7 @@ public class SignerTest {
     @Test
     public void testSetKey() throws CoseException {
         System.out.println("setKey");
-        CBORObject cnKey = null;
+        OneKey cnKey = null;
         Signer instance = new Signer();
         instance.setKey(cnKey);
         // TODO review the generated test code and remove the default call to fail.

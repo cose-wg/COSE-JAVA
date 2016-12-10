@@ -204,6 +204,16 @@ public class OneKey {
     }
     
     /**
+     * Return the key as a CBOR object
+     * 
+     * @return 
+     */
+    public CBORObject AsCBOR()
+    {
+        return keyMap;
+    }
+    
+    /**
      * Return a java.security.PublicKey that is the same as the OneKey key
      * 
      * @return the key
