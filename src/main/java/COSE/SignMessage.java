@@ -26,7 +26,7 @@ import com.upokecenter.cbor.CBORType;
  * @author jimsch
  */
 public class SignMessage extends Message {
-    protected List<Signer> signerList = new ArrayList();
+    protected List<Signer> signerList = new ArrayList<Signer>();
     
     /**
      * Create a signed message object for which the leading tag and the content will be included.

@@ -296,7 +296,7 @@ public class Recipient extends Message {
     }
 
     public void addRecipient(Recipient recipient) {
-        if (recipientList == null) recipientList = new ArrayList();
+        if (recipientList == null) recipientList = new ArrayList<Recipient>();
         recipientList.add(recipient);
     }
     

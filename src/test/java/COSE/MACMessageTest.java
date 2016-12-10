@@ -27,7 +27,7 @@ public class MACMessageTest {
     static byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
  
     Recipient recipient256;
-    CBORObject cnKey256;
+    OneKey cnKey256;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -47,10 +47,11 @@ public class MACMessageTest {
     @Before
     public void setUp() throws CoseException {
         recipient256 = new Recipient();
-        recipient256.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UnprotectedAttributes);
-        cnKey256 = CBORObject.NewMap();
-        cnKey256.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_Octet);
-        cnKey256.Add(KeyKeys.Octet_K.AsCBOR(), CBORObject.FromObject(rgbKey256));
+        recipient256.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UNPROTECTED);
+        CBORObject key256 = CBORObject.NewMap();
+        key256.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_Octet);
+        key256.Add(KeyKeys.Octet_K.AsCBOR(), CBORObject.FromObject(rgbKey256));
+        cnKey256 = new OneKey(key256);
         recipient256.SetKey(cnKey256);        
     }
     
@@ -101,7 +102,7 @@ public class MACMessageTest {
     public void testRoundTrip() throws Exception {
         System.out.println("Round Trip");
         MACMessage msg = new MACMessage();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.addRecipient(recipient256);
         msg.Create();
@@ -121,7 +122,7 @@ public class MACMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No recipients supplied");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create();
     }    
@@ -144,7 +145,7 @@ public class MACMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unknown Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
+        msg.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create();
     }    
@@ -156,7 +157,7 @@ public class MACMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unsupported MAC Algorithm");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_CCM_16_64_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_CCM_16_64_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.Create();
     }    
@@ -168,7 +169,7 @@ public class MACMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Content Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.Create();
     }    
     

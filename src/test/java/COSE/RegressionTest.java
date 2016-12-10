@@ -6,10 +6,8 @@
 package COSE;
 
 import org.junit.*;
-import COSE.*;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -17,9 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Stream;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -138,7 +133,7 @@ public class RegressionTest {
         CBORObject cnRecipients = cnEncrypt.get("recipients");
         cnRecipients = cnRecipients.get(0);
 
-        CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+        OneKey cnKey = BuildKey(cnRecipients.get("key"), true);
 
         CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
@@ -176,7 +171,7 @@ public class RegressionTest {
             CBORObject cnRecipients = cnEncrypt.get("recipients");
             cnRecipients = cnRecipients.get(0);
 
-            CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+            OneKey cnKey = BuildKey(cnRecipients.get("key"), true);
 
             CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
@@ -252,7 +247,7 @@ public class RegressionTest {
         CBORObject cnRecipients = cnEncrypt.get("recipients");
         cnRecipients = cnRecipients.get(0);
 
-        CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+        OneKey cnKey = BuildKey(cnRecipients.get("key"), true);
 
         CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
@@ -291,7 +286,7 @@ public class RegressionTest {
             CBORObject cnRecipients = cnMac.get("recipients");
             cnRecipients = cnRecipients.get(0);
 
-            CBORObject cnKey = BuildKey(cnRecipients.get("key"), true);
+            OneKey cnKey = BuildKey(cnRecipients.get("key"), true);
 
             CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
@@ -344,14 +339,14 @@ public class RegressionTest {
             CBORObject cnRecipients = cnMac.get("recipients");
             cnRecipients = cnRecipients.get(0);
 
-            CBORObject cnKey = BuildKey(cnRecipients.get("key"), false);
+            OneKey cnKey = BuildKey(cnRecipients.get("key"), false);
             Recipient recipient = mac.getRecipient(0);
             recipient.SetKey(cnKey);
             
             CBORObject cnStatic = cnRecipients.get("sender_key");
             if (cnStatic != null) {
                 if (recipient.findAttribute(HeaderKeys.ECDH_SPK) == null) {
-                    recipient.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                    recipient.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true).AsCBOR(), Attribute.DO_NOT_SEND);
                 }
             }
 
@@ -380,7 +375,7 @@ public class RegressionTest {
 	Recipient hRecip2;
 	boolean fRet = false;
 	int type;
-	CBORObject cnkey;
+	OneKey cnkey;
         Message msg;
 
         try {
@@ -413,7 +408,7 @@ public class RegressionTest {
                 CBORObject cnStatic = cnRecipient2.get("sender_key");
                 if (cnStatic != null) {
                     if (hRecip2.findAttribute(HeaderKeys.ECDH_SPK) == null) {
-                        hRecip2.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                        hRecip2.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true).AsCBOR(), Attribute.DO_NOT_SEND);
                     }
                 }
 
@@ -426,7 +421,7 @@ public class RegressionTest {
                 CBORObject cnStatic = cnRecipient1.get("sender_key");
                 if (cnStatic != null) {
                     if (hRecip1.findAttribute(HeaderKeys.ECDH_SPK) == null) {
-                        hRecip1.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true), Attribute.DontSendAttributes);
+                        hRecip1.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnStatic, true).AsCBOR(), Attribute.DO_NOT_SEND);
                     }
                 }
 
@@ -502,7 +497,7 @@ public class RegressionTest {
 
 	CBORObject cnKey = cnRecipient.get("key");
 	if (cnKey != null) {
-            CBORObject pkey = BuildKey(cnKey, true);
+            OneKey pkey = BuildKey(cnKey, true);
 
             hRecip.SetKey(pkey);
         }
@@ -517,14 +512,14 @@ public class RegressionTest {
 
 	CBORObject cnSenderKey = cnRecipient.get("sender_key");
 	if (cnSenderKey != null) {
-            CBORObject cnSendKey = BuildKey(cnSenderKey, false);
+            OneKey cnSendKey = BuildKey(cnSenderKey, false);
             CBORObject cnKid = cnSenderKey.get("kid");
             hRecip.SetSenderKey(cnSendKey);
             if (cnKid == null) {
-                hRecip.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnSenderKey, true), Attribute.UnprotectedAttributes);
+                hRecip.addAttribute(HeaderKeys.ECDH_SPK, BuildKey(cnSenderKey, true).AsCBOR(), Attribute.UNPROTECTED);
             }
             else {
-                hRecip.addAttribute(HeaderKeys.ECDH_SKID, cnKid, Attribute.UnprotectedAttributes);
+                hRecip.addAttribute(HeaderKeys.ECDH_SKID, cnKid, Attribute.UNPROTECTED);
             }
 	}
 
@@ -573,7 +568,7 @@ public class RegressionTest {
     {
 	boolean f = false;
 
-	SetAttributes(msg, cnIn.get("unsent"), Attribute.DontSendAttributes, true);
+	SetAttributes(msg, cnIn.get("unsent"), Attribute.DO_NOT_SEND, true);
 
         CBORObject cnExternal = cnIn.get("external");
 	if (cnExternal != null) {
@@ -583,9 +578,9 @@ public class RegressionTest {
     
     void SetSendingAttributes(Attribute msg, CBORObject cnIn, boolean fPublicKey) throws Exception
     {
-        SetAttributes(msg, cnIn.get("protected"), Attribute.ProtectedAttributes, fPublicKey);
-        SetAttributes(msg, cnIn.get("unprotected"), Attribute.UnprotectedAttributes, fPublicKey);
-        SetAttributes(msg, cnIn.get("unsent"), Attribute.DontSendAttributes, fPublicKey);
+        SetAttributes(msg, cnIn.get("protected"), Attribute.PROTECTED, fPublicKey);
+        SetAttributes(msg, cnIn.get("unprotected"), Attribute.UNPROTECTED, fPublicKey);
+        SetAttributes(msg, cnIn.get("unsent"), Attribute.DO_NOT_SEND, fPublicKey);
 
         CBORObject cnExternal = cnIn.get("external");
         if (cnExternal != null) {
@@ -706,7 +701,7 @@ public class RegressionTest {
         }
     }
     
-    public CBORObject BuildKey(CBORObject keyIn, boolean fPublicKey) {
+    public OneKey BuildKey(CBORObject keyIn, boolean fPublicKey) throws CoseException {
         CBORObject cnKeyOut = CBORObject.NewMap();
  
         for (CBORObject key : keyIn.getKeys()) {
@@ -764,7 +759,7 @@ public class RegressionTest {
             }
         }
         
-        return cnKeyOut;
+        return new OneKey( cnKeyOut);
     }
             
             
@@ -882,7 +877,7 @@ public class RegressionTest {
 
                 SetReceivingAttributes(hSig, cnSign);
 
-                CBORObject cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
+                OneKey cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
 
                 Signer hSigner = hSig.getSigner(iSigner);
 
@@ -946,7 +941,7 @@ public class RegressionTest {
             CBORObject cnSigners = cnSign.get("signers");
 
             for (iSigner = 0; iSigner < cnSigners.size(); iSigner++) {
-                CBORObject cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
+                OneKey cnkey = BuildKey(cnSigners.get(iSigner).get("key"), false);
 
                 Signer hSigner = new Signer();
 
@@ -1003,7 +998,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 
             SetReceivingAttributes(hSig, cnSign);
 
-            CBORObject cnkey = BuildKey(cnSign.get("key"), true);
+            OneKey cnkey = BuildKey(cnSign.get("key"), true);
 
             boolean fFailInput = HasFailMarker(cnInput);
 
@@ -1050,7 +1045,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 
             SetSendingAttributes(hSignObj, cnSign, false);
 
-            CBORObject cnkey = BuildKey(cnSign.get("key"), false);
+            OneKey cnkey = BuildKey(cnSign.get("key"), false);
 
             hSignObj.sign(cnkey);
 
@@ -1074,7 +1069,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             
             
             for (CBORObject csig : cSigConfig.getValues()) {
-                CBORObject cnKey = BuildKey(csig.get("key"), false);
+                OneKey cnKey = BuildKey(csig.get("key"), false);
                 
                 CounterSign sig = new CounterSign();
                 
@@ -1088,7 +1083,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
                 else cnResult.Add(sig.EncodeToBytes());
             }
             
-            msg.addAttribute(HeaderKeys.CounterSignature, cnResult, Attribute.UnprotectedAttributes);
+            msg.addAttribute(HeaderKeys.CounterSignature, cnResult, Attribute.UNPROTECTED);
             
         }
         catch (Exception e) {
@@ -1126,7 +1121,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
                     sig = new CounterSign(cSigs.get(iCSign).GetByteString());
                 }
 
-                CBORObject cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), false);
+                OneKey cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), false);
                 SetReceivingAttributes(sig, cSigConfig.get(iCSign));
 
                 sig.setKey(cnKey);

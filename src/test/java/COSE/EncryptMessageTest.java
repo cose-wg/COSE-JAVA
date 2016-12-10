@@ -26,7 +26,7 @@ public class EncryptMessageTest {
     static byte[] rgbIV96 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     
     Recipient recipient128;
-    CBORObject cnKey128;
+    OneKey cnKey128;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -34,10 +34,11 @@ public class EncryptMessageTest {
     @Before
     public void setUp() throws CoseException {
         recipient128 = new Recipient();
-        recipient128.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UnprotectedAttributes);
-        cnKey128 = CBORObject.NewMap();
-        cnKey128.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_Octet);
-        cnKey128.Add(KeyKeys.Octet_K.AsCBOR(), CBORObject.FromObject(rgbKey128));
+        recipient128.addAttribute(HeaderKeys.Algorithm, AlgorithmID.Direct.AsCBOR(), Attribute.UNPROTECTED);
+        CBORObject key128 = CBORObject.NewMap();
+        key128.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_Octet);
+        key128.Add(KeyKeys.Octet_K.AsCBOR(), CBORObject.FromObject(rgbKey128));
+        cnKey128 = new OneKey(key128);
         recipient128.SetKey(cnKey128);        
     }
     
@@ -48,8 +49,8 @@ public class EncryptMessageTest {
     public void testRoundTrip() throws Exception {
         System.out.println("Round Trip");
         EncryptMessage msg = new EncryptMessage();
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.AddProtected(HeaderKeys.IV, CBORObject.FromObject(rgbIV96));
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject(rgbIV96), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.addRecipient(recipient128);
         msg.encrypt();
@@ -85,7 +86,7 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No recipients supplied");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt();
     }    
@@ -108,7 +109,7 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unknown Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"));
+        msg.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject("Unknown"), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt();
     }    
@@ -120,7 +121,7 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("Unsupported Algorithm Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.HMAC_SHA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt();
     }    
@@ -132,7 +133,7 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("No Content Specified");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
         msg.encrypt();
     }    
 
@@ -143,8 +144,8 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("IV is incorrectly formed");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.AddUnprotected(HeaderKeys.IV, CBORObject.FromObject("IV"));
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, CBORObject.FromObject("IV"), Attribute.UNPROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt();
     }    
@@ -156,8 +157,8 @@ public class EncryptMessageTest {
         
         thrown.expect(CoseException.class);
         thrown.expectMessage("IV size is incorrect");
-        msg.AddProtected(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR());
-        msg.AddUnprotected(HeaderKeys.IV, rgbIV128);
+        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
+        msg.addAttribute(HeaderKeys.IV, rgbIV128, Attribute.UNPROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt();
     }    
