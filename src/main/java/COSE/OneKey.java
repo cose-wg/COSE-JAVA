@@ -6,6 +6,8 @@
 package COSE;
 
 import com.upokecenter.cbor.*;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import org.bouncycastle.asn1.nist.NISTNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -199,5 +201,35 @@ public class OneKey {
     public byte[] EncodeToBytes()
     {
         return keyMap.EncodeToBytes();
+    }
+    
+    /**
+     * Return a java.security.PublicKey that is the same as the OneKey key
+     * 
+     * @return the key
+     * @throws CoseException If there is a conversion error
+     */
+    public PublicKey AsPublicKey() throws CoseException
+    {
+        if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
+        {
+           return new ECPublicKey(this);
+        }
+        throw new CoseException("Cannot convert key as key type is not converted");
+    }
+    
+    /**
+     * Return a java.security.PrivateKey that is the same as the OneKey key
+     * 
+     * @return the key
+     * @throws CoseException if there is a conversion error
+     */
+    public PrivateKey AsPrivateKey() throws CoseException
+    {
+        if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
+        {
+            return new ECPrivateKey(this);
+        }
+        throw new CoseException("Cannot convert key as key type is not converted");
     }
 }
