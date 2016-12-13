@@ -16,7 +16,7 @@ To add this library to a Maven project, add the following to the `dependencies` 
 <dependency>
   <groupId>com.augustcellars.cose</groupId>
   <artifactId>cose-java</artifactId>
-  <version>0.9.2</version>
+  <version>0.9.3</version>
 </dependency>
 ```
 
