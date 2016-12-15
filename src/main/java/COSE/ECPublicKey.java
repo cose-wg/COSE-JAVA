@@ -41,6 +41,7 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
             point = new ECPoint(new BigInteger(1, oneKey.get(KeyKeys.EC2_X).GetByteString()), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
         }
 
+        /*
         switch (AlgorithmID.FromCBOR(oneKey.get(KeyKeys.Algorithm))) {
             case ECDH_ES_HKDF_256:
             case ECDH_ES_HKDF_512:
@@ -70,6 +71,10 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
             default:
                 throw new CoseException("No algorithm specified");
         }
+        */
+        algorithm = "EC"; // This seems wrong to me asit returns the KeyFactory name and 
+                          // there is no distinction between ECDH and ECDSA while there
+                          // is for DSA vs DiffieHellman.
         
         ECField field = new ECFieldFp(p.getCurve().getField().getCharacteristic());
         EllipticCurve crv = new EllipticCurve(field, p.getCurve().getA().toBigInteger(), p.getCurve().getB().toBigInteger());
