@@ -5,17 +5,16 @@
  */
 package COSE;
 
+import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.math.BigInteger;
 import java.security.spec.ECField;
 import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
-import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -89,6 +88,26 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
 */
         algorithm = "EC";
         
+                CBORObject curve = oneKey.get(KeyKeys.EC2_Curve);
+                int keySize;
+        ASN1ObjectIdentifier curveOID;
+        if (curve.equals(KeyKeys.EC2_P256)) {
+            curveOID = org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp256r1;
+            keySize = 256;
+        }
+        else if (curve.equals(KeyKeys.EC2_P384)) {
+            curveOID = org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp384r1;
+            keySize= 384;
+        }
+        else if (curve.equals(KeyKeys.EC2_P521)) {
+            curveOID =org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp521r1;
+            keySize= 521;
+        }
+        else {
+            throw new CoseException("Unrecognized Curve");
+        }
+
+        
         privateKey = new BigInteger(1, oneKey.get(KeyKeys.EC2_D).GetByteString());
         
         ECField field = new ECFieldFp(p.getCurve().getField().getCharacteristic());
@@ -97,9 +116,9 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
         ecParameterSpec = new ECParameterSpec(crv, pt, p.getN(), p.getH().intValue());
         
         
-        AlgorithmIdentifier alg =  new AlgorithmIdentifier(org.bouncycastle.asn1.x9.X9Curve.id_ecPublicKey,  org.bouncycastle.asn1.nist.NISTNamedCurves.getOID("P-256"));
+        AlgorithmIdentifier alg =  new AlgorithmIdentifier(org.bouncycastle.asn1.x9.X9Curve.id_ecPublicKey,  curveOID);
         
-        org.bouncycastle.asn1.sec.ECPrivateKey asnPrivate = new org.bouncycastle.asn1.sec.ECPrivateKey(256, privateKey);
+        org.bouncycastle.asn1.sec.ECPrivateKey asnPrivate = new org.bouncycastle.asn1.sec.ECPrivateKey(keySize, privateKey);
         byte[] x = asnPrivate.getEncoded();
 
         PrivateKeyInfo asnPrivateX = new PrivateKeyInfo(alg, asnPrivate);
