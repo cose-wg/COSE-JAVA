@@ -6,6 +6,7 @@
 package COSE;
 
 import com.upokecenter.cbor.*;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.spec.ECParameterSpec;
@@ -13,6 +14,11 @@ import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
 import java.security.spec.ECField;
 import java.security.spec.ECFieldFp;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.eac.ECDSAPublicKey;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 
 /**
@@ -23,22 +29,29 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
     ECPoint point;
     String algorithm;
     ECParameterSpec ecParameterSpec;
+    byte[] spkiEncoded;
             
-    public ECPublicKey(OneKey oneKey) throws CoseException
+    public ECPublicKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
+        byte [] rgbKey;
+        byte[] X = oneKey.get(KeyKeys.EC2_X).GetByteString();
         
         if (oneKey.get(KeyKeys.EC2_Y).getType()== CBORType.Boolean) {
-            byte[] X = oneKey.get(KeyKeys.EC2_X.AsCBOR()).GetByteString();
-            byte[] rgb = new byte[X.length + 1];
-            System.arraycopy(X, 0, rgb, 1, X.length);
-            rgb[0] = (byte) (2 + (oneKey.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
+            rgbKey = new byte[X.length + 1];
+            System.arraycopy(X, 0, rgbKey, 1, X.length);
+            rgbKey[0] = (byte) (2 + (oneKey.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
             org.bouncycastle.math.ec.ECPoint pubPoint;
-            pubPoint = p.getCurve().decodePoint(rgb);
+            pubPoint = p.getCurve().decodePoint(rgbKey);
             point = new ECPoint(point.getAffineX(), point.getAffineY());
         }
         else {
-            point = new ECPoint(new BigInteger(1, oneKey.get(KeyKeys.EC2_X).GetByteString()), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
+            rgbKey = new byte[X.length*2+1];
+            System.arraycopy(X, 0,rgbKey, 1, X.length);
+            byte[] Y = oneKey.get(KeyKeys.EC2_Y).GetByteString();
+            System.arraycopy(Y, 0, rgbKey, 1+X.length, X.length);
+            rgbKey[0] = 4;
+            point = new ECPoint(new BigInteger(1, X), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
         }
 
         /*
@@ -80,6 +93,12 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
         EllipticCurve crv = new EllipticCurve(field, p.getCurve().getA().toBigInteger(), p.getCurve().getB().toBigInteger());
         ECPoint pt = new ECPoint(p.getG().getRawXCoord().toBigInteger(), p.getG().getRawYCoord().toBigInteger());
         ecParameterSpec = new ECParameterSpec(crv, pt, p.getN(), p.getH().intValue());
+        
+        
+        AlgorithmIdentifier alg =  new AlgorithmIdentifier(org.bouncycastle.asn1.x9.X9Curve.id_ecPublicKey,  org.bouncycastle.asn1.nist.NISTNamedCurves.getOID("P-256"));
+        SubjectPublicKeyInfo spki = new SubjectPublicKeyInfo(alg, rgbKey);
+        spkiEncoded = spki.getEncoded();
+        
     }
     
     @Override
@@ -94,12 +113,12 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
 
     @Override
     public String getFormat() {
-        return null;
+        return "X.509";
     }
 
     @Override
     public byte[] getEncoded() {
-        return null;
+        return spkiEncoded;
     }
 
     @Override
