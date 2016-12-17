@@ -6,6 +6,7 @@
 package COSE;
 
 import com.upokecenter.cbor.*;
+import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import org.bouncycastle.asn1.nist.NISTNamedCurves;
@@ -223,7 +224,12 @@ public class OneKey {
     {
         if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
         {
-           return new ECPublicKey(this);
+            try {
+                return new ECPublicKey(this);
+            }
+            catch (IOException e) {
+                throw new CoseException("Internal Error encoding the key");
+            }
         }
         throw new CoseException("Cannot convert key as key type is not converted");
     }
@@ -238,7 +244,11 @@ public class OneKey {
     {
         if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
         {
-            return new ECPrivateKey(this);
+            try {
+                return new ECPrivateKey(this);
+            } catch (IOException ex) {
+                throw new CoseException("Internal error encoding the key");
+            }
         }
         throw new CoseException("Cannot convert key as key type is not converted");
     }

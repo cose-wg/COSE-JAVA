@@ -6,7 +6,7 @@
 
     <groupId>com.augustcellars.cose</groupId>
     <artifactId>cose-java</artifactId>
-    <version>0.9.4-snapshot</version>
+    <version>0.9.4</version>
 
     <name>com.augustcellars.cose:cose-java</name>
     <description>A Java implementation that supports the COSE secure message specification.</description>
@@ -98,6 +98,11 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.54</version>
+        </dependency>
+        <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpkix-jdk15on</artifactId>
+          <version>1.54</version>
         </dependency>
         <dependency>
             <groupId>com.upokecenter</groupId>
