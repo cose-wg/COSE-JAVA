@@ -160,7 +160,7 @@ public class Encrypt0MessageTest {
         msg.encrypt(rgbKey128);
         CBORObject cn = msg.EncodeCBORObject();
         
-        assert(!cn.isTrue());
+        assert(!cn.isTagged());
     }
     
     @Test
