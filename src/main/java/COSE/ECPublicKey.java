@@ -8,15 +8,12 @@ package COSE;
 import com.upokecenter.cbor.*;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.PublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
 import java.security.spec.ECField;
 import java.security.spec.ECFieldFp;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.eac.ECDSAPublicKey;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -89,13 +86,28 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
                           // there is no distinction between ECDH and ECDSA while there
                           // is for DSA vs DiffieHellman.
         
+        CBORObject curve = oneKey.get(KeyKeys.EC2_Curve);
+        ASN1ObjectIdentifier curveOID;
+        if (curve.equals(KeyKeys.EC2_P256)) {
+            curveOID = org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp256r1;
+        }
+        else if (curve.equals(KeyKeys.EC2_P384)) {
+        curveOID = org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp384r1;
+        }
+        else if (curve.equals(KeyKeys.EC2_P521)) {
+            curveOID =org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp521r1;
+        }
+        else {
+            throw new CoseException("Unrecognized Curve");
+        }
+        
         ECField field = new ECFieldFp(p.getCurve().getField().getCharacteristic());
         EllipticCurve crv = new EllipticCurve(field, p.getCurve().getA().toBigInteger(), p.getCurve().getB().toBigInteger());
         ECPoint pt = new ECPoint(p.getG().getRawXCoord().toBigInteger(), p.getG().getRawYCoord().toBigInteger());
         ecParameterSpec = new ECParameterSpec(crv, pt, p.getN(), p.getH().intValue());
         
         
-        AlgorithmIdentifier alg =  new AlgorithmIdentifier(org.bouncycastle.asn1.x9.X9Curve.id_ecPublicKey,  org.bouncycastle.asn1.nist.NISTNamedCurves.getOID("P-256"));
+        AlgorithmIdentifier alg =  new AlgorithmIdentifier(org.bouncycastle.asn1.x9.X9Curve.id_ecPublicKey,  curveOID);
         SubjectPublicKeyInfo spki = new SubjectPublicKeyInfo(alg, rgbKey);
         spkiEncoded = spki.getEncoded();
         
