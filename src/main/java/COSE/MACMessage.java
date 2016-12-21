@@ -25,7 +25,8 @@ public class MACMessage extends MacCommon {
         messageTag = MessageTag.MAC;
     }
  
-    public void addRecipient(Recipient recipient) {
+    public void addRecipient(Recipient recipient) throws CoseException {
+        if (recipient == null) throw new CoseException("Recipient is null");
         recipientList.add(recipient);
     }
 
