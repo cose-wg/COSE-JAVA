@@ -133,7 +133,7 @@ public class MAC0MessageTest {
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Invalid MAC structure");
+        thrown.expectMessage("Invalid MAC0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
         Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC0);        
@@ -148,7 +148,7 @@ public class MAC0MessageTest {
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Invalid MAC structure");
+        thrown.expectMessage("Invalid MAC0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
         Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC0);        
@@ -163,7 +163,7 @@ public class MAC0MessageTest {
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Invalid MAC structure");
+        thrown.expectMessage("Invalid MAC0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
         Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC0);        
@@ -178,7 +178,7 @@ public class MAC0MessageTest {
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Invalid MAC structure");
+        thrown.expectMessage("Invalid MAC0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
         Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC0);        
@@ -193,7 +193,7 @@ public class MAC0MessageTest {
         obj.Add(CBORObject.False);
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Invalid MAC structure");
+        thrown.expectMessage("Invalid MAC0 structure");
 
         byte[] rgb = obj.EncodeToBytes();
         Message msg = Message.DecodeFromBytes(rgb, MessageTag.MAC0);        

@@ -30,18 +30,18 @@ public class MAC0Message extends MacCommon {
             if (obj.get(0).GetByteString().length == 0) objProtected = CBORObject.NewMap();
             else objProtected = CBORObject.DecodeFromBytes(obj.get(0).GetByteString());
         }
-        else throw new CoseException("Invalid MAC structure");
+        else throw new CoseException("Invalid MAC0 structure");
         
         if (obj.get(1).getType() == CBORType.Map) {
             objUnprotected = obj.get(1);
         }
-        else throw new CoseException("Invalid MAC structure");
+        else throw new CoseException("Invalid MAC0 structure");
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbContent = obj.get(2).GetByteString();
-        else if (!obj.get(2).isNull()) throw new CoseException("Invalid MAC structure");
+        else if (!obj.get(2).isNull()) throw new CoseException("Invalid MAC0 structure");
         
         if (obj.get(3).getType() == CBORType.ByteString) rgbTag = obj.get(3).GetByteString();
-        else throw new CoseException("Invalid MAC structure");
+        else throw new CoseException("Invalid MAC0 structure");
     }   
  
     @Override
