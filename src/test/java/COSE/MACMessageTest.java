@@ -63,10 +63,14 @@ public class MACMessageTest {
      * Test of addRecipient method, of class MACMessage.
      */
     @Test
-    public void testAddRecipient() {
+    public void testAddRecipient() throws CoseException {
         System.out.println("addRecipient");
         Recipient recipient = null;
         MACMessage instance = new MACMessage();
+
+        thrown.expect(CoseException.class);
+        thrown.expectMessage("Recipient is null");
+
         instance.addRecipient(recipient);
     }
 
@@ -74,7 +78,7 @@ public class MACMessageTest {
      * Test of getRecipient method, of class MACMessage.
      */
     @Test
-    public void testGetRecipient_1args_1() {
+    public void testGetRecipient_1args_1() throws CoseException {
         System.out.println("getRecipient");
         int iRecipient = 0;
         MACMessage instance = new MACMessage();
@@ -85,7 +89,7 @@ public class MACMessageTest {
     }
 
     @Test
-    public void testGetRecipientCount() {
+    public void testGetRecipientCount() throws CoseException {
        MACMessage msg = new MACMessage();
        
        assertEquals(msg.getRecipientCount(), 0);
