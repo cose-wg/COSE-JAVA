@@ -34,7 +34,7 @@ public class Encrypt0Message extends EncryptCommon {
      * @param emitContent is the content emitted
      */
     public Encrypt0Message(boolean emitTag, boolean emitContent) {
-        context = "Encrypt1";
+        context = "Encrypt0";
         messageTag = MessageTag.Encrypt0;
         this.emitTag = emitTag;
         this.emitContent = emitContent;
