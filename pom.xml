@@ -6,7 +6,7 @@
 
     <groupId>com.augustcellars.cose</groupId>
     <artifactId>cose-java</artifactId>
-    <version>0.9.5-snapshot</version>
+    <version>0.9.6-snapshot</version>
 
     <name>com.augustcellars.cose:cose-java</name>
     <description>A Java implementation that supports the COSE secure message specification.</description>
