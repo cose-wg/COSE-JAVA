@@ -14,7 +14,7 @@ import com.upokecenter.cbor.CBORObject;
 public enum HeaderKeys {
     Algorithm(1),
     CONTENT_TYPE(3),
-    KID(2),
+    KID(4),
     IV(5),
     CriticalHeaders(2),
     CounterSignature(7),
