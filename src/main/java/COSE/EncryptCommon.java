@@ -13,11 +13,6 @@ import java.security.SecureRandom;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.engines.AESFastEngine;
-import org.bouncycastle.crypto.modes.CCMBlockCipher;
-import org.bouncycastle.crypto.params.AEADParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
  *
@@ -37,7 +32,7 @@ public abstract class EncryptCommon extends Message {
     protected byte[] rgbEncrypt;
     SecureRandom random = new SecureRandom();
     
-    protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+    protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException {
         CBORObject algX = findAttribute(HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
@@ -68,7 +63,7 @@ public abstract class EncryptCommon extends Message {
         return rgbContent;
     }
     
-    void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    void encryptWithKey(byte[] rgbKey) throws CoseException, IllegalStateException {
         CBORObject algX = findAttribute(HeaderKeys.Algorithm);
         AlgorithmID alg = AlgorithmID.FromCBOR(algX);
                 
@@ -113,8 +108,7 @@ public abstract class EncryptCommon extends Message {
         throw new CoseException("Unsupported algorithm: " + alg);
     }
     
-    private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException
-    {
+    private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
         // validate key
         if (rgbKey.length != alg.getKeySize()/8) {
             throw new CoseException("Key Size is incorrect");
@@ -152,8 +146,7 @@ public abstract class EncryptCommon extends Message {
     }
     
  
-    private void AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException
-    {
+    private void AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
         // validate key
         if (rgbKey.length != alg.getKeySize()/8) {
             throw new CoseException("Key Size is incorrect");
@@ -194,7 +187,7 @@ public abstract class EncryptCommon extends Message {
         }
     }
 
-    private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+    private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
         CBORObject      iv = findAttribute(HeaderKeys.IV);
 
         // validate key
@@ -236,7 +229,7 @@ public abstract class EncryptCommon extends Message {
         }
     }
 
-    private void AES_GCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    private void AES_GCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
         // validate key
         if (rgbKey.length != alg.getKeySize()/8) {
             throw new CoseException("Key Size is incorrect");
