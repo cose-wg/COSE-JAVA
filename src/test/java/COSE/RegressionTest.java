@@ -12,12 +12,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.Provider;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.*;
@@ -28,6 +33,17 @@ import org.junit.runners.Parameterized.*;
  */
 @RunWith(Parameterized.class)
 public class RegressionTest {
+    private static final Provider    pvdr = new BouncyCastleProvider();
+
+    @BeforeClass
+    public static void installProvider() throws Exception {
+        Security.insertProviderAt(pvdr, 1);
+    }
+    @AfterClass
+    public static void uninstallProvider() throws Exception {
+        Security.removeProvider(pvdr.getName());
+    }
+
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
