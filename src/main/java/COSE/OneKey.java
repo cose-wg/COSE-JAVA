@@ -215,7 +215,7 @@ public class OneKey {
             case ECDSA_512:
                 returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521);
                 break;
-                
+
             default:
                 throw new CoseException("Unknown algorithm");
         }
@@ -223,7 +223,57 @@ public class OneKey {
         returnThis.add(KeyKeys.Algorithm, algorithm.AsCBOR());
         return returnThis;
     }
+    static public OneKey generateKey(CBORObject curve) throws CoseException {
+        String curveName;
+        
+        switch (curve.AsInt32()) {
+            case 1:
+                curveName = "P-256";
+                break;
+            
+            case 2:
+                curveName = "P-384";
+                break;
+            
+            case 3:
+                curveName = "P-521";
+                break;
+
+            default:
+                throw new CoseException("Unkonwn curve");
+        }
+
+        OneKey returnThis = generateECDHKey(curveName, curve);
+        return returnThis;
+    }
     
+    static private OneKey generateECDHKey(String curveName, CBORObject curve) {
+        X9ECParameters p = NISTNamedCurves.getByName(curveName);
+        
+        ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+        ECKeyPairGenerator pGen = new ECKeyPairGenerator();
+        ECKeyGenerationParameters genParam = new ECKeyGenerationParameters(parameters, null);
+        pGen.init(genParam);
+
+        AsymmetricCipherKeyPair p1 = pGen.generateKeyPair();
+
+        ECPublicKeyParameters keyPublic = (ECPublicKeyParameters) p1.getPublic();
+        ECPrivateKeyParameters keyPrivate = (ECPrivateKeyParameters) p1.getPrivate();
+
+        byte[] rgbX = keyPublic.getQ().normalize().getXCoord().getEncoded();
+        byte[] rgbY = keyPublic.getQ().normalize().getYCoord().getEncoded();
+        byte[] rgbD = keyPrivate.getD().toByteArray();
+
+        OneKey key = new OneKey();
+
+        key.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);
+        key.add(KeyKeys.EC2_Curve, curve);
+        key.add(KeyKeys.EC2_X, CBORObject.FromObject(rgbX));
+        key.add(KeyKeys.EC2_Y, CBORObject.FromObject(rgbY));
+        key.add(KeyKeys.EC2_D, CBORObject.FromObject(rgbD));
+
+        return key;
+    }
     static private OneKey generateECDSAKey(String curveName, CBORObject curve) {                
         X9ECParameters p = NISTNamedCurves.getByName(curveName);
         

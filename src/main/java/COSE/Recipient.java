@@ -13,20 +13,10 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.engines.AESWrapEngine;
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.util.BigIntegers;
 
 /**
  * 
@@ -86,7 +76,7 @@ public class Recipient extends Message {
         return obj;
     }
     
-    public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException, InvalidCipherTextException {
+    public byte[] decrypt(AlgorithmID algCEK, Recipient recip) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
         
@@ -224,7 +214,7 @@ public class Recipient extends Message {
                 
             case ECDH_ES_HKDF_256_AES_KW_128:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                ECDH_GenerateEphemeral();
+                ECDH_GenEphemeral();
                 rgbKey = ECDH_GenSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 128, AlgorithmID.AES_KW_128, "SHA256");
                 rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_128, rgbKey);
@@ -245,7 +235,7 @@ public class Recipient extends Message {
                                 
             case ECDH_ES_HKDF_256_AES_KW_192:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                ECDH_GenerateEphemeral();
+                ECDH_GenEphemeral();
                 rgbKey = ECDH_GenSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 192, AlgorithmID.AES_KW_192, "SHA256");
                 rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_192, rgbKey);
@@ -266,7 +256,7 @@ public class Recipient extends Message {
 
             case ECDH_ES_HKDF_256_AES_KW_256:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                ECDH_GenerateEphemeral();
+                ECDH_GenEphemeral();
                 rgbKey = ECDH_GenSecret(privateKey);
                 rgbKey = HKDF(rgbKey, 256, AlgorithmID.AES_KW_256, "SHA256");
                 rgbEncrypted = AES_KeyWrap_Encrypt(AlgorithmID.AES_KW_256, rgbKey);
@@ -352,13 +342,13 @@ public class Recipient extends Message {
                 
             case ECDH_ES_HKDF_256:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                ECDH_GenerateEphemeral();
+                ECDH_GenEphemeral();
                 rgbSecret = ECDH_GenSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, "SHA256");
                 
             case ECDH_ES_HKDF_512:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
-                ECDH_GenerateEphemeral();
+                ECDH_GenEphemeral();
                 rgbSecret = ECDH_GenSecret(privateKey);
                 return HKDF(rgbSecret, algCEK.getKeySize(), algCEK, "SHA512");
                 
@@ -431,54 +421,40 @@ public class Recipient extends Message {
     {
         if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is not the correct size");
 
-        AESWrapEngine foo = new AESWrapEngine();
-        KeyParameter parameters = new KeyParameter(rgbKey);
-        foo.init(true, parameters);
-        return foo.wrap(rgbContent, 0, rgbContent.length);
+        try {
+            Cipher  cipher = Cipher.getInstance("AESWrap");
+            cipher.init(Cipher.WRAP_MODE, new SecretKeySpec(rgbKey, "AESWrap"));
+            return cipher.wrap(new SecretKeySpec(rgbContent, "AES"));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new CoseException("Algorithm not supported", ex);
+        } catch (Exception ex) {
+            throw new CoseException("Key Wrap failure", ex);
+        }
     }
     
-    private byte[] AES_KeyWrap_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, InvalidCipherTextException
+    private byte[] AES_KeyWrap_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException
     {
         if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is not the correct size");
 
-        AESWrapEngine foo = new AESWrapEngine();
-        KeyParameter parameters = new KeyParameter(rgbKey);
-        foo.init(false, parameters);
-        return foo.unwrap(rgbEncrypted, 0, rgbEncrypted.length);
+        try {
+            Cipher cipher = Cipher.getInstance("AESWrap");
+            cipher.init(Cipher.UNWRAP_MODE, new SecretKeySpec(rgbKey, "AESWrap"));
+            return ((SecretKeySpec)cipher.unwrap(rgbEncrypted, "AES", Cipher.SECRET_KEY)).getEncoded();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new CoseException("Algorithm not supported", ex);
+        } catch (Exception ex) {
+            throw new CoseException("Key Unwrap failure", ex);
+        }
     }
     
-    
-    private void ECDH_GenerateEphemeral() throws CoseException
-    {
-        X9ECParameters p = privateKey.GetCurve();
-        ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-
-        ECKeyPairGenerator pGen = new ECKeyPairGenerator();
-        ECKeyGenerationParameters genParam = new ECKeyGenerationParameters(parameters, null);
-        pGen.init(genParam);
-
-        AsymmetricCipherKeyPair p1 = pGen.generateKeyPair();
-
-        CBORObject epk = CBORObject.NewMap();
-        epk.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-        epk.Add(KeyKeys.EC2_Curve.AsCBOR(), privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
-        ECPublicKeyParameters priv = (ECPublicKeyParameters) p1.getPublic();
-
-        byte[] rgbEncoded = priv.getQ().normalize().getEncoded(true);
-        byte[] X = new byte[rgbEncoded.length - 1];
-        System.arraycopy(rgbEncoded, 1, X, 0, X.length);
-        epk.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(X));
-        epk.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
+    private void ECDH_GenEphemeral() throws CoseException {
+        OneKey  secretKey = OneKey.generateKey(privateKey.get(KeyKeys.EC2_Curve));
+        
+        // pack into EPK header
+        CBORObject  epk = secretKey.PublicKey().AsCBOR();
         addAttribute(HeaderKeys.ECDH_EPK, epk, Attribute.UNPROTECTED);
         
-        OneKey secretKey = new OneKey();
-        secretKey.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);
-        secretKey.add(KeyKeys.EC2_Curve, privateKey.get(KeyKeys.EC2_Curve.AsCBOR()));
-        secretKey.add(KeyKeys.EC2_X, CBORObject.FromObject(X));
-        secretKey.add(KeyKeys.EC2_Y, CBORObject.FromObject((rgbEncoded[0] & 1) == 1));
-        ECPrivateKeyParameters priv1 = (ECPrivateKeyParameters) p1.getPrivate();
-        secretKey.add(KeyKeys.EC2_D, CBORObject.FromObject(BigIntegers.asUnsignedByteArray( priv1.getD())));
-        
+        // apply as senderKey
         senderKey = secretKey;
     }
     
