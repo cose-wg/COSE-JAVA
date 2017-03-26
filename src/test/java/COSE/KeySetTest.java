@@ -1,5 +1,5 @@
-package COSE;
 
+package COSE;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -8,10 +8,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class KeySetTest {
-  
+
   /**
    * Test of stream method of class KeySet.
-   * @throws CoseException 
+   * 
+   * @throws CoseException
    */
   @Test
   public void testStream() throws CoseException {
@@ -20,18 +21,25 @@ public class KeySetTest {
     ks.add(ecdsa_256);
     ks.add(OneKey.generateKey(AlgorithmID.ECDSA_512));
 
-    List<OneKey> filteredKeys = ks.stream()
-        .filter(k-> k.HasAlgorithmID(AlgorithmID.ECDSA_256))
-        .collect(Collectors.toList());
+    KeySet newKeys = ks.stream()
+        .filter(k -> k.HasAlgorithmID(AlgorithmID.ECDSA_256))
+        .collect(new KeySetCollector());
+    List<OneKey> filteredKeys = newKeys.getList();
     Assert.assertEquals(1, filteredKeys.size());
     Assert.assertEquals(ecdsa_256, filteredKeys.get(0));
 
-    // Do something like the following
-    filteredKeys = ks.stream()
+    newKeys = ks.stream()
         .filter(k -> AlgorithmID.ECDSA_256.AsCBOR().equals(k.get(KeyKeys.Algorithm)))
-        .collect(Collectors.toList());
+        .collect(new KeySetCollector());
+    filteredKeys = newKeys.getList();
     Assert.assertEquals(1, filteredKeys.size());
     Assert.assertEquals(ecdsa_256, filteredKeys.get(0));
+
+    newKeys = ks.stream()
+        .filter(k -> k.HasAlgorithmID(AlgorithmID.ECDSA_384))
+        .collect(new KeySetCollector());
+    filteredKeys = newKeys.getList();
+    Assert.assertEquals(0, filteredKeys.size());
   }
 
 }
