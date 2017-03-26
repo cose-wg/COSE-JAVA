@@ -45,7 +45,7 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
             System.arraycopy(X, 0, rgb, 1, X.length);
             rgb[0] = (byte) (2 + (oneKey.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
             pubPoint = p.getCurve().decodePoint(rgb);
-            point = new ECPoint(point.getAffineX(), point.getAffineY());
+            point = new ECPoint(pubPoint.getAffineXCoord().toBigInteger(), pubPoint.getAffineYCoord().toBigInteger());
         }
         else {
             point = new ECPoint(new BigInteger(1, oneKey.get(KeyKeys.EC2_X).GetByteString()), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
