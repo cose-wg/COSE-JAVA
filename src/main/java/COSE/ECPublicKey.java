@@ -31,7 +31,7 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
     public ECPublicKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
-        byte [] rgbKey;
+        byte[] rgbKey;
         byte[] X = oneKey.get(KeyKeys.EC2_X).GetByteString();
         
         if (oneKey.get(KeyKeys.EC2_Y).getType()== CBORType.Boolean) {

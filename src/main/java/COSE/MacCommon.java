@@ -6,8 +6,6 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
-import java.util.ArrayList;
-import java.util.List;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.Mac;

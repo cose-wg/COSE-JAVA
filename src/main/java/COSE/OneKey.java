@@ -8,6 +8,7 @@ package COSE;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import org.bouncycastle.asn1.nist.NISTNamedCurves;
@@ -30,6 +31,8 @@ import java.security.PublicKey;
 public class OneKey {
 
     protected CBORObject keyMap;
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
     
     public OneKey() {
         keyMap = CBORObject.NewMap();
@@ -168,27 +171,49 @@ public class OneKey {
             if ((val== null) || (val.getType() != CBORType.ByteString)) throw new CoseException("Malformed key structure");
         }
         else if (val.equals(KeyKeys.KeyType_EC2)) {
-            boolean privateKey = false;
-            
-            val = OneKey.this.get(KeyKeys.EC2_D);
-            if (val != null) {
-                if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
-                privateKey = true;
-            }
-            
-            val = OneKey.this.get(KeyKeys.EC2_X);
-            if (val == null) {
-                if (!privateKey) throw new CoseException("Malformed key structure");
-            }
-            else if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
-            
-            val = OneKey.this.get(KeyKeys.EC2_Y);
-            if (val == null) {
-                if (!privateKey) throw new CoseException("Malformed key structure");
-            }
-            else if ((val.getType() != CBORType.ByteString) && (val.getType() != CBORType.Boolean)) throw new CoseException("Malformed key structure");
+            CheckECKey();
         }
         else throw new CoseException("Unsupported key type");
+    }
+    private void CheckECKey() throws CoseException {
+        X9ECParameters          curve = GetCurve();
+        ECDomainParameters      params = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+        boolean                 needPublic = false;
+        ECPrivateKeyParameters  privKey = null;
+        ECPublicKeyParameters   pubKey = null;
+        CBORObject              val;
+
+        val = OneKey.this.get(KeyKeys.EC2_D);
+        if (val != null) {
+            if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+            privKey = new ECPrivateKeyParameters(new BigInteger(1, val.GetByteString()),
+                                                    params);
+        }
+
+        val = OneKey.this.get(KeyKeys.EC2_X);
+        if (val == null) {
+            if (privKey == null) throw new CoseException("Malformed key structure");
+            else needPublic = true;
+        }
+        else if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+
+        val = OneKey.this.get(KeyKeys.EC2_Y);
+        if (val == null) {
+            if (privKey == null) throw new CoseException("Malformed key structure");
+            else needPublic = true;
+        }
+        else if ((val.getType() != CBORType.ByteString) && (val.getType() != CBORType.Boolean)) throw new CoseException("Malformed key structure");
+
+        if (privKey != null && needPublic) {
+            // todo: calculate (and populate) public from private
+            pubKey = new ECPublicKeyParameters(params.getG().multiply(privKey.getD()), params);
+            byte[] rgbX = pubKey.getQ().normalize().getXCoord().getEncoded();
+            byte[] rgbY = pubKey.getQ().normalize().getYCoord().getEncoded();
+            add(KeyKeys.EC2_X, CBORObject.FromObject(rgbX));
+            add(KeyKeys.EC2_Y, CBORObject.FromObject(rgbY));
+        } else {
+            // todo: validate public on curve
+        }
     }
 
     public X9ECParameters GetCurve() throws CoseException {    
@@ -374,16 +399,19 @@ public class OneKey {
      */
     public PublicKey AsPublicKey() throws CoseException
     {
-        if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
-        {
-            try {
-                return new ECPublicKey(this);
+        if (publicKey == null) {
+            if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
+            {
+                try {
+                    publicKey = new ECPublicKey(this);
+                }
+                catch (IOException e) {
+                    throw new CoseException("Internal Error encoding the key");
+                }
             }
-            catch (IOException e) {
-                throw new CoseException("Internal Error encoding the key");
-            }
+            else throw new CoseException("Cannot convert key as key type is not converted");
         }
-        throw new CoseException("Cannot convert key as key type is not converted");
+        return publicKey;
     }
     
     /**
@@ -394,15 +422,18 @@ public class OneKey {
      */
     public PrivateKey AsPrivateKey() throws CoseException
     {
-        if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
-        {
-            try {
-                return new ECPrivateKey(this);
-            } catch (IOException ex) {
-                throw new CoseException("Internal error encoding the key");
+        if (privateKey == null) {
+            if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
+            {
+                try {
+                    privateKey = new ECPrivateKey(this);
+                } catch (IOException ex) {
+                    throw new CoseException("Internal error encoding the key");
+                }
             }
+            else throw new CoseException("Cannot convert key as key type is not converted");
         }
-        throw new CoseException("Cannot convert key as key type is not converted");
+        return privateKey;
     }
     
     private Object UserData;

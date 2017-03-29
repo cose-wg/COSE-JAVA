@@ -10,7 +10,6 @@ import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
 import java.util.List;
 import org.bouncycastle.crypto.InvalidCipherTextException;
-import static org.bouncycastle.math.raw.Mod.random;
 
 /**
  *
