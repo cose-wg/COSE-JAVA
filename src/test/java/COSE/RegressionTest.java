@@ -46,7 +46,7 @@ public class RegressionTest {
             "Examples/mac0-tests",
             "Examples/sign-tests",
             "Examples/sign1-tests",
-            "Examples/spec-examples",
+            "Examples/RC8152",
            });
     }
 
