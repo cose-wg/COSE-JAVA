@@ -5,9 +5,11 @@
  */
 package COSE;
 
-import com.upokecenter.cbor.*;
+import com.upokecenter.cbor.CBORObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
+
 /**
  *
  * @author jimsch
@@ -18,6 +20,7 @@ public class KeySet {
     public KeySet() {
         keys = new ArrayList<OneKey>();
     }
+
     
     public KeySet(CBORObject keysIn) {
         keys = new ArrayList<OneKey>();
@@ -43,5 +46,13 @@ public class KeySet {
     
     public void remove(OneKey key) {
         keys.remove(key);
+    }
+    
+    public Stream<OneKey> stream() {
+        return keys.stream();
+    }
+    
+    public Stream<OneKey> parallelStream() {
+        return keys.parallelStream();
     }
 }
