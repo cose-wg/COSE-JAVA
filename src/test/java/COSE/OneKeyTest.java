@@ -13,6 +13,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
@@ -21,6 +23,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Assert;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
@@ -227,12 +230,65 @@ public class OneKeyTest {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(rgbPrivate);
         PrivateKey pubKey = (PrivateKey) kFactory.generatePrivate(spec);
     }
-    
+
+    @Test
+    public void testHasAlgorithmID_null() {
+        OneKey key = new OneKey();
+        Assert.assertTrue(key.HasAlgorithmID(null));
+        Assert.assertFalse(key.HasAlgorithmID(AlgorithmID.ECDSA_384));
+    }
+
+    @Test
+    public void testHasAlgorithmID_value() throws CoseException {
+        OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+        Assert.assertTrue(key.HasAlgorithmID(AlgorithmID.ECDSA_256));
+        Assert.assertFalse(key.HasAlgorithmID(AlgorithmID.ECDSA_384));
+    }
+
+    @Test
+    public void testHasKeyID_null() {
+        OneKey key = new OneKey();
+        Assert.assertTrue(key.HasKeyID(null));
+    }
+
+    @Test
+    public void testHasKeyID_value() {
+        String idStr = "testId";
+        OneKey key = new OneKey();
+        CBORObject id = CBORObject.FromObject(idStr);
+        key.add(KeyKeys.KeyId, id);
+        Assert.assertTrue(key.HasKeyID(idStr));
+    }
+
+    @Test
+    public void testHasKeyOp_null() {
+        OneKey key = new OneKey();
+        Assert.assertTrue(key.HasKeyOp(null));
+    }
+
+    @Test
+    public void testHasKeyOp_value() {
+        OneKey key = new OneKey();
+        key.add(KeyKeys.Key_Ops, CBORObject.FromObject(2));
+        Assert.assertTrue(key.HasKeyOp(2));
+    }
+
+    @Test
+    public void testHasKeyType_null() {
+        OneKey key = new OneKey();
+        Assert.assertTrue(key.HasKeyType(null));
+    }
+
+    @Test
+    public void testHasKeyType_value() throws CoseException {
+        OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+        Assert.assertTrue(key.HasKeyType(KeyKeys.KeyType_EC2));
+    }
+     
     static String byteArrayToHex(byte[] a) {
        StringBuilder sb = new StringBuilder(a.length * 2);
-   for(byte b: a)
-      sb.append(String.format("%02x", b & 0xff));
-   return sb.toString();
+        for(byte b: a)
+            sb.append(String.format("%02x", b & 0xff));
+        return sb.toString();
     }
-    
 }

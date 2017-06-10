@@ -5,7 +5,8 @@
  */
 package COSE;
 
-import com.upokecenter.cbor.*;
+import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -17,6 +18,10 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+
+import java.io.IOException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
  *
@@ -53,7 +58,104 @@ public class OneKey {
         if ((keyValue.getType() != CBORType.Number) && (keyValue.getType() != CBORType.TextString)) throw new CoseException("keyValue type is incorrect");
         return keyMap.get(keyValue);
     }
-    
+ 
+    /**
+     * Compares the key's assigned algorithm with the provided value, indicating if the values are the
+     * same.
+     * 
+     * @param algorithmId
+     *          the algorithm to compare or {@code null} to check for no assignment.
+     * @return {@code true} if the current key has the provided algorithm assigned, or {@code false}
+     *         otherwise
+     */
+    public boolean HasAlgorithmID(AlgorithmID algorithmId) {
+        CBORObject thisObj = get(KeyKeys.Algorithm);
+        CBORObject thatObj = (algorithmId == null ? null : algorithmId.AsCBOR());
+        boolean result;
+
+        if (thatObj == null) {
+            result = (thisObj == null);
+        } else {
+            result = thatObj.equals(thisObj);
+        }
+        return result;
+    }
+
+    /**
+     * Compares the key's assigned identifier with the provided value, indicating if the values are
+     * the same.
+     * 
+     * @param id
+     *          the identifier to compare or {@code null} to check for no assignment.
+     * @return {@code true} if the current key has the provided identifier assigned, or {@code false}
+     *         otherwise
+     */
+    public boolean HasKeyID(String id) {
+        CBORObject thatObj = (id == null) ? null : CBORObject.FromObject(id);
+        CBORObject thisObj = get(KeyKeys.KeyId);
+        boolean result;
+        if (thatObj == null) {
+            result = (thisObj == null);
+        } else {
+            result = thatObj.equals(thisObj);
+        }    
+        return result;
+    }
+
+    /**
+    * Compares the key's assigned key type with the provided value, indicating if the values are the
+    * same.
+    * 
+    * @param keyTypeObj
+    *          the key type to compare or {@code null} to check for no assignment.
+    * @return {@code true} if the current key has the provided identifier assigned, or {@code false}
+    *         otherwise
+    */
+    public boolean HasKeyType(CBORObject keyTypeObj) {
+        CBORObject thatObj = keyTypeObj;
+        CBORObject thisObj = get(KeyKeys.KeyType);
+        boolean result;
+        if (thatObj == null) {
+            result = (thisObj == null);
+        } else {
+            result = thatObj.equals(thisObj);
+        }
+        return result;
+    }
+  
+    /**
+     * Compares the key's assigned key operations with the provided value, indicating if the provided
+     * value was found in the key operation values assigned to the key.
+     * 
+     * @param that
+     *          the integer operation value to attempt to find in the values provided by the key or
+     *          {@code null} to check for no assignment.
+     * @return {@code true} if the current key has the provided value assigned, or {@code false}
+     *         otherwise
+     */
+    public boolean HasKeyOp(Integer that) {
+        CBORObject thisObj = get(KeyKeys.Key_Ops);
+        boolean result;
+        if (that == null) {
+            result = (thisObj == null);
+        } else {
+            result = false;
+            if (thisObj.getType() == CBORType.Number) {
+                if (thisObj.AsInt32() == that) {
+                    result = true;
+                }
+            } else if (thisObj.getType() == CBORType.Array) {
+                for (int i = 0; i < thisObj.size(); i++) {
+                    if ((thisObj.get(i).getType() == CBORType.Number) && (thisObj.get(i).AsInt32() == that)) {
+                        result = true;
+                        break;
+                    }
+               }
+            }
+        }
+        return result;
+    }
+
     private void CheckKeyState() throws CoseException {
         CBORObject val;
         
