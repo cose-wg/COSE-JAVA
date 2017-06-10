@@ -345,7 +345,8 @@ public class Recipient extends Message {
             case AES_KW_128:
             case AES_KW_192:
             case AES_KW_256:
-                throw new Exception("Internal Error");
+                if (!privateKey.HasKeyType(KeyKeys.KeyType_Octet)) throw new CoseException("Key and algorithm do not agree");
+                return privateKey.get(KeyKeys.Octet_K).GetByteString();
                 
             case ECDH_ES_HKDF_256:
                 if (privateKey.get(KeyKeys.KeyType.AsCBOR()) != KeyKeys.KeyType_EC2) throw new CoseException("Key and algorithm do not agree");
