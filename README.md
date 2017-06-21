@@ -28,7 +28,7 @@ Still need to figure this out.
 
 ## Contributing
 
-Go ahead, file issues, make pull requests.  There is an automated build process that will both build and run the test suites on any requests.  These will need to pass, or have solid documentation about why they donot pass, before any pull request will be merged.
+Go ahead, file issues, make pull requests.  There is an automated build process that will both build and run the test suites on any requests.  These will need to pass, or have solid documentation about why they do not pass, before any pull request will be merged.
 
 ## Building
 
