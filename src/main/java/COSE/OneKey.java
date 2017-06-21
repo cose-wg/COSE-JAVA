@@ -354,4 +354,28 @@ public class OneKey {
         }
         throw new CoseException("Cannot convert key as key type is not converted");
     }
+    
+    private Object UserData;
+    
+    /**
+     * Return the user data field.
+     * 
+     * The user data object allows for an application to associate a piece of arbitrary
+     * data with a key and retrieve it later.  
+     * @return
+     */
+    public Object getUserData() {
+        return UserData;
+    }
+    
+    /**
+     * Set the user data field.
+     * 
+     * The user data field allows for an application to associate a piece of arbitrary
+     * data with a key and retrieve it later.
+     * @param newData Data field to be saved.
+     */
+    public void setUserData(Object newData) {
+        UserData = newData;
+    }
 }
