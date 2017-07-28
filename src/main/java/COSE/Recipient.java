@@ -163,7 +163,7 @@ public class Recipient extends Message {
         }
     }
     
-    public void encrypt() throws CoseException, Exception {
+    public void encrypt() throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
         SecureRandom random;
@@ -329,7 +329,7 @@ public class Recipient extends Message {
         }
     }
     
-    public byte[] getKey(AlgorithmID algCEK) throws CoseException, Exception {
+    public byte[] getKey(AlgorithmID algCEK) throws CoseException {
         byte[] rgbSecret;
         SecureRandom random;
         

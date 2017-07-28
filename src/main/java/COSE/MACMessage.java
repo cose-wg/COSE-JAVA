@@ -123,7 +123,7 @@ public class MACMessage extends MacCommon {
         throw new CoseException("Usable recipient not found");
     }
     
-    public void Create() throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+    public void Create() throws CoseException, IllegalStateException, InvalidCipherTextException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
 

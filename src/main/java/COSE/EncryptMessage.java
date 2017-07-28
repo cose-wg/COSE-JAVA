@@ -63,10 +63,10 @@ public class EncryptMessage extends EncryptCommon {
         return super.decryptWithKey(rgbKey);
     }
     
-    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
-
+   
         int recipientTypes = 0;
         
         if (recipientList.isEmpty()) throw new CoseException("No recipients supplied");
