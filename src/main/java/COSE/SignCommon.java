@@ -244,6 +244,7 @@ public abstract class SignCommon extends Message {
         }
     }
     
+    @Deprecated
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, CipherParameters key) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
