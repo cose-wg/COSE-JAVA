@@ -22,15 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.*;
 
-/**
- *
- * @author jimsch
- */
-@RunWith(Parameterized.class)
-public class RegressionTest extends TestBase {
-    @Parameters(name = "{index}: {0})")
-    public static Collection<Object> data() {
-        return Arrays.asList(new Object[] {
+/*
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
@@ -47,6 +39,20 @@ public class RegressionTest extends TestBase {
             "Examples/sign-tests",
             "Examples/sign1-tests",
             "Examples/RFC8152",
+            "Examples/spec-examples",
+
+*/
+
+/**
+ *
+ * @author jimsch
+ */
+@RunWith(Parameterized.class)
+public class RegressionTest extends TestBase {
+    @Parameters(name = "{index}: {0})")
+    public static Collection<Object> data() {
+        return Arrays.asList(new Object[] {
+            "Examples/cbc-mac-examples",
            });
     }
 

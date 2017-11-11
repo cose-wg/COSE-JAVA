@@ -6,17 +6,13 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
-import org.bouncycastle.crypto.BlockCipher;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.Mac;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.digests.SHA384Digest;
-import org.bouncycastle.crypto.digests.SHA512Digest;
-import org.bouncycastle.crypto.macs.HMac;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.engines.AESFastEngine;
-import org.bouncycastle.crypto.macs.CBCBlockCipherMac;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 
 /**
@@ -48,10 +44,13 @@ public abstract class MacCommon extends Message {
                 break;
                 
             case AES_CBC_MAC_128_64:
-            case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_64:
+                rgbTag = AES_CBC_MAC(alg, rgbKey, 8);
+                break;
+
+            case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_128:
-                rgbTag = AES_CBC_MAC(alg, rgbKey);
+                rgbTag = AES_CBC_MAC(alg, rgbKey, 16);
                 break;
 
             default:
@@ -76,10 +75,13 @@ public abstract class MacCommon extends Message {
                 break;
                 
             case AES_CBC_MAC_128_64:
-            case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_64:
+                rgbTest = AES_CBC_MAC(alg, rgbKey, 8);
+                break;
+
+            case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_128:
-                rgbTest = AES_CBC_MAC(alg, rgbKey);
+                rgbTest = AES_CBC_MAC(alg, rgbKey, 16);
                 break;
                 
             default:
@@ -111,58 +113,47 @@ public abstract class MacCommon extends Message {
         return obj.EncodeToBytes();
     }
     
-    protected byte[] AES_CBC_MAC(AlgorithmID alg, byte[] rgbKey) throws CoseException
+    protected byte[] AES_CBC_MAC(AlgorithmID alg, byte[] rgbKey, int tagLen) throws CoseException
     {
-        BlockCipher aes = new AESFastEngine();
-
-        KeyParameter ContentKey;
+        if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is incorrectly sized");
 
         //  The requirements from spec
         //  IV is 128 bits of zeros
         //  key sizes are 128, 192 and 256 bits
         //  Authentication tag sizes are 64 and 128 bits
-
         byte[] IV = new byte[128 / 8];
 
-        Mac mac = new CBCBlockCipherMac(aes, alg.getTagSize(), null);
-
-        if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is incorrectly sized");
-        ContentKey = new KeyParameter(rgbKey);
-
-        //  Build the text to be digested
-
-        mac.init(ContentKey);
-
-        byte[] toDigest = BuildContentBytes();
-
-        byte[] C = new byte[128 / 8];
-        mac.update(toDigest, 0, toDigest.length);
-        mac.doFinal(C, 0);
-
-        byte[] rgbResult = new byte[alg.getTagSize() / 8];
-        System.arraycopy(C, 0, rgbResult, 0, alg.getTagSize() / 8);
-
-        return rgbResult;
+        try {
+            Cipher cbcmac = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cbcmac.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(rgbKey, "AES"),
+                        new IvParameterSpec(IV));
+            byte[] val = BuildContentBytes();
+            val = cbcmac.doFinal(val);
+            int blocksize = cbcmac.getBlockSize();
+            val = Arrays.copyOfRange(val, val.length - blocksize, val.length - (blocksize - tagLen));
+            return val;
+        } catch (NoSuchAlgorithmException ex) {
+            throw new CoseException("Algorithm not supported", ex);
+        } catch (Exception ex) {
+            throw new CoseException("Mac failure", ex);
+        }
     }
     
     private byte[] HMAC(AlgorithmID alg, byte[] rgbKey) throws CoseException {
-        Digest digest;
+        String          algStr;
         
         switch (alg) {
             case HMAC_SHA_256_64:
-                digest = new SHA256Digest();
-                break;
-                
             case HMAC_SHA_256:
-                digest = new SHA256Digest();
+                algStr = "HmacSHA256";
                 break;
                 
             case HMAC_SHA_384:
-                digest = new SHA384Digest();
+                algStr = "HmacSHA384";
                 break;
                 
             case HMAC_SHA_512:
-                digest = new SHA512Digest();
+                algStr = "HmacSHA512";
                 break;
                 
             default:
@@ -171,18 +162,16 @@ public abstract class MacCommon extends Message {
         
         if (rgbKey.length != alg.getKeySize()/8) throw new CoseException("Key is incorrect size");
         
-        HMac hmac = new HMac(digest);
-        KeyParameter key = new KeyParameter(rgbKey);
-        byte[] toDigest = BuildContentBytes();
-
-        byte[] resBuf = new byte[hmac.getMacSize()];
-
-        hmac.init(key);
-        hmac.update(toDigest, 0, toDigest.length);
-        hmac.doFinal(resBuf, 0);
-
-        byte[] returnVal = new byte[alg.getTagSize()/8];
-        System.arraycopy(resBuf, 0, returnVal, 0, alg.getTagSize()/8);
-        return returnVal;
+        try {
+            Mac hmac = Mac.getInstance(algStr);
+            hmac.init(new SecretKeySpec(rgbKey, algStr));
+            byte[] val = BuildContentBytes();
+            val = hmac.doFinal(val);
+            return val;
+        } catch (NoSuchAlgorithmException ex) {
+            throw new CoseException("Algorithm not supported", ex);
+        } catch (Exception ex) {
+            throw new CoseException("Mac failure", ex);
+        }
     }
 }
