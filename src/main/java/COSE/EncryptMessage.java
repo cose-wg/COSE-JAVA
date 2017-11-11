@@ -62,7 +62,7 @@ public class EncryptMessage extends EncryptCommon {
         return super.decryptWithKey(rgbKey);
     }
     
-    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void encrypt() throws CoseException, IllegalStateException, Exception {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
    

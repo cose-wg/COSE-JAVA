@@ -6,9 +6,11 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
+import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Formatter;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
@@ -45,12 +47,9 @@ public abstract class MacCommon extends Message {
                 
             case AES_CBC_MAC_128_64:
             case AES_CBC_MAC_256_64:
-                rgbTag = AES_CBC_MAC(alg, rgbKey, 8);
-                break;
-
             case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_128:
-                rgbTag = AES_CBC_MAC(alg, rgbKey, 16);
+                rgbTag = AES_CBC_MAC(alg, rgbKey);
                 break;
 
             default:
@@ -76,12 +75,9 @@ public abstract class MacCommon extends Message {
                 
             case AES_CBC_MAC_128_64:
             case AES_CBC_MAC_256_64:
-                rgbTest = AES_CBC_MAC(alg, rgbKey, 8);
-                break;
-
             case AES_CBC_MAC_128_128:
             case AES_CBC_MAC_256_128:
-                rgbTest = AES_CBC_MAC(alg, rgbKey, 16);
+                rgbTest = AES_CBC_MAC(alg, rgbKey);
                 break;
                 
             default:
@@ -113,7 +109,7 @@ public abstract class MacCommon extends Message {
         return obj.EncodeToBytes();
     }
     
-    protected byte[] AES_CBC_MAC(AlgorithmID alg, byte[] rgbKey, int tagLen) throws CoseException
+    protected byte[] AES_CBC_MAC(AlgorithmID alg, byte[] rgbKey) throws CoseException
     {
         if (rgbKey.length != alg.getKeySize() / 8) throw new CoseException("Key is incorrectly sized");
 
@@ -124,13 +120,28 @@ public abstract class MacCommon extends Message {
         byte[] IV = new byte[128 / 8];
 
         try {
-            Cipher cbcmac = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            Cipher cbcmac = Cipher.getInstance("AES/CBC/NoPadding");
             cbcmac.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(rgbKey, "AES"),
                         new IvParameterSpec(IV));
             byte[] val = BuildContentBytes();
-            val = cbcmac.doFinal(val);
-            int blocksize = cbcmac.getBlockSize();
-            val = Arrays.copyOfRange(val, val.length - blocksize, val.length - (blocksize - tagLen));
+            int blockLen = cbcmac.getBlockSize();
+            int tagLen = alg.getTagSize() / 8;
+
+            int dataLen = val.length,
+                dataPad = 16 - (val.length % 16);
+            if (dataPad != 16) {
+                dataLen += dataPad;
+            }
+            ByteBuffer input = ByteBuffer.allocate(dataLen);
+            input.put(val);
+            input.put(IV, 0, input.remaining());
+            input.flip();
+
+            ByteBuffer output = ByteBuffer.allocate(dataLen);
+            cbcmac.doFinal(input, output);
+            val = new byte[alg.getTagSize() / 8];
+            output.position(output.limit() - blockLen);
+            output.get(val);
             return val;
         } catch (NoSuchAlgorithmException ex) {
             throw new CoseException("Algorithm not supported", ex);
@@ -167,6 +178,7 @@ public abstract class MacCommon extends Message {
             hmac.init(new SecretKeySpec(rgbKey, algStr));
             byte[] val = BuildContentBytes();
             val = hmac.doFinal(val);
+            val = Arrays.copyOfRange(val, 0, alg.getTagSize() / 8);
             return val;
         } catch (NoSuchAlgorithmException ex) {
             throw new CoseException("Algorithm not supported", ex);

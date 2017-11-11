@@ -22,7 +22,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.*;
 
-/*
+/**
+ *
+ * @author jimsch
+ */
+@RunWith(Parameterized.class)
+public class RegressionTest extends TestBase {
+    @Parameters(name = "{index}: {0})")
+    public static Collection<Object> data() {
+        return Arrays.asList(new Object[] {
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
@@ -39,20 +47,6 @@ import org.junit.runners.Parameterized.*;
             "Examples/sign-tests",
             "Examples/sign1-tests",
             "Examples/RFC8152",
-            "Examples/spec-examples",
-
-*/
-
-/**
- *
- * @author jimsch
- */
-@RunWith(Parameterized.class)
-public class RegressionTest extends TestBase {
-    @Parameters(name = "{index}: {0})")
-    public static Collection<Object> data() {
-        return Arrays.asList(new Object[] {
-            "Examples/cbc-mac-examples",
            });
     }
 
@@ -69,6 +63,7 @@ public class RegressionTest extends TestBase {
             directory = new File("C:\\Projects\\cose\\" + directoryName);
         }
         File[] contents = directory.listFiles();
+        org.junit.Assert.assertNotNull(directoryName, contents);
         for ( File f : contents) {
             ProcessFile(f.getAbsolutePath());
         }    
