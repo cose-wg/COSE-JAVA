@@ -7,7 +7,6 @@ package COSE;
 
 import static COSE.MAC0MessageTest.rgbContent;
 import com.upokecenter.cbor.CBORObject;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.junit.rules.ExpectedException;
@@ -60,7 +59,7 @@ public class MAC0MessageTest extends TestBase {
     }
     
     @Test
-    public void macNoAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -70,7 +69,7 @@ public class MAC0MessageTest extends TestBase {
     }    
 
     @Test
-    public void macUnknownAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnknownAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -81,7 +80,7 @@ public class MAC0MessageTest extends TestBase {
     }    
 
     @Test
-    public void macUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnsupportedAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -92,7 +91,7 @@ public class MAC0MessageTest extends TestBase {
     }    
 
     @Test
-    public void macNoContent() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoContent() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);

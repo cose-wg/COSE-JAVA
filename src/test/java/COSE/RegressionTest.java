@@ -17,7 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import org.junit.runner.RunWith;
@@ -99,7 +98,7 @@ public class RegressionTest extends TestBase {
         }
     }
     
-    public void ProcessJSON(CBORObject control) throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+    public void ProcessJSON(CBORObject control) throws CoseException, IllegalStateException, Exception {
         CBORObject input = control.get("input");
         
         if (input.ContainsKey("mac0")) {
@@ -128,7 +127,7 @@ public class RegressionTest extends TestBase {
         }
     }
     
-    public void BuildEncryptTest(CBORObject cnControl) throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+    public void BuildEncryptTest(CBORObject cnControl) throws CoseException, IllegalStateException, Exception {
         CBORObject cnFail = cnControl.get("fail");
         if ((cnFail != null) && cnFail.AsBoolean()) return;
         
@@ -258,7 +257,7 @@ public class RegressionTest extends TestBase {
         return;
     }
     
-    public void BuildMac0Test(CBORObject cnControl) throws CoseException, IllegalStateException, InvalidCipherTextException, Exception {
+    public void BuildMac0Test(CBORObject cnControl) throws CoseException, IllegalStateException, Exception {
         CBORObject cnFail = cnControl.get("fail");
         if ((cnFail != null) && cnFail.AsBoolean()) return;
         

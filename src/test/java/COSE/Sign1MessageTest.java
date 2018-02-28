@@ -123,29 +123,11 @@ public class Sign1MessageTest extends TestBase {
         Sign1Message msg = new Sign1Message();
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
-        msg.sign(keyPrivate);
+        msg.sign(cnKeyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
         
         msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
         boolean f = msg.validate(cnKeyPublic);
-      
-        assert(f);
-    }
-
-    /**
-     * Test of Decrypt method, of class Encrypt0Message.
-     */
-    @Test
-    public void testRoundTripBC() throws Exception {
-        System.out.println("Round Trip");
-        Sign1Message msg = new Sign1Message();
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
-        msg.SetContent(rgbContent);
-        msg.sign(keyPrivate);
-        byte[] rgbMsg = msg.EncodeToBytes();
-        
-        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
-        boolean f = msg.validate(keyPublic);
       
         assert(f);
     }
@@ -186,17 +168,6 @@ public class Sign1MessageTest extends TestBase {
     public void nullKey() throws CoseException, InvalidCipherTextException {
         Sign1Message msg = new Sign1Message();
         OneKey key=null;
-        
-        thrown.expect(NullPointerException.class);
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
-        msg.SetContent(rgbContent);
-        msg.sign(key);
-    }    
-
-    @Test
-    public void nullKeyBC() throws CoseException, InvalidCipherTextException {
-        Sign1Message msg = new Sign1Message();
-        CipherParameters key=null;
         
         thrown.expect(NullPointerException.class);
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);

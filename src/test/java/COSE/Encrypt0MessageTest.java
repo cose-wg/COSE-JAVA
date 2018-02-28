@@ -6,7 +6,6 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.junit.rules.ExpectedException;
@@ -64,7 +63,7 @@ public class Encrypt0MessageTest extends TestBase {
     }
     
     @Test
-    public void encryptNoAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptNoAlgorithm() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -74,7 +73,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptUnknownAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptUnknownAlgorithm() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -85,7 +84,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void encryptUnsupportedAlgorithm() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -96,7 +95,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptIncorrectKeySize() throws CoseException, InvalidCipherTextException {
+    public void encryptIncorrectKeySize() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -107,7 +106,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptNullKey() throws CoseException, InvalidCipherTextException {
+    public void encryptNullKey() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(NullPointerException.class);
@@ -117,7 +116,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptNoContent() throws CoseException, InvalidCipherTextException {
+    public void encryptNoContent() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -127,7 +126,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptBadIV() throws CoseException, InvalidCipherTextException {
+    public void encryptBadIV() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -139,7 +138,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
 
     @Test
-    public void encryptIncorrectIV() throws CoseException, InvalidCipherTextException {
+    public void encryptIncorrectIV() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
@@ -151,7 +150,7 @@ public class Encrypt0MessageTest extends TestBase {
     }    
     
     @Test
-    public void encryptNoTag() throws CoseException, InvalidCipherTextException {
+    public void encryptNoTag() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message(false, true);
 
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Attribute.PROTECTED);
@@ -164,7 +163,7 @@ public class Encrypt0MessageTest extends TestBase {
     }
     
     @Test
-    public void encryptNoEmitContent() throws CoseException, InvalidCipherTextException {
+    public void encryptNoEmitContent() throws CoseException {
         Encrypt0Message msg = new Encrypt0Message(true, false);
 
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(),Attribute.PROTECTED);
@@ -177,7 +176,7 @@ public class Encrypt0MessageTest extends TestBase {
     }
     
     @Test
-    public void noContentForDecrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void noContentForDecrypt() throws CoseException, IllegalStateException {
         Encrypt0Message msg = new Encrypt0Message(true, false);
 
         thrown.expect(CoseException.class);
@@ -196,7 +195,7 @@ public class Encrypt0MessageTest extends TestBase {
     }
     
     @Test
-    public void roundTripDetached() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void roundTripDetached() throws CoseException, IllegalStateException {
         Encrypt0Message msg = new Encrypt0Message(true, false);
         
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
