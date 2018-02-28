@@ -9,7 +9,6 @@ import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
 import java.util.List;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
  *
@@ -44,7 +43,7 @@ public class EncryptMessage extends EncryptCommon {
         return recipientList.size();
     }
     
-    public byte[] decrypt(Recipient whom) throws CoseException, InvalidCipherTextException {
+    public byte[] decrypt(Recipient whom) throws CoseException {
         byte[] rgbKey = null;
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
@@ -63,7 +62,7 @@ public class EncryptMessage extends EncryptCommon {
         return super.decryptWithKey(rgbKey);
     }
     
-    public void encrypt() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void encrypt() throws CoseException, IllegalStateException, Exception {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
    

@@ -7,8 +7,6 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *

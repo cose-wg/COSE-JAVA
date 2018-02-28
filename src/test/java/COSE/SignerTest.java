@@ -20,7 +20,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class SignerTest {
+public class SignerTest extends TestBase {
     
     public SignerTest() {
     }

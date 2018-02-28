@@ -12,6 +12,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -27,7 +29,7 @@ import org.junit.runners.Parameterized.*;
  * @author jimsch
  */
 @RunWith(Parameterized.class)
-public class RegressionTest {
+public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
@@ -60,9 +62,10 @@ public class RegressionTest {
         CFails=0;
         File directory = new File(directoryName);
         if (!directory.isDirectory()) {
-            directory = new File("C:\\Projects\\cose\\" + directoryName);
+            directory = new File("d:\\Projects\\cose\\" + directoryName);
         }
         File[] contents = directory.listFiles();
+        org.junit.Assert.assertNotNull(directoryName, contents);
         for ( File f : contents) {
             ProcessFile(f.getAbsolutePath());
         }    
@@ -80,6 +83,15 @@ public class RegressionTest {
             ProcessJSON(foo);
             if (fails == CFails) System.out.print("... PASS\n");
             else System.out.print("... FAIL\n");
+        }
+        catch (CoseException e) {
+            if (e.getMessage() == "Unsupported key size") {
+                System.out.print("... SKIP\nException " + e + "\n");                
+            }
+            else {
+                System.out.print("... FAIL\nException " + e + "\n");                
+                CFails++;            
+            }
         }
         catch(Exception e) {
             System.out.print("... FAIL\nException " + e + "\n");
@@ -144,13 +156,13 @@ public class RegressionTest {
         _VerifyEncrypt(cnControl, rgb);
     }
     
-    public void VerifyEncryptTest(CBORObject control) {
+    public void VerifyEncryptTest(CBORObject control) throws CoseException {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyEncrypt(control, rgb);
     }
     
-    public void _VerifyEncrypt(CBORObject control, byte[] rgbData) {
+    public void _VerifyEncrypt(CBORObject control, byte[] rgbData) throws CoseException {
  	CBORObject cnInput = control.get("input");
 	boolean fFail = false;
 	boolean fFailBody = false;
@@ -162,7 +174,14 @@ public class RegressionTest {
         }
 
         try {
-            Message msg = Message.DecodeFromBytes(rgbData, MessageTag.Encrypt0);
+            Message msg;
+            try {
+                msg = Message.DecodeFromBytes(rgbData, MessageTag.Encrypt0);
+            }
+            catch (Exception e) {
+               if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
+               throw new Exception();
+            }
             Encrypt0Message enc0 = (Encrypt0Message)msg;
 
             CBORObject cnEncrypt = cnInput.get("encrypted");
@@ -183,9 +202,18 @@ public class RegressionTest {
                 byte[] oldContent = cnInput.get("plaintext").AsString().getBytes(StandardCharsets.UTF_8);
                 assertArrayEquals(oldContent, rgbContent);
             }
+            catch(CoseException e) {
+                if (e.getMessage() == "Unsupported key size") {
+                    throw e;
+                }
+               if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
+            }
             catch (Exception e) {
-                   if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
+               if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
             }            
+        }
+        catch (CoseException e) {
+            throw e;
         }
         catch (Exception e) {
             if (!fFailBody) CFails++;
@@ -258,13 +286,13 @@ public class RegressionTest {
         _VerifyMac0(cnControl, rgb);
     }
 
-    public void VerifyMac0Test(CBORObject control) {
+    public void VerifyMac0Test(CBORObject control) throws CoseException {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac0(control, rgb);
     }
     
-    public void _VerifyMac0(CBORObject control, byte[] rgbData) {
+    public void _VerifyMac0(CBORObject control, byte[] rgbData) throws CoseException {
 	CBORObject cnInput = control.get("input");
 	int type;
 	boolean fFail = false;
@@ -302,18 +330,24 @@ public class RegressionTest {
             }
 
         }
+        catch(CoseException e) {
+            if (e.getMessage() == "Unsupported key size") {
+                throw e;
+            }
+            if (!fFailBody) CFails++;
+        }
         catch (Exception e) {
             if (!fFailBody) CFails++;
         }
     }
 
-    public void VerifyMacTest(CBORObject control) {
+    public void VerifyMacTest(CBORObject control) throws CoseException {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac(control, rgb);
     }
     
-    public void _VerifyMac(CBORObject control, byte[] rgbData) {
+    public void _VerifyMac(CBORObject control, byte[] rgbData) throws CoseException {
 	CBORObject cnInput = control.get("input");
 	boolean fFail = false;
 	boolean fFailBody = false;
@@ -356,18 +390,29 @@ public class RegressionTest {
                 if (f && (fFail || fFailBody)) CFails++;
                 else if (!f && !(fFail || fFailBody)) CFails++;
             }
+            catch(CoseException e) {
+                if (e.getMessage() == "Unsupported key size") {
+                    throw e;
+                }
+                if (fFail || fFailBody) return;
+                CFails++;
+                return;
+            }
             catch (Exception e) {
                 if (fFail || fFailBody) return;
                 CFails++;
                 return;
             }
         }
+        catch (CoseException e) {
+            throw e;
+        }
         catch (Exception e) {
             CFails++;
         }
     }
 
-    boolean DecryptMessage(byte[] rgbEncoded, boolean fFailBody, CBORObject cnEnveloped, CBORObject cnRecipient1, int iRecipient1, CBORObject cnRecipient2, int iRecipient2)
+    boolean DecryptMessage(byte[] rgbEncoded, boolean fFailBody, CBORObject cnEnveloped, CBORObject cnRecipient1, int iRecipient1, CBORObject cnRecipient2, int iRecipient2) throws CoseException
     {
 	EncryptMessage hEnc;
 	Recipient hRecip;
@@ -439,10 +484,20 @@ public class RegressionTest {
                 if (fFailBody) fRet = false;
                 else fRet = true;
             }
+            catch(CoseException e) {
+                if (e.getMessage() == "Unsupported key size") {
+                    throw e;
+                }
+                if(!fFailBody) fRet = false;
+                else fRet = true;
+            }
             catch(Exception e) {
                 if(!fFailBody) fRet = false;
                 else fRet = true;
             }
+        }
+        catch(CoseException e) {
+            throw e;
         }
         catch(Exception e) {
             fRet = false;
@@ -451,7 +506,7 @@ public class RegressionTest {
 	return fRet;
 }
 
-    int _ValidateEnveloped(CBORObject cnControl, byte[] rgbEncoded)
+    int _ValidateEnveloped(CBORObject cnControl, byte[] rgbEncoded) throws CoseException
     {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject cnFail;
@@ -481,7 +536,7 @@ public class RegressionTest {
 	return 0;
     }
 
-    int VerifyEnvelopedTest(CBORObject cnControl)
+    int VerifyEnvelopedTest(CBORObject cnControl) throws CoseException
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);

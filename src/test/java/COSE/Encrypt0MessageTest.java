@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class Encrypt0MessageTest {
+public class Encrypt0MessageTest extends TestBase {
     byte[] rgbKey128 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     byte[] rgbKey256 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,28, 29, 30, 31, 32};
     byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
@@ -100,7 +100,7 @@ public class Encrypt0MessageTest {
         Encrypt0Message msg = new Encrypt0Message();
         
         thrown.expect(CoseException.class);
-        thrown.expectMessage("Incorrect Key Size");
+        thrown.expectMessage("Key Size is incorrect");
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.AES_GCM_128.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
         msg.encrypt(rgbKey256);

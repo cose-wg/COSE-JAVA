@@ -31,7 +31,7 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
     public ECPublicKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
-        byte [] rgbKey;
+        byte[] rgbKey;
         byte[] X = oneKey.get(KeyKeys.EC2_X).GetByteString();
         
         if (oneKey.get(KeyKeys.EC2_Y).getType()== CBORType.Boolean) {
@@ -40,7 +40,7 @@ public class ECPublicKey implements java.security.interfaces.ECPublicKey {
             rgbKey[0] = (byte) (2 + (oneKey.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
             org.bouncycastle.math.ec.ECPoint pubPoint;
             pubPoint = p.getCurve().decodePoint(rgbKey);
-            point = new ECPoint(point.getAffineX(), point.getAffineY());
+            point = new ECPoint(pubPoint.getAffineXCoord().toBigInteger(), pubPoint.getAffineYCoord().toBigInteger());
         }
         else {
             rgbKey = new byte[X.length*2+1];

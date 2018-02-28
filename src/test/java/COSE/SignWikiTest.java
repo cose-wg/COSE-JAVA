@@ -16,7 +16,7 @@ import org.junit.rules.*;
  *
  * @author jimsch
  */
-public class SignWikiTest {
+public class SignWikiTest extends TestBase {
     static OneKey signingKey;
     static OneKey sign2Key;
     static OneKey sign3Key;
