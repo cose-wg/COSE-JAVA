@@ -32,6 +32,7 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
+            "Examples/CWT",
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
@@ -48,6 +49,7 @@ public class RegressionTest extends TestBase {
             "Examples/sign-tests",
             "Examples/sign1-tests",
             "Examples/RFC8152",
+            "Examples/CWT"
            });
     }
 
@@ -61,7 +63,7 @@ public class RegressionTest extends TestBase {
         CFails=0;
         File directory = new File(directoryName);
         if (!directory.isDirectory()) {
-            directory = new File("d:\\Projects\\cose\\" + directoryName);
+            directory = new File("D:\\Projects\\cose\\" + directoryName);
         }
         File[] contents = directory.listFiles();
         org.junit.Assert.assertNotNull(directoryName, contents);
@@ -78,6 +80,7 @@ public class RegressionTest extends TestBase {
             System.out.print("Check: " + test);
             InputStream str = new FileInputStream(test);
             CBORObject foo = CBORObject.ReadJSON(str);
+            
 
             ProcessJSON(foo);
             if (fails == CFails) System.out.print("... PASS\n");
@@ -137,8 +140,13 @@ public class RegressionTest extends TestBase {
         Encrypt0Message msg = new Encrypt0Message();
         
         CBORObject cn = cnInput.get("plaintext");
-        msg.SetContent(cn.AsString());
-        
+        if (cn == null) {
+            cn = cnInput.get("plaintext_hex");
+            msg.SetContent(hexStringToByteArray(cn.AsString()));
+        }
+        else {
+            msg.SetContent(cn.AsString());
+        }
         SetSendingAttributes(msg, cnEncrypt, true);
 
         CBORObject cnRecipients = cnEncrypt.get("recipients");
@@ -198,7 +206,17 @@ public class RegressionTest extends TestBase {
             try {
                 byte[] rgbContent = enc0.decrypt(kk.GetByteString());
                 if ((cnFail != null) && !cnFail.AsBoolean()) CFails++;
-                byte[] oldContent = cnInput.get("plaintext").AsString().getBytes(StandardCharsets.UTF_8);
+                
+                byte[] oldContent;
+                CBORObject cnOldContent = cnInput.get("plaintext");
+                if (cnOldContent == null) {
+                    cnOldContent = cnInput.get("plaintext_hex");
+                    oldContent = hexStringToByteArray(cnOldContent.AsString());
+                }
+                else {
+                    oldContent = cnInput.get("plaintext").AsString().getBytes(StandardCharsets.UTF_8);
+                }
+                                
                 assertArrayEquals(oldContent, rgbContent);
             }
             catch(CoseException e) {
@@ -235,8 +253,13 @@ public class RegressionTest extends TestBase {
 	CBORObject cnEnveloped = cnInputs.get("mac");
 
 	CBORObject cnContent = cnInputs.get("plaintext");
-        
-	hEncObj.SetContent(cnContent.AsString());
+        if (cnContent == null) {
+            cnContent = cnInputs.get("plaintext_hex");
+            hEncObj.SetContent(hexStringToByteArray(cnContent.AsString()));
+        }
+        else {
+            hEncObj.SetContent(cnContent.AsString());
+        }
 
 	SetSendingAttributes(hEncObj, cnEnveloped, true);
 
@@ -267,7 +290,13 @@ public class RegressionTest extends TestBase {
         MAC0Message msg = new MAC0Message();
         
         CBORObject cn = cnInput.get("plaintext");
-        msg.SetContent(cn.AsString());
+        if (cn == null) {
+            cn = cnInput.get("plaintext_hex");
+            msg.SetContent(hexStringToByteArray(cn.AsString()));
+        }
+        else {
+            msg.SetContent(cn.AsString());
+        }
         
         SetSendingAttributes(msg, cnEncrypt, true);
 
@@ -596,8 +625,13 @@ public class RegressionTest extends TestBase {
 	CBORObject cnEnveloped = cnInputs.get("enveloped");
 
 	CBORObject cnContent = cnInputs.get("plaintext");
-        
-	hEncObj.SetContent(cnContent.AsString());
+        if (cnContent == null) {
+            cnContent = cnInputs.get("plaintext_hex");
+            hEncObj.SetContent(hexStringToByteArray(cnContent.AsString()));
+        }
+        else {
+            hEncObj.SetContent(cnContent.AsString());
+        }
 
 	SetSendingAttributes(hEncObj, cnEnveloped, true);
 
@@ -797,8 +831,16 @@ public class RegressionTest extends TestBase {
                     cnKeyOut.set(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
                     break;
                     
+                case "x_hex":
+                    cnKeyOut.set(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+
                 case "y":
                     cnKeyOut.set(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
+                    break;
+
+                case "y_hex":
+                    cnKeyOut.set(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
 
                 case "d":
@@ -807,8 +849,18 @@ public class RegressionTest extends TestBase {
                     }
                     break;
 
+                case "d_hex":
+                    if (!fPublicKey) {
+                        cnKeyOut.set(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    }
+                    break;
+
                 case "k":
                     cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
+                    break;
+                    
+                case "k_hex":
+                    cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
             }
         }
@@ -988,7 +1040,13 @@ public class RegressionTest extends TestBase {
             CBORObject cnSign = cnInputs.get("sign");
 
             CBORObject cnContent = cnInputs.get("plaintext");
-            hSignObj.SetContent(cnContent.AsString());
+            if (cnContent == null) {
+                cnContent = cnInputs.get("plaintext_hex");
+                hSignObj.SetContent(hexStringToByteArray(cnContent.AsString()));
+            }
+            else {
+                hSignObj.SetContent(cnContent.AsString());
+            }
 
             SetSendingAttributes(hSignObj, cnSign, false);
 
@@ -1095,7 +1153,13 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             CBORObject cnSign = cnInputs.get("sign0");
 
             CBORObject cnContent = cnInputs.get("plaintext");
-            hSignObj.SetContent(cnContent.AsString());
+            if (cnContent == null) {
+                cnContent = cnInputs.get("plaintext_hex");
+                hSignObj.SetContent(hexStringToByteArray(cnContent.AsString()));
+            }
+            else {
+                hSignObj.SetContent(cnContent.AsString());
+            }
 
             SetSendingAttributes(hSignObj, cnSign, false);
 
