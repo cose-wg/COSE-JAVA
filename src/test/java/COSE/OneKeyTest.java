@@ -223,7 +223,12 @@ public class OneKeyTest extends TestBase {
         byte[] rgbPrivate = result.getEncoded();
         String x = byteArrayToHex(rgbPrivate);
         
+        /*
+        
+        THis seems to go boom on jdk 9
         KeyPairGenerator kpgen = KeyPairGenerator.getInstance("EC");
+        
+        */
 
         KeyFactory kFactory = KeyFactory.getInstance("EC", new BouncyCastleProvider());
                 
