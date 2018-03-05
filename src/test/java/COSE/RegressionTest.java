@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.*;
  * @author jimsch
  */
 @RunWith(Parameterized.class)
-public class RegressionTest {
+public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
@@ -65,6 +65,7 @@ public class RegressionTest {
             directory = new File("D:\\Projects\\cose\\" + directoryName);
         }
         File[] contents = directory.listFiles();
+        org.junit.Assert.assertNotNull(directoryName, contents);
         for ( File f : contents) {
             ProcessFile(f.getAbsolutePath());
         }    

@@ -36,25 +36,9 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
     public ECPrivateKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
-        org.bouncycastle.math.ec.ECPoint pubPoint;
-        ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+        
+        privateKey = new BigInteger(1, oneKey.get(KeyKeys.EC2_D).GetByteString());
 
-        if (oneKey.get(KeyKeys.EC2_Y).getType()== CBORType.Boolean) {
-            byte[] X = oneKey.get(KeyKeys.EC2_X.AsCBOR()).GetByteString();
-            byte[] rgb = new byte[X.length + 1];
-            System.arraycopy(X, 0, rgb, 1, X.length);
-            rgb[0] = (byte) (2 + (oneKey.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
-            pubPoint = p.getCurve().decodePoint(rgb);
-            point = new ECPoint(point.getAffineX(), point.getAffineY());
-        }
-        else {
-            point = new ECPoint(new BigInteger(1, oneKey.get(KeyKeys.EC2_X).GetByteString()), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
-            pubPoint = p.getCurve().createPoint(new BigInteger(1, oneKey.get(KeyKeys.EC2_X).GetByteString()), new BigInteger(1, oneKey.get(KeyKeys.EC2_Y).GetByteString()));
-       }
-        
-        ECPublicKeyParameters pub = new ECPublicKeyParameters(pubPoint, parameters);
-        ECPrivateKeyParameters priv = new ECPrivateKeyParameters(new BigInteger(1, oneKey.get(KeyKeys.EC2_D.AsCBOR()).GetByteString()), parameters);        
-        
 /*
         switch (AlgorithmID.FromCBOR(oneKey.get(KeyKeys.Algorithm))) {
             case ECDH_ES_HKDF_256:
@@ -88,8 +72,8 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
 */
         algorithm = "EC";
         
-                CBORObject curve = oneKey.get(KeyKeys.EC2_Curve);
-                int keySize;
+        CBORObject curve = oneKey.get(KeyKeys.EC2_Curve);
+        int keySize;
         ASN1ObjectIdentifier curveOID;
         if (curve.equals(KeyKeys.EC2_P256)) {
             curveOID = org.bouncycastle.asn1.sec.SECObjectIdentifiers.secp256r1;
@@ -107,8 +91,6 @@ public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
             throw new CoseException("Unrecognized Curve");
         }
 
-        
-        privateKey = new BigInteger(1, oneKey.get(KeyKeys.EC2_D).GetByteString());
         
         ECField field = new ECFieldFp(p.getCurve().getField().getCharacteristic());
         EllipticCurve crv = new EllipticCurve(field, p.getCurve().getA().toBigInteger(), p.getCurve().getB().toBigInteger());

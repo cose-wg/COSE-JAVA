@@ -7,7 +7,6 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 
 /**
  * The Encrypt0Message object corresponds to the Encrypt COSE message structure.
@@ -92,9 +91,8 @@ public class Encrypt0Message extends EncryptCommon {
      * @param rgbKey key for decryption
      * @return the decrypted content
      * @throws CoseException 
-     * @throws InvalidCipherTextException when the decryption does not authenticate
      */
-    public byte[] decrypt(byte[] rgbKey) throws CoseException, InvalidCipherTextException {
+    public byte[] decrypt(byte[] rgbKey) throws CoseException {
         return super.decryptWithKey(rgbKey);
     }
     
@@ -104,9 +102,8 @@ public class Encrypt0Message extends EncryptCommon {
      * @param rgbKey key used for encryption
      * @throws CoseException
      * @throws IllegalStateException
-     * @throws InvalidCipherTextException
      */
-    public void encrypt(byte[] rgbKey) throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void encrypt(byte[] rgbKey) throws CoseException, IllegalStateException {
         super.encryptWithKey(rgbKey);
     }
 }

@@ -28,7 +28,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class Sign1MessageTest {
+public class Sign1MessageTest extends TestBase {
     static byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
     
     static OneKey cnKeyPublic;
