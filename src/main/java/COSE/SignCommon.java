@@ -132,69 +132,6 @@ public abstract class SignCommon extends Message {
         return concat;
     }
     
-    byte[] computeSig(byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
-        AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
-        Digest digest;
-        CBORObject cn;
-
-        switch (alg) {
-            case ECDSA_256:
-                digest = new SHA256Digest();
-                break;
-            
-            case ECDSA_384:
-                digest = new SHA384Digest();
-                break;
-                
-            case ECDSA_512:
-                digest = new SHA512Digest();
-                break;
-            
-            default:
-                throw new CoseException("Unsupported Algorithm Specified");
-        }
-        
-        switch (alg) {
-            case ECDSA_256:
-            case ECDSA_384:
-            case ECDSA_512:
-            {
-                digest.update(rgbToBeSigned, 0, rgbToBeSigned.length);
-                byte[] rgbDigest = new byte[digest.getDigestSize()];
-                digest.doFinal(rgbDigest, 0);
-                
-                cn = cnKey.get(KeyKeys.KeyType);
-                if ((cn == null) || (cn != KeyKeys.KeyType_EC2)) throw new CoseException("Must use key with key type EC2");
-                cn = cnKey.get(KeyKeys.EC2_D);
-                if (cn == null) throw new CoseException("Private key required to sign");
-                
-                X9ECParameters p = cnKey.GetCurve();
-                ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-                ECPrivateKeyParameters privKey = new ECPrivateKeyParameters(new BigInteger(1, cn.GetByteString()), parameters);
-                
-                ECDSASigner ecdsa = new ECDSASigner();
-                ecdsa.init(true, privKey);
-                BigInteger[] sig = ecdsa.generateSignature(rgbDigest);
-                
-                int cb = (p.getCurve().getFieldSize() + 7)/8;
-                byte[] r = sig[0].toByteArray();
-                byte[] s = sig[1].toByteArray();
-                
-                byte[] sigs = new byte[cb*2];
-                int cbR = min(cb,r.length);
-                System.arraycopy(r, r.length - cbR, sigs, cb - cbR, cbR);
-                cbR = min(cb, s.length);
-                System.arraycopy(s, s.length - cbR, sigs, cb + cb - cbR, cbR);
-
-                return sigs;
-                
-            }
-            
-            default:
-                throw new CoseException("Inernal error");
-        }
-    }
-
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         Digest digest;
