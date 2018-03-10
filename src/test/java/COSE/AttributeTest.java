@@ -19,7 +19,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class AttributeTest {
+public class AttributeTest extends TestBase {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     

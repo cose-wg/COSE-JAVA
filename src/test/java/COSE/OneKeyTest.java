@@ -32,7 +32,7 @@ import org.junit.Ignore;
  *
  * @author jimsch
  */
-public class OneKeyTest {
+public class OneKeyTest extends TestBase {
     
     public OneKeyTest() {
     }

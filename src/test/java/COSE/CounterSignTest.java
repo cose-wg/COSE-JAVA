@@ -19,7 +19,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class CounterSignTest {
+public class CounterSignTest extends TestBase {
     
     public CounterSignTest() {
     }

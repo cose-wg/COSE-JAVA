@@ -17,7 +17,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class Sign1WikiTest {
+public class Sign1WikiTest extends TestBase {
     static OneKey signingKey;
     static OneKey sign2Key;
     static OneKey sign3Key;
