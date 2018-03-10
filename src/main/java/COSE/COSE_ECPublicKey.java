@@ -22,13 +22,13 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
  *
  * @author jimsch
  */
-public class ECPublicKey implements java.security.interfaces.ECPublicKey {
+public class COSE_ECPublicKey implements java.security.interfaces.ECPublicKey {
     ECPoint point;
     String algorithm;
     ECParameterSpec ecParameterSpec;
     byte[] spkiEncoded;
             
-    public ECPublicKey(OneKey oneKey) throws CoseException, IOException
+    public COSE_ECPublicKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
         byte[] rgbKey;
