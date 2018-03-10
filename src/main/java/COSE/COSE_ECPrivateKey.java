@@ -23,14 +23,14 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
  *
  * @author jimsch
  */
-public class ECPrivateKey implements java.security.interfaces.ECPrivateKey {
+public class COSE_ECPrivateKey implements java.security.interfaces.ECPrivateKey {
     ECPoint point;
     String algorithm;
     ECParameterSpec ecParameterSpec;
     BigInteger privateKey;
     byte[] encodedKey;
             
-    public ECPrivateKey(OneKey oneKey) throws CoseException, IOException
+    public COSE_ECPrivateKey(OneKey oneKey) throws CoseException, IOException
     {
         X9ECParameters p = oneKey.GetCurve();
         

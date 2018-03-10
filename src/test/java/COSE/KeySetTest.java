@@ -11,7 +11,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class KeySetTest {
+public class KeySetTest extends TestBase {
 
     /**
      * Test of stream method of class KeySet.
