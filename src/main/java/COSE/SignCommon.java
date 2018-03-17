@@ -5,31 +5,11 @@
  */
 package COSE;
 
-import com.upokecenter.cbor.CBORObject;
-import static java.lang.Integer.min;
-import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
-import java.security.SignatureException;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.digests.SHA384Digest;
-import org.bouncycastle.crypto.digests.SHA512Digest;
-import org.bouncycastle.asn1.nist.NISTNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.digests.SHA384Digest;
-import org.bouncycastle.crypto.digests.SHA512Digest;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.signers.ECDSASigner;
-import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
-import org.bouncycastle.math.ec.ECPoint;
+import java.util.Arrays;
 
 /**
  *
@@ -93,7 +73,7 @@ public abstract class SignCommon extends Message {
         // this is far too naive
         byte[] concat = new byte[len * 2];
 
-        // assumes BITSTRING is organized as "R + S"
+        // assumes SEQUENCE is organized as "R + S"
         int kLen = 4;
         if (der[0] != 0x30) {
             throw new CoseException("Unexpected signature input");
@@ -134,53 +114,56 @@ public abstract class SignCommon extends Message {
     
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
-        Digest digest;
-        
+        String algName = null;
+
         switch (alg) {
-            case ECDSA_256:
-                digest = new SHA256Digest();
-                break;
-            
-            case ECDSA_384:
-                digest = new SHA384Digest();
-                break;
-                
-            case ECDSA_512:
-                digest = new SHA512Digest();
-                break;
-            
-            default:
-                throw new CoseException("Unsupported algorithm specified");
+        case ECDSA_256:
+            algName = "SHA256withECDSA";
+            break;
+        case ECDSA_384:
+            algName = "SHA384withECDSA";
+            break;
+        case ECDSA_512:
+            algName = "SHA512withECDSA";
+            break;
+
+        default:
+            throw new CoseException("Unsupported Algorithm Specified");
         }
-        
-        switch (alg) {
-            case ECDSA_256:
-            case ECDSA_384:
-            case ECDSA_512:
-            {
-                byte[] rgbR = new byte[rgbSignature.length/2];
-                byte[] rgbS = new byte[rgbSignature.length/2];
-                System.arraycopy(rgbSignature, 0, rgbR, 0, rgbR.length);
-                System.arraycopy(rgbSignature, rgbR.length, rgbS, 0, rgbR.length);
-                
-                digest.update(rgbToBeSigned, 0, rgbToBeSigned.length);
-                byte[] rgbDigest = new byte[digest.getDigestSize()];
-                digest.doFinal(rgbDigest, 0);
-                
-                X9ECParameters p = cnKey.GetCurve();
-                ECDomainParameters parameters = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-                BigInteger bnX = new BigInteger(1, cnKey.get(KeyKeys.EC2_X).GetByteString());
-                ECPoint point = p.getCurve().createPoint(bnX, new BigInteger(1, cnKey.get(KeyKeys.EC2_Y).GetByteString()));
-                
-                ECPublicKeyParameters pubKey = new ECPublicKeyParameters(point, parameters);
-                
-                ECDSASigner ecdsa = new ECDSASigner();
-                ecdsa.init(false, pubKey);
-                return ecdsa.verifySignature(rgbDigest, new BigInteger(1, rgbR), new BigInteger(1, rgbS));                
-            }
-            
-            default:
-                throw new CoseException("Internal error");
+
+        if (cnKey == null) {
+            throw new NullPointerException();
         }
+
+        PublicKey pubKey = null;
+        try {
+            pubKey = cnKey.AsPublicKey();
+        } catch (NullPointerException ex) {
+            throw new CoseException("Public key required to verify");
+        }
+
+        boolean result = false;
+        try {
+            Signature sig = Signature.getInstance(algName);
+            sig.initVerify(pubKey);
+            sig.update(rgbToBeSigned);
+
+            rgbSignature = convertConcatToDer(rgbSignature);
+            result = sig.verify(rgbSignature);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new CoseException("Algorithm not supported", ex);
+        } catch (Exception ex) {
+            throw new CoseException("Signature verification failure", ex);
+        }
+
+        return result;
+    }
+
+    private byte[] convertConcatToDer(byte[] concat) throws CoseException {
+        int len = concat.length / 2;
+        byte[] r = Arrays.copyOfRange(concat, 0, len);
+        byte[] s = Arrays.copyOfRange(concat, len, concat.length);
+
+        return ASN1.EncodeSignature(r, s);
     }
 }

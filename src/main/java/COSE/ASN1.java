@@ -109,6 +109,13 @@ public class ASN1 {
             throw e;
         }
     }
+    public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
+        ArrayList<byte[]> x = new ArrayList<byte[]>();
+        x.add(UnsignedInteger(r));
+        x.add(UnsignedInteger(s));
+
+        return Sequence(x);
+    }
     
     private static byte[] AlgorithmIdentifier(byte[] oid, byte[] params) throws CoseException
     {
@@ -128,6 +135,27 @@ public class ASN1 {
         x.add(y);
         
         return ToBytes(x);
+    }
+    private static byte[] UnsignedInteger(byte[] i) throws CoseException {
+        int pad = 0, offset = 0;
+
+        while (offset < i.length && i[offset] == 0) {
+            offset++;
+        }
+
+        if (offset == i.length) {
+            return new byte[] {0x02, 0x01, 0x00};
+        }
+        if ((i[offset] & 0x80) != 0) {
+            pad++;
+        }
+        int length = i.length - offset;
+        byte[] der = new byte[2 + length + pad];
+        der[0] = 0x02;
+        der[1] = (byte)(length + pad);
+        System.arraycopy(i, offset, der, 2 + pad, length);
+
+        return der;
     }
     
     private static byte[] GetLength(int x) throws CoseException
