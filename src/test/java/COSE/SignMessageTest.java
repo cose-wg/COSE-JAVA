@@ -21,7 +21,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class SignMessageTest {
+public class SignMessageTest extends TestBase {
     
     public SignMessageTest() {
     }

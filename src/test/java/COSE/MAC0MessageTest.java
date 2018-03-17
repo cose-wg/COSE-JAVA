@@ -7,7 +7,6 @@ package COSE;
 
 import static COSE.MAC0MessageTest.rgbContent;
 import com.upokecenter.cbor.CBORObject;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.junit.rules.ExpectedException;
@@ -16,7 +15,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class MAC0MessageTest {
+public class MAC0MessageTest extends TestBase {
     static byte[] rgbKey128 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     static byte[] rgbKey256 = {'a', 'b', 'c', 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,28, 29, 30, 31, 32};
     static byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
@@ -60,7 +59,7 @@ public class MAC0MessageTest {
     }
     
     @Test
-    public void macNoAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -70,7 +69,7 @@ public class MAC0MessageTest {
     }    
 
     @Test
-    public void macUnknownAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnknownAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -81,7 +80,7 @@ public class MAC0MessageTest {
     }    
 
     @Test
-    public void macUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnsupportedAlgorithm() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);
@@ -92,7 +91,7 @@ public class MAC0MessageTest {
     }    
 
     @Test
-    public void macNoContent() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoContent() throws CoseException, Exception {
         MAC0Message msg = new MAC0Message();
         
         thrown.expect(CoseException.class);

@@ -9,8 +9,6 @@ import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.util.ArrayList;
 import java.util.List;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import static org.bouncycastle.math.raw.Mod.random;
 
 /**
  *
@@ -92,7 +90,7 @@ public class MACMessage extends MacCommon {
         return obj;
     }
         
-    public boolean Validate(Recipient recipientToUse) throws CoseException, InvalidCipherTextException {
+    public boolean Validate(Recipient recipientToUse) throws CoseException, Exception {
         byte[] rgbKey = null;
         int cbitKey = 0;
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
@@ -123,7 +121,7 @@ public class MACMessage extends MacCommon {
         throw new CoseException("Usable recipient not found");
     }
     
-    public void Create() throws CoseException, IllegalStateException, InvalidCipherTextException {
+    public void Create() throws CoseException, IllegalStateException, Exception {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         byte[] rgbKey = null;
 

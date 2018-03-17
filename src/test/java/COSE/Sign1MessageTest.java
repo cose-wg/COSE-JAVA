@@ -9,8 +9,6 @@ import com.upokecenter.cbor.CBORObject;
 import org.bouncycastle.asn1.nist.NISTNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -28,7 +26,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author jimsch
  */
-public class Sign1MessageTest {
+public class Sign1MessageTest extends TestBase {
     static byte[] rgbContent = {'T', 'h', 'i', 's', ' ', 'i', 's', ' ', 's', 'o', 'm', 'e', ' ', 'c', 'o', 'n', 't', 'e', 'n', 't'};
     
     static OneKey cnKeyPublic;
@@ -123,7 +121,7 @@ public class Sign1MessageTest {
         Sign1Message msg = new Sign1Message();
         msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
         msg.SetContent(rgbContent);
-        msg.sign(keyPrivate);
+        msg.sign(cnKeyPrivate);
         byte[] rgbMsg = msg.EncodeToBytes();
         
         msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
@@ -132,26 +130,8 @@ public class Sign1MessageTest {
         assert(f);
     }
 
-    /**
-     * Test of Decrypt method, of class Encrypt0Message.
-     */
     @Test
-    public void testRoundTripBC() throws Exception {
-        System.out.println("Round Trip");
-        Sign1Message msg = new Sign1Message();
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
-        msg.SetContent(rgbContent);
-        msg.sign(keyPrivate);
-        byte[] rgbMsg = msg.EncodeToBytes();
-        
-        msg = (Sign1Message) Message.DecodeFromBytes(rgbMsg, MessageTag.Sign1);
-        boolean f = msg.validate(keyPublic);
-      
-        assert(f);
-    }
-
-    @Test
-    public void noAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void noAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -161,7 +141,7 @@ public class Sign1MessageTest {
     }    
 
     @Test
-    public void unknownAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void unknownAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -172,7 +152,7 @@ public class Sign1MessageTest {
     }    
 
     @Test
-    public void unsupportedAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void unsupportedAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -183,7 +163,7 @@ public class Sign1MessageTest {
     }    
 
     @Test
-    public void nullKey() throws CoseException, InvalidCipherTextException {
+    public void nullKey() throws CoseException {
         Sign1Message msg = new Sign1Message();
         OneKey key=null;
         
@@ -194,18 +174,7 @@ public class Sign1MessageTest {
     }    
 
     @Test
-    public void nullKeyBC() throws CoseException, InvalidCipherTextException {
-        Sign1Message msg = new Sign1Message();
-        CipherParameters key=null;
-        
-        thrown.expect(NullPointerException.class);
-        msg.addAttribute(HeaderKeys.Algorithm, AlgorithmID.ECDSA_256.AsCBOR(), Attribute.PROTECTED);
-        msg.SetContent(rgbContent);
-        msg.sign(key);
-    }    
-
-    @Test
-    public void noContent() throws CoseException, InvalidCipherTextException {
+    public void noContent() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -215,7 +184,7 @@ public class Sign1MessageTest {
     }    
     
     @Test
-    public void publicKey() throws CoseException, InvalidCipherTextException {
+    public void publicKey() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);

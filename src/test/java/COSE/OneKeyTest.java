@@ -7,17 +7,10 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,7 +25,7 @@ import org.junit.Ignore;
  *
  * @author jimsch
  */
-public class OneKeyTest {
+public class OneKeyTest extends TestBase {
     
     public OneKeyTest() {
     }
@@ -110,21 +103,6 @@ public class OneKeyTest {
         OneKey instance = new OneKey();
         CBORObject expResult = null;
         CBORObject result = instance.get(keyValue);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
-
-    /**
-     * Test of GetCurve method, of class OneKey.
-     */
-    @Ignore
-    @Test
-    public void testGetCurve() throws Exception {
-        System.out.println("GetCurve");
-        OneKey instance = new OneKey();
-        X9ECParameters expResult = null;
-        X9ECParameters result = instance.GetCurve();
         assertEquals(expResult, result);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
