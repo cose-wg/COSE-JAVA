@@ -9,8 +9,6 @@ import com.upokecenter.cbor.CBORObject;
 import org.bouncycastle.asn1.nist.NISTNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -133,7 +131,7 @@ public class Sign1MessageTest extends TestBase {
     }
 
     @Test
-    public void noAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void noAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -143,7 +141,7 @@ public class Sign1MessageTest extends TestBase {
     }    
 
     @Test
-    public void unknownAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void unknownAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -154,7 +152,7 @@ public class Sign1MessageTest extends TestBase {
     }    
 
     @Test
-    public void unsupportedAlgorithm() throws CoseException, InvalidCipherTextException {
+    public void unsupportedAlgorithm() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -165,7 +163,7 @@ public class Sign1MessageTest extends TestBase {
     }    
 
     @Test
-    public void nullKey() throws CoseException, InvalidCipherTextException {
+    public void nullKey() throws CoseException {
         Sign1Message msg = new Sign1Message();
         OneKey key=null;
         
@@ -176,7 +174,7 @@ public class Sign1MessageTest extends TestBase {
     }    
 
     @Test
-    public void noContent() throws CoseException, InvalidCipherTextException {
+    public void noContent() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
@@ -186,7 +184,7 @@ public class Sign1MessageTest extends TestBase {
     }    
     
     @Test
-    public void publicKey() throws CoseException, InvalidCipherTextException {
+    public void publicKey() throws CoseException {
         Sign1Message msg = new Sign1Message();
         
         thrown.expect(CoseException.class);
