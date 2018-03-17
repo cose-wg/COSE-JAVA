@@ -6,8 +6,6 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
-import java.util.List;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -121,7 +119,7 @@ public class MACMessageTest extends TestBase {
     }
 
     @Test
-    public void macNoRecipients() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoRecipients() throws CoseException, Exception {
         MACMessage msg = new MACMessage();
         
         thrown.expect(CoseException.class);
@@ -132,7 +130,7 @@ public class MACMessageTest extends TestBase {
     }    
     
     @Test
-    public void macNoAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoAlgorithm() throws CoseException, Exception {
         MACMessage msg = new MACMessage();
         msg.addRecipient(recipient256);
         
@@ -143,7 +141,7 @@ public class MACMessageTest extends TestBase {
     }    
 
     @Test
-    public void macUnknownAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnknownAlgorithm() throws CoseException, Exception {
         MACMessage msg = new MACMessage();
         msg.addRecipient(recipient256);
         
@@ -155,7 +153,7 @@ public class MACMessageTest extends TestBase {
     }    
 
     @Test
-    public void macUnsupportedAlgorithm() throws CoseException, InvalidCipherTextException, Exception {
+    public void macUnsupportedAlgorithm() throws CoseException, Exception {
         MACMessage msg = new MACMessage();
         msg.addRecipient(recipient256);
         
@@ -167,7 +165,7 @@ public class MACMessageTest extends TestBase {
     }    
 
     @Test
-    public void macNoContent() throws CoseException, InvalidCipherTextException, Exception {
+    public void macNoContent() throws CoseException, Exception {
         MACMessage msg = new MACMessage();
         msg.addRecipient(recipient256);
         

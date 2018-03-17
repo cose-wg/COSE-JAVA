@@ -8,10 +8,7 @@ package COSE;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.math.BigInteger;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.asn1.nist.NISTNamedCurves;
 
-import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -321,17 +318,6 @@ public class OneKey {
         */
     }
 
-    public X9ECParameters GetCurve() throws CoseException {    
-        if (OneKey.this.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 key");
-        CBORObject cnCurve = OneKey.this.get(KeyKeys.EC2_Curve);
-        
-        if (cnCurve == KeyKeys.EC2_P256) return NISTNamedCurves.getByName("P-256");
-        if (cnCurve == KeyKeys.EC2_P384) return NISTNamedCurves.getByName("P-384");
-        if (cnCurve == KeyKeys.EC2_P521) return NISTNamedCurves.getByName("P-521");
-        throw new CoseException("Unsupported curve " + cnCurve);
-    }
-    
-    
     public ECGenParameterSpec GetCurve2() throws CoseException {
         if (OneKey.this.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 key");
         CBORObject cnCurve = OneKey.this.get(KeyKeys.EC2_Curve);
@@ -434,6 +420,8 @@ public class OneKey {
             key.add(KeyKeys.EC2_X, CBORObject.FromObject(rgbX));
             key.add(KeyKeys.EC2_Y, CBORObject.FromObject(rgbY));
             key.add(KeyKeys.EC2_D, CBORObject.FromObject(rgbD));
+            key.publicKey = keyPair.getPublic();
+            key.privateKey = keyPair.getPrivate();
             
             return key;
 
@@ -503,6 +491,8 @@ public class OneKey {
             key.add(KeyKeys.EC2_X, CBORObject.FromObject(rgbX));
             key.add(KeyKeys.EC2_Y, CBORObject.FromObject(rgbY));
             key.add(KeyKeys.EC2_D, CBORObject.FromObject(rgbD));
+            key.publicKey = keyPair.getPublic();
+            key.privateKey = keyPair.getPrivate();
             
             return key;
 
@@ -586,18 +576,6 @@ public class OneKey {
      */
     public PublicKey AsPublicKey() throws CoseException
     {
-        if (publicKey == null) {
-            if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
-            {
-                try {
-                    publicKey = new COSE_ECPublicKey(this);
-                }
-                catch (IOException e) {
-                    throw new CoseException("Internal Error encoding the key");
-                }
-            }
-            else throw new CoseException("Cannot convert key as key type is not converted");
-        }
         return publicKey;
     }
     
@@ -609,17 +587,6 @@ public class OneKey {
      */
     public PrivateKey AsPrivateKey() throws CoseException
     {
-        if (privateKey == null) {
-            if (get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2))
-            {
-                try {
-                    privateKey = new COSE_ECPrivateKey(this);
-                } catch (IOException ex) {
-                    throw new CoseException("Internal error encoding the key");
-                }
-            }
-            else throw new CoseException("Cannot convert key as key type is not converted");
-        }
         return privateKey;
     }
     

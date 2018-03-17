@@ -21,6 +21,10 @@ public abstract class SignCommon extends Message {
 
     byte[] computeSignature(byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
+        return computeSignature(alg, rgbToBeSigned, cnKey);
+    }
+
+    static byte[] computeSignature(AlgorithmID alg, byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
         String      algName = null;
         int         sigLen = 0;
         
@@ -46,10 +50,8 @@ public abstract class SignCommon extends Message {
             throw new NullPointerException();
         }
         
-        PrivateKey  privKey = null;
-        try {
-            privKey = cnKey.AsPrivateKey();
-        } catch (NullPointerException ex) {
+        PrivateKey  privKey = cnKey.AsPrivateKey();
+        if (privKey == null) {
             throw new CoseException("Private key required to sign");
         }
         
@@ -69,7 +71,7 @@ public abstract class SignCommon extends Message {
         return result;
     }
     
-    private byte[] convertDerToConcat(byte[] der, int len) throws CoseException {
+    private static byte[] convertDerToConcat(byte[] der, int len) throws CoseException {
         // this is far too naive
         byte[] concat = new byte[len * 2];
 
@@ -114,6 +116,10 @@ public abstract class SignCommon extends Message {
     
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
+        return validateSignature(alg, rgbToBeSigned, rgbSignature, cnKey);
+    }
+
+    static boolean validateSignature(AlgorithmID alg, byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         String algName = null;
 
         switch (alg) {
@@ -135,10 +141,8 @@ public abstract class SignCommon extends Message {
             throw new NullPointerException();
         }
 
-        PublicKey pubKey = null;
-        try {
-            pubKey = cnKey.AsPublicKey();
-        } catch (NullPointerException ex) {
+        PublicKey pubKey = cnKey.AsPublicKey();
+        if (pubKey == null) {
             throw new CoseException("Public key required to verify");
         }
 
@@ -159,7 +163,7 @@ public abstract class SignCommon extends Message {
         return result;
     }
 
-    private byte[] convertConcatToDer(byte[] concat) throws CoseException {
+    private static byte[] convertConcatToDer(byte[] concat) throws CoseException {
         int len = concat.length / 2;
         byte[] r = Arrays.copyOfRange(concat, 0, len);
         byte[] s = Arrays.copyOfRange(concat, len, concat.length);
