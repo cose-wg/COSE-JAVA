@@ -7,9 +7,20 @@ jdk:
 
 before_install:
   - sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g' ~/.m2/settings.xml
+  - if [ ! -z "$GPG_SECRET_KEYS" ]; then echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import; fi
+  - if [ ! -z "$GPG_OWNERTRUST" ]; then echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust; fi
+  - git clone git://github.com/cose-wg/Examples Examples
 
 script:
-  - git clone git://github.com/cose-wg/Examples Examples
   - ls
   - mvn test -B
-  
+
+deploy:
+  -
+    provider: script
+    script: ./travis/deploy.sh
+    skip_cleanup: true
+    on:
+      repro: Com.AugustCellars.Com/coase-java
+      tags: true
+      jdk: oraclejdk8
