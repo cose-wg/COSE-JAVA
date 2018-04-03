@@ -32,7 +32,7 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
-            "Examples/CWT",
+            "Examples/eddsa-examples",
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
@@ -802,6 +802,10 @@ public class RegressionTest extends TestBase {
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(2));
                             break;
                             
+                        case "OKP":
+                            cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(1));
+                            break;
+                            
                         case "oct":
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(4));
                             break;
@@ -820,6 +824,14 @@ public class RegressionTest extends TestBase {
                             
                         case "P-521":
                             cnValue = CBORObject.FromObject(3);
+                            break;
+                            
+                        case "Ed25519":
+                            cnValue = CBORObject.FromObject(6);
+                            break;
+                            
+                        case "Ed448":
+                            cnValue = CBORObject.FromObject(7);
                             break;
                     }
                     
@@ -935,6 +947,7 @@ public class RegressionTest extends TestBase {
          case "ECDH-SS-A192KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_192.AsCBOR();
          case "ECDH-ES-A256KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_256.AsCBOR();
          case "ECDH-SS-A256KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_256.AsCBOR();
+         case "EdDSA": return AlgorithmID.EDDSA.AsCBOR();
 
          default: return old;
          }
