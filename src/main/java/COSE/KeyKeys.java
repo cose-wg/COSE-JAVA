@@ -22,16 +22,22 @@ public enum KeyKeys {
     EC2_X(-2),
     EC2_Y(-3),
     EC2_D(-4),
+    OKP_Curve(-1),
+    OKP_X(-2),
+    OKP_D(-4),
             ;
     
     private final CBORObject value;
     
+    public final static CBORObject KeyType_OKP = CBORObject.FromObject(1);
     public final static CBORObject KeyType_EC2 = CBORObject.FromObject(2);
     public final static CBORObject KeyType_Octet =  CBORObject.FromObject(4);
     
     public final static CBORObject EC2_P256 = CBORObject.FromObject(1);
     public final static CBORObject EC2_P384 = CBORObject.FromObject(2);
     public final static CBORObject EC2_P521 = CBORObject.FromObject(3);
+    
+    public final static CBORObject OKP_Ed25519 = CBORObject.FromObject(6);
     
     KeyKeys(int val) {
         this.value = CBORObject.FromObject(val);

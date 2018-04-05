@@ -19,7 +19,10 @@ public class ASN1 {
     // 1.3.132.0.35
     public static final byte[] Oid_secp521r1 = new byte[]{0x06, 0x05, 0x2B, (byte) 0x81, 0x04, 0x00, 0x23};
 
-    static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
+    public static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
+    
+    // 1.3.101.112
+    public static final byte[] Oid_Ed25519 = new byte[]{0x6, 0x3, 0x2a, 101, 112};
     
     
     private static final byte[] SequenceX = new byte[]{0x30};
@@ -32,7 +35,7 @@ public class ASN1 {
      * @param keyBytes - encoded key bytes
      * @return - encoded SPKI
      */
-    public static byte[] EncodeSubjectPublicKeyInfo(byte[] oid, byte[] keyBytes) throws CoseException
+    public static byte[] EncodeSubjectPublicKeyInfo(byte[] algorithm, byte[] keyBytes) throws CoseException
     {
         //  SPKI ::= SEQUENCE {
         //       algorithm   SEQUENCE {
@@ -45,7 +48,7 @@ public class ASN1 {
         try {
         
         ArrayList<byte[]> xxx = new ArrayList<byte[]>();
-        xxx.add(AlgorithmIdentifier(oid_ecPublicKey, oid));
+        xxx.add(algorithm);
         xxx.add(new byte[]{3});
         xxx.add(GetLength(keyBytes.length+1));
         xxx.add(new byte[]{0});
@@ -59,18 +62,50 @@ public class ASN1 {
         }
     }
     
-    public static byte[] EncodePKCS8(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
+    public static byte[] EncodeEdDSASubjectPublicKeyInfo(byte[] oid, byte[] keyBytes) throws CoseException
+    {
+        //  SPKI ::= SEQUENCE {
+        //       algorithm   SEQUENCE {
+        //            oid = oid for algorithm
+        //            no parameters
+        //       }
+        //       subjectPublicKey BIT STRING CONTAINS  key bytes
+        //       }
+        //  }
+        try {
+        
+            ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+            xxx.add(AlgorithmIdentifier(oid, null));
+            xxx.add(new byte[]{3});
+            xxx.add(GetLength(keyBytes.length+1));
+            xxx.add(new byte[]{0});
+            xxx.add(keyBytes);
+       
+        return Sequence(xxx);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            System.out.print(e.toString());
+            throw e;
+        }
+    }
+    
+    public static byte[] EncodePKCS8(byte[] algorithm, byte[] keybytes, byte[] spki) throws CoseException
+    {
+        return EncodePKCS8(algorithm, keybytes, spki, false);
+    }
+
+    public static byte[] EncodePKCS8(byte[] algorithm, byte[] keyBytes, byte[] spki, boolean omitNestedOctet) throws CoseException
     {
         //  ECPrivateKey ::= SEQUENCE {
         //     version  INTEGER {1}
         //     privateKey OCTET STRING
-        //     parameters [0] OBJECT IDENTIFIER = named curve
+        //     parameters [0] ATTRIBUTES
         //     public key [1] BIT STRING OPTIONAL
         //  }
         //
         //  PKCS#8 ::= SEQUENCE {
         //     version INTEGER {0}
-        //      privateKeyALgorithm SEQUENCE {
+        //      privateKeyAlgorithm SEQUENCE {
         //           algorithm OID,
         //           parameters ANY
         //      }
@@ -79,30 +114,31 @@ public class ASN1 {
         //   }
         
         try {
-        ArrayList<byte[]> xxx = new ArrayList<byte[]>();
-        xxx.add(new byte[]{2, 1, 1});
-        xxx.add(new byte[]{4});
-        xxx.add(GetLength(keyBytes.length));
-        xxx.add(keyBytes);
-        xxx.add(new byte[]{(byte)0xa0});
-        xxx.add(GetLength(oid.length));
-        xxx.add(oid);
-        if (spki != null) {
-            xxx.add(new byte[]{(byte)0xa1});
-            xxx.add(GetLength(spki.length));
-            xxx.add(spki);
-        }
-        
-        byte[] ecPrivateKey = Sequence(xxx);
-        
-        xxx = new ArrayList<byte[]>();
-        xxx.add(new byte[]{2, 1, 0});
-        xxx.add(AlgorithmIdentifier(oid_ecPublicKey, oid));
-        xxx.add(new byte[]{4});
-        xxx.add(GetLength(ecPrivateKey.length));
-        xxx.add(ecPrivateKey);
-        
-        return Sequence(xxx);
+            ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+            xxx.add(new byte[]{2, 1, 1});
+            if (!omitNestedOctet) {
+                xxx.add(new byte[]{4});
+                xxx.add(GetLength(keyBytes.length + 2));
+            }
+            xxx.add(new byte[]{4});
+            xxx.add(GetLength(keyBytes.length));
+            xxx.add(keyBytes);
+            if (spki != null) {
+                xxx.add(new byte[]{(byte)0xa1});
+                xxx.add(GetLength(spki.length));
+                xxx.add(spki);
+            }
+
+            byte[] ecPrivateKey = Sequence(xxx);
+
+            xxx = new ArrayList<byte[]>();
+            xxx.add(new byte[]{2, 1, 0});
+            xxx.add(algorithm);
+            xxx.add(new byte[]{4});
+            xxx.add(GetLength(ecPrivateKey.length));
+            xxx.add(ecPrivateKey);
+
+            return Sequence(xxx);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             System.out.print(e.toString());
@@ -117,7 +153,7 @@ public class ASN1 {
         return Sequence(x);
     }
     
-    private static byte[] AlgorithmIdentifier(byte[] oid, byte[] params) throws CoseException
+    public static byte[] AlgorithmIdentifier(byte[] oid, byte[] params) throws CoseException
     {
         ArrayList<byte[]> xxx = new ArrayList<byte[]>();
         xxx.add(oid);
