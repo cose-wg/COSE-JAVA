@@ -43,7 +43,6 @@ public enum AlgorithmID {
     HKDF_HMAC_AES_256(-13, 256, 0),
     ECDSA_384(-35, 0, 0),
     ECDSA_512(-36, 0, 0),
-    EDDSA(-8, 0, 0),
     
     ECDH_ES_HKDF_256(-25, 0, 0),
     ECDH_ES_HKDF_512(-26, 0, 0),
