@@ -33,7 +33,7 @@ Starting with version 0.9.7, the code was modified so that it only uses the JAVA
 ```java
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.security.Security;
-import java security.Provider;
+import java.security.Provider;
 
 public class InstallBouncyCastle {
    private static final Provider PROVIDER;
