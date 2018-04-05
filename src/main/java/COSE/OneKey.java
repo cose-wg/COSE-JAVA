@@ -25,9 +25,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
 
 /**
  *
@@ -178,12 +175,8 @@ public class OneKey {
         else if (val.equals(KeyKeys.KeyType_EC2)) {
             CheckECKey();
         }
-        else if (val.equals(KeyKeys.KeyType_OKP)) {
-            CheckOkpKey();
-        }
         else throw new CoseException("Unsupported key type");
     }
-    
     private void CheckECKey() throws CoseException {
         // ECParameterSpec         params = null; //   new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
         boolean                 needPublic = false;
@@ -211,7 +204,7 @@ public class OneKey {
             if (val != null) {
                 if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
                 try {
-                    byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), val.GetByteString(), null, true);
+                    byte[] pkcs8 = ASN1.EncodePKCS8(oid, val.GetByteString(), null);
                     
                     KeyFactory fact = KeyFactory.getInstance("EC");
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
@@ -266,7 +259,7 @@ public class OneKey {
                      rgbKey[0] = 4;
                  }
 
-                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), rgbKey);        
+                spki = ASN1.EncodeSubjectPublicKeyInfo(oid, rgbKey);        
             }
        
             KeyFactory fact = KeyFactory.getInstance("EC", "BC");
@@ -282,6 +275,47 @@ public class OneKey {
         catch (NoSuchProviderException e) {
             throw new CoseException("BC not found");
         }
+        
+/*        
+        X9ECParameters          curve = GetCurve();
+        ECDomainParameters      params = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+        boolean                 needPublic = false;
+        ECPrivateKeyParameters  privKey = null;
+        ECPublicKeyParameters   pubKey = null;
+        CBORObject              val;
+
+        val = OneKey.this.get(KeyKeys.EC2_D);
+        if (val != null) {
+            if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+            privKey = new ECPrivateKeyParameters(new BigInteger(1, val.GetByteString()),
+                                                    params);
+        }
+
+        val = OneKey.this.get(KeyKeys.EC2_X);
+        if (val == null) {
+            if (privKey == null) throw new CoseException("Malformed key structure");
+            else needPublic = true;
+        }
+        else if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
+
+        val = OneKey.this.get(KeyKeys.EC2_Y);
+        if (val == null) {
+            if (privKey == null) throw new CoseException("Malformed key structure");
+            else needPublic = true;
+        }
+        else if ((val.getType() != CBORType.ByteString) && (val.getType() != CBORType.Boolean)) throw new CoseException("Malformed key structure");
+
+        if (privKey != null && needPublic) {
+            // todo: calculate (and populate) public from private
+            pubKey = new ECPublicKeyParameters(params.getG().multiply(privKey.getD()), params);
+            byte[] rgbX = pubKey.getQ().normalize().getXCoord().getEncoded();
+            byte[] rgbY = pubKey.getQ().normalize().getYCoord().getEncoded();
+            add(KeyKeys.EC2_X, CBORObject.FromObject(rgbX));
+            add(KeyKeys.EC2_Y, CBORObject.FromObject(rgbY));
+        } else {
+            // todo: validate public on curve
+        }
+        */
     }
 
     public ECGenParameterSpec GetCurve2() throws CoseException {
@@ -309,9 +343,6 @@ public class OneKey {
             case ECDSA_512:
                 returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521);
                 break;
-                
-            case EDDSA:
-                returnThis = generateOkpKey("EdDSA", KeyKeys.OKP_Ed25519);
 
             default:
                 throw new CoseException("Unknown algorithm");
@@ -336,13 +367,9 @@ public class OneKey {
             case 3:
                 curveName = "P-521";
                 break;
-                
-            case 6:
-                curveName = "Ed25519";
-                return generateOkpKey(curveName, curve);
 
             default:
-                throw new CoseException("Unknown curve");
+                throw new CoseException("Unkonwn curve");
         }
 
         OneKey returnThis = generateECDHKey(curveName, curve);
@@ -586,117 +613,4 @@ public class OneKey {
     public void setUserData(Object newData) {
         UserData = newData;
     }
-
-    private void CheckOkpKey() throws CoseException {
-        boolean                 needPublic = false;
-        CBORObject              val;
-
-        byte[] oid;
-        CBORObject cn = this.get(KeyKeys.OKP_Curve);
-        if (cn == KeyKeys.OKP_Ed25519) {
-            oid = ASN1.Oid_Ed25519;
-        }
-        else {
-            throw new CoseException("Key as an unknown curve");
-        }
-
-        try {
-
-            val = this.get(KeyKeys.OKP_D);
-            if (val != null) {
-                if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
-                try {
-                    byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), val.GetByteString(), null);
-                    
-                    KeyFactory fact = KeyFactory.getInstance("EdDSA");
-                    KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
-
-                    privateKey = fact.generatePrivate(keyspec);
-                }
-                catch (NoSuchAlgorithmException e) {
-                    throw new CoseException("Unsupported Algorithm", e);
-                }
-                catch (InvalidKeySpecException e) {
-                    throw new CoseException("Invalid Private Key", e);
-                }
-            }
-
-            val = this.get(KeyKeys.OKP_X);
-            if (val == null) {
-                if (privateKey == null) throw new CoseException("Malformed key structure");
-                else needPublic = true;
-            }
-            else if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
-
-            if (privateKey != null && needPublic) {
-                byte[] pkcs8 = privateKey.getEncoded();
-                return;
-
-                // todo: calculate (and populate) public from private
-            }
-
-            byte[] spki = null;
-
-           if (spki == null) {
-                byte[] rgbKey = null;
-                byte[] X = this.get(KeyKeys.OKP_X).GetByteString();
-
-                
-                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(oid, null), rgbKey);        
-            }
-       
-            KeyFactory fact = KeyFactory.getInstance("EdDSA");
-            KeySpec keyspec = new X509EncodedKeySpec(spki);
-            publicKey = fact.generatePublic(keyspec);
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new CoseException("Alorithm unsupported", e);
-        }
-        catch (InvalidKeySpecException e) {
-            throw new CoseException("Internal error on SPKI", e);
-        }
-    }
-    
-    static private OneKey generateOkpKey(String curveName, CBORObject curve) throws CoseException { 
-        try {
-            int curveSize;
-            
-            switch (curveName) {
-                case "Ed25519":
-                    
-                    break;
-
-                default:
-                    throw new CoseException("Internal Error");
-            }
-
-            EdDSAGenParameterSpec paramSpec = new EdDSAGenParameterSpec(curveName);
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("EdDSA");
-            gen.initialize(paramSpec);
-            
-            KeyPair keyPair = gen.genKeyPair();
-            
-            ECPoint pubPoint = ((ECPublicKey) keyPair.getPublic()).getW();
-                        
-            byte[] rgbX = ((EdDSAPublicKey) keyPair.getPublic()).getEncoded();
-            byte[] rgbD = ((EdDSAPrivateKey) keyPair.getPrivate()).getEncoded();
-
-            OneKey key = new OneKey();
-
-            key.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);
-            key.add(KeyKeys.OKP_Curve, curve);
-            key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
-            key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
-            key.publicKey = keyPair.getPublic();
-            key.privateKey = keyPair.getPrivate();
-            
-            return key;
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new CoseException("No provider for algorithm", e);
-        }
-        catch (InvalidAlgorithmParameterException e) {
-            throw new CoseException("The curve is not supported", e);
-        }
-    }    
 }
