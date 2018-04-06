@@ -6,12 +6,29 @@
 package COSE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
  * @author Jim
  */
 public class ASN1 {
+    public static class TagValue {
+        public int tag;
+        public byte[] value;
+        public ArrayList<TagValue> list;
+        
+        public TagValue(int tagIn, byte[] valueIn) {
+            tag = tagIn;
+            value = valueIn;
+        }
+        
+        public TagValue(int tagIn, ArrayList<TagValue> listIn) {
+            tag = tagIn;
+            list = listIn;
+        }
+    }
+    
     // 1.2.840.10045.3.1.7
     public static final byte[] Oid_secp256r1 = new byte[]{0x06, 0x08, 0x2A, (byte) 0x86, 0x48, (byte) 0xCE, 0x3D, 0x03, 0x01, 0x07};
     // 1.3.132.0.34
@@ -19,7 +36,7 @@ public class ASN1 {
     // 1.3.132.0.35
     public static final byte[] Oid_secp521r1 = new byte[]{0x06, 0x05, 0x2B, (byte) 0x81, 0x04, 0x00, 0x23};
 
-    static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
+    public static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
     
     
     private static final byte[] SequenceX = new byte[]{0x30};
@@ -57,6 +74,52 @@ public class ASN1 {
             System.out.print(e.toString());
             throw e;
         }
+    }
+    
+    public static ArrayList<TagValue> DecodeSubjectPublicKeyInfo(byte[] encoding) throws CoseException
+    {
+        TagValue spki = DecodeCompound(0, encoding);
+        if (spki.tag != 0x30) throw new CoseException("Invalid SPKI");
+        ArrayList<TagValue> tvl = spki.list;
+        
+        if (tvl.get(0).tag != 0x30) throw new CoseException("Invalid SPKI");
+        if (tvl.get(1).tag != 3) throw new CoseException("Invalid SPKI");
+        
+        return tvl;
+    }
+    
+    public static TagValue DecodeCompound(int offset, byte[] encoding) throws CoseException
+    {
+        ArrayList<TagValue> result = new ArrayList<TagValue>();
+        if ((encoding[offset] & 0x20) != 0x20) throw new CoseException("Invalid structure");
+        int[] l = DecodeLength(offset+1, encoding);
+        int sequenceLength = l[1];
+        if (offset + sequenceLength > encoding.length) throw new CoseException("Invalid sequence");
+        offset += l[0]+1;
+
+        while (sequenceLength > 0) {
+            int tag = encoding[offset];
+            if ((tag & 0x20) != 0) {
+                // Cheat and assume we only do sequences.  Otherwise generalize this function
+                l = DecodeLength(offset+1, encoding);
+                result.add(DecodeCompound(offset, encoding));
+                offset += 1 + l[0] + l[1];
+                sequenceLength -= 1 + l[0] + l[1];                    
+            }
+            else {
+                l = DecodeLength(offset+1, encoding);
+                if (tag == 6) {
+                    result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset, offset+l[1]+l[0]+1)));                
+                }
+                else {
+                    result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset+l[0]+1, offset+1+l[0]+l[1])));
+                }
+                offset += 1 + l[0] + l[1];
+                sequenceLength -= 1 + l[0] + l[1];
+            }
+        }
+        
+        return new TagValue(encoding[0], result);
     }
     
     public static byte[] EncodePKCS8(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
@@ -109,6 +172,32 @@ public class ASN1 {
             throw e;
         }
     }
+    
+    public static ArrayList<TagValue> DecodePKCS8(byte[] encodedData) throws CoseException 
+    {
+        TagValue pkcs8 = DecodeCompound(0, encodedData);
+        if (pkcs8.tag != 0x30) throw new CoseException("Invalid PKCS8 structure");
+        ArrayList<TagValue> retValue = pkcs8.list;
+        if (retValue.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 0) {
+            throw new CoseException("Invalid PKCS8 structure");
+        }
+        if (retValue.get(1).tag != 0x30) throw new CoseException("Invalid PKCS8 structure");
+        if (retValue.get(2).tag != 4) throw new CoseException("Invalid PKCS8 structure");
+        byte[] pk = (byte[]) retValue.get(2).value;
+        TagValue pkd = DecodeCompound(0, pk);
+        ArrayList<TagValue> pkdl = pkd.list;
+        if (pkdl.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 1) {
+            throw new CoseException("Invalid Private Key structure");
+        }
+        if (pkdl.get(1).tag != 4) throw new CoseException("Invalid Private Key structure");
+        retValue.get(2).list = pkdl;
+        retValue.get(2).value = null;
+        retValue.get(2).tag = 0x30;
+        
+        return retValue;
+    }
+    
+    
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
         x.add(UnsignedInteger(r));
@@ -167,6 +256,21 @@ public class ASN1 {
             return new byte[]{(byte) 0x81, (byte) x};
         }
         throw new CoseException("Error in ASN1.GetLength");
+    }
+    
+    private static int[] DecodeLength(int offset, byte[] data)
+    {
+        int length;
+        int i;
+        
+        if ((data[offset] & 0x80) == 0) return new int[]{1, data[offset]};
+        length = data[offset] & 0x7f;
+        int retValue = 0;
+        for (i=0; i<length; i++) {
+            retValue = retValue*256 + (data[i+offset+1] & 0xff);
+        }
+        
+        return new int[]{length+1, retValue};
     }
     
     private static byte[] ToBytes(ArrayList<byte[]> x)

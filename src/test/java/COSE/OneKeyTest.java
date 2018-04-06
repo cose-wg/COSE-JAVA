@@ -6,9 +6,14 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -266,6 +271,20 @@ public class OneKeyTest extends TestBase {
     public void testHasKeyType_value() throws CoseException {
         OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_256);
         Assert.assertTrue(key.HasKeyType(KeyKeys.KeyType_EC2));
+    }
+    
+    @Test
+    public void testFromPublic() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, CoseException {
+            ECGenParameterSpec paramSpec = new ECGenParameterSpec("P-256");
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+            gen.initialize(paramSpec);
+            
+            KeyPair keyPair = gen.genKeyPair();
+            
+            OneKey pubKey = new OneKey(keyPair.getPublic(), null);
+            OneKey privKey = new OneKey(null, keyPair.getPrivate());
+            OneKey bothKey = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
+        
     }
      
     static String byteArrayToHex(byte[] a) {
