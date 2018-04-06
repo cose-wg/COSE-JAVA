@@ -83,6 +83,7 @@ public class ASN1 {
         ArrayList<TagValue> tvl = spki.list;
         
         if (tvl.get(0).tag != 0x30) throw new CoseException("Invalid SPKI");
+        if (tvl.get(0).list.get(0).tag != 6) throw new CoseException("Invalid SPKI");
         if (tvl.get(1).tag != 3) throw new CoseException("Invalid SPKI");
         
         return tvl;
