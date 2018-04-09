@@ -339,20 +339,21 @@ public class OneKey {
                 spki = ASN1.EncodeSubjectPublicKeyInfo(oid, rgbKey);        
             }
        
-            KeyFactory fact = KeyFactory.getInstance("EC", "BC");
+            KeyFactory fact = KeyFactory.getInstance("EC"/*, "BC"*/);
             KeySpec keyspec = new X509EncodedKeySpec(spki);
             publicKey = fact.generatePublic(keyspec);
-            }
+        }
         catch (NoSuchAlgorithmException e) {
             throw new CoseException("Alorithm unsupported", e);
         }
         catch (InvalidKeySpecException e) {
             throw new CoseException("Internal error on SPKI", e);
        }
+        /*
         catch (NoSuchProviderException e) {
             throw new CoseException("BC not found");
         }
-        
+        */
 /*        
         X9ECParameters          curve = GetCurve();
         ECDomainParameters      params = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
