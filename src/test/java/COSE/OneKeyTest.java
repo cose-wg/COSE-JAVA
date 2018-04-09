@@ -6,9 +6,15 @@
 package COSE;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -267,6 +273,46 @@ public class OneKeyTest extends TestBase {
         OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_256);
         Assert.assertTrue(key.HasKeyType(KeyKeys.KeyType_EC2));
     }
+    
+    @Test
+    public void testFromPublic() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, CoseException {
+            ECGenParameterSpec paramSpec = new ECGenParameterSpec("P-256");
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+            gen.initialize(paramSpec);
+            
+            KeyPair keyPair = gen.genKeyPair();
+            
+            OneKey pubKey = new OneKey(keyPair.getPublic(), null);
+            OneKey privKey = new OneKey(null, keyPair.getPrivate());
+            OneKey bothKey = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
+        
+    }
+    
+    @Test
+    public void testRoundTrip() throws CoseException {
+        CBORObject cborKey = CBORObject.NewMap();
+        cborKey.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+        cborKey.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+        cborKey.Add(KeyKeys.EC2_D.AsCBOR(), hexStringToByteArray("6c1382765aec5358f117733d281c1c7bdc39884d04a45a1e6c67c858bc206c19"));
+        cborKey.Add(KeyKeys.EC2_Y.AsCBOR(), hexStringToByteArray("60f7f1a780d8a783bfb7a2dd6b2796e8128dbbcef9d3d168db9529971a36e7b9"));
+        cborKey.Add(KeyKeys.EC2_X.AsCBOR(), hexStringToByteArray("143329cce7868e416927599cf65a34f3ce2ffda55a7eca69ed8919a394d42f0f"));
+        
+        OneKey oneKey = new OneKey(cborKey);
+        PublicKey pubKey = oneKey.AsPublicKey();
+        PrivateKey privKey = oneKey.AsPrivateKey();
+        
+        OneKey oneKey2 = new OneKey(pubKey, privKey);
+        Assert.assertEquals(oneKey2.get(KeyKeys.KeyType), oneKey.get(KeyKeys.KeyType));
+        Assert.assertEquals(oneKey2.get(KeyKeys.EC2_Curve), oneKey2.get(KeyKeys.EC2_Curve));
+        Assert.assertArrayEquals(oneKey2.get(KeyKeys.EC2_X).GetByteString(), oneKey.get(KeyKeys.EC2_X).GetByteString());
+        if (oneKey2.get(KeyKeys.EC2_Y).getType() == CBORType.ByteString) {
+            Assert.assertArrayEquals(oneKey2.get(KeyKeys.EC2_Y).GetByteString(), oneKey.get(KeyKeys.EC2_Y).GetByteString());            
+        }
+        else {
+            Assert.assertTrue("Need to implement this", false);
+        }
+        Assert.assertArrayEquals(oneKey2.get(KeyKeys.EC2_D).GetByteString(), oneKey.get(KeyKeys.EC2_D).GetByteString());
+    }
      
     static String byteArrayToHex(byte[] a) {
        StringBuilder sb = new StringBuilder(a.length * 2);
@@ -274,4 +320,15 @@ public class OneKeyTest extends TestBase {
             sb.append(String.format("%02x", b & 0xff));
         return sb.toString();
     }
+
+    public byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }  
+    
 }
