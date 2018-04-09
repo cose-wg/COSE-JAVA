@@ -42,8 +42,9 @@ public abstract class SignCommon extends Message {
                 sigLen = 66;
                 break;
             case EDDSA:
-                algName = "NONEwithEdDSA";
-                break;                
+                algName = "NonewithEdDSA";
+                break;
+                
             default:
                 throw new CoseException("Unsupported Algorithm Specified");
         }
@@ -140,8 +141,11 @@ public abstract class SignCommon extends Message {
             algName = "SHA512withECDSA";
             convert = true;
             break;
+            
         case EDDSA:
-            algName = "NONEwithEdDSA";
+            algName = "NonewithEdDSA";
+            break;
+
         default:
             throw new CoseException("Unsupported Algorithm Specified");
         }

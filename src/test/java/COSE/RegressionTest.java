@@ -803,7 +803,7 @@ public class RegressionTest extends TestBase {
                             break;
                             
                         case "OKP":
-                            cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(1));
+                            cnKeyOut.set(CBORObject.FromObject(1), KeyKeys.KeyType_OKP);
                             break;
                             
                         case "oct":
@@ -825,14 +825,10 @@ public class RegressionTest extends TestBase {
                         case "P-521":
                             cnValue = CBORObject.FromObject(3);
                             break;
-                            
-                        case "Ed25519":
-                            cnValue = CBORObject.FromObject(6);
-                            break;
-                            
-                        case "Ed448":
-                            cnValue = CBORObject.FromObject(7);
-                            break;
+                                    
+                                    case "Ed25519":
+                                        cnValue = KeyKeys.OKP_Ed25519;
+                                        break;
                     }
                     
                             
@@ -1137,7 +1133,9 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
             }
         }
         catch (Exception e) {
-            CFails++;
+           System.out.print("... Exception " + e + "\n");
+
+           CFails++;
         }
 	return 0;
     }

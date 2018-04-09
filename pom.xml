@@ -107,12 +107,6 @@
 	  <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>net.i2p.crypto</groupId>
-          <artifactId>eddsa</artifactId>
-          <version>0.2.0</version>
-          <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.upokecenter</groupId>
             <artifactId>cbor</artifactId>
             <version>2.4.1</version>
@@ -141,6 +135,12 @@
                     <artifactId>selenium-remote-driver</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
+            <version>0.2.0</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 
