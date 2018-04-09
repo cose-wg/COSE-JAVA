@@ -658,9 +658,7 @@ public class OneKey {
     }
     
     static private OneKey generateOkpKey(String curveName, CBORObject curve) throws CoseException { 
-        try {
-            int curveSize;
-            
+        try {            
             switch (curveName) {
                 case "Ed25519":
                     
@@ -675,9 +673,7 @@ public class OneKey {
             gen.initialize(paramSpec);
             
             KeyPair keyPair = gen.genKeyPair();
-            
-            ECPoint pubPoint = ((ECPublicKey) keyPair.getPublic()).getW();
-                        
+                                    
             byte[] rgbX = ((EdDSAPublicKey) keyPair.getPublic()).getEncoded();
             byte[] rgbD = ((EdDSAPrivateKey) keyPair.getPrivate()).getEncoded();
 
