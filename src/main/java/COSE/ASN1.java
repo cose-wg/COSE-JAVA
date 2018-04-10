@@ -21,13 +21,21 @@ public class ASN1 {
 
     static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
     
+    // 1.3.101.110
+    public static final byte[] Oid_X25519 = new byte[]{0x6, 3, 0x2b, 101, 110};
+    // 1.3.101.111
+    public static final byte[] Oid_X448 = new byte[]{0x6, 3, 0x2b, 101, 111};
     // 1.3.101.112
     public static final byte[] Oid_Ed25519 = new byte[]{0x6, 0x3, 0x2b, 101, 112};
+    //  1.3.101.113
+    public static final byte[] Oid_Ed448 = new byte[]{0x6, 0x3, 0x2b, 101, 113};
     
-    private static final byte[] SequenceX = new byte[]{0x30};
+    private static final byte[] SequenceTag = new byte[]{0x30};
+    private static final byte[] OctetStringTag = new byte[]{0x4};
+    private static final byte[] BitStringTag = new byte[]{0x3};
     
     /**
-     * Encode a subject public key info structure from an oid and the data bytes
+     * Encode a subject public key info structure from an OID and the data bytes
      * for the key
      * 
      * @param oid - encoded Object Identifier
@@ -71,9 +79,17 @@ public class ASN1 {
      */
     public static byte[] EncodeEcPrivateKey(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
     {
+        //  ECPrivateKey ::= SEQUENCE {
+        //     version  INTEGER {1}
+        //     privateKey OCTET STRING
+        //     parameters [0] OBJECT IDENTIFIER = named curve
+        //     public key [1] BIT STRING OPTIONAL
+        //  }
+        //
+
         ArrayList<byte[]> xxx = new ArrayList<byte[]>();
         xxx.add(new byte[]{2, 1, 1});
-        xxx.add(new byte[]{4});
+        xxx.add(OctetStringTag);
         xxx.add(GetLength(keyBytes.length));
         xxx.add(keyBytes);
         xxx.add(new byte[]{(byte)0xa0});
@@ -92,13 +108,6 @@ public class ASN1 {
     
     public static byte[] EncodePKCS8(byte[] algorithm, byte[] privateKey, byte[] spki) throws CoseException
     {
-        //  ECPrivateKey ::= SEQUENCE {
-        //     version  INTEGER {1}
-        //     privateKey OCTET STRING
-        //     parameters [0] OBJECT IDENTIFIER = named curve
-        //     public key [1] BIT STRING OPTIONAL
-        //  }
-        //
         //  PKCS#8 ::= SEQUENCE {
         //     version INTEGER {0}
         //      privateKeyALgorithm SEQUENCE {
@@ -115,7 +124,7 @@ public class ASN1 {
             xxx = new ArrayList<byte[]>();
             xxx.add(new byte[]{2, 1, 0});
             xxx.add(algorithm);
-            xxx.add(new byte[]{4});
+            xxx.add(OctetStringTag);
             xxx.add(GetLength(privateKey.length));
             xxx.add(privateKey);
 
@@ -126,6 +135,7 @@ public class ASN1 {
             throw e;
         }
     }
+    
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
         x.add(UnsignedInteger(r));
@@ -136,7 +146,7 @@ public class ASN1 {
     
     public static byte[] EncodeOctetString(byte[] data) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
-        x.add(new byte[]{4});
+        x.add(OctetStringTag);
         x.add(GetLength(data.length));
         x.add(data);
         
@@ -152,16 +162,18 @@ public class ASN1 {
         }
         return Sequence(xxx);
     }
+    
     private static byte[] Sequence(ArrayList<byte[]> members) throws CoseException
     {
         byte[] y = ToBytes(members);
         ArrayList<byte[]> x = new ArrayList<byte[]>();
-        x.add(SequenceX);
+        x.add(SequenceTag);
         x.add(GetLength(y.length));
         x.add(y);
         
         return ToBytes(x);
     }
+    
     private static byte[] UnsignedInteger(byte[] i) throws CoseException {
         int pad = 0, offset = 0;
 
@@ -175,6 +187,9 @@ public class ASN1 {
         if ((i[offset] & 0x80) != 0) {
             pad++;
         }
+        
+        // M00BUG - Errors in the event of length > 127
+        
         int length = i.length - offset;
         byte[] der = new byte[2 + length + pad];
         der[0] = 0x02;

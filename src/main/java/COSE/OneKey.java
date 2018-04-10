@@ -626,11 +626,25 @@ public class OneKey {
     private void CheckOkpKey() throws CoseException {
         boolean                 needPublic = false;
         CBORObject              val;
+        String  algName;
 
         byte[] oid;
         CBORObject cn = this.get(KeyKeys.OKP_Curve);
         if (cn == KeyKeys.OKP_Ed25519) {
             oid = ASN1.Oid_Ed25519;
+            algName = "EdDSA";
+        }
+        else if (cn == KeyKeys.OKP_Ed448) {
+            oid = ASN1.Oid_Ed448;
+            algName = "EdDSA";
+        }
+        else if (cn == KeyKeys.OKP_X25519) {
+            oid = ASN1.Oid_X25519;
+            algName = "EdDH";
+        }
+        else if (cn == KeyKeys.OKP_X448) {
+            oid = ASN1.Oid_X448;
+            algName = "ECDH";
         }
         else {
             throw new CoseException("Key has an unknown curve");
@@ -646,7 +660,7 @@ public class OneKey {
                     byte[] privateKeyBytes = ASN1.EncodeOctetString(val.GetByteString());
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), privateKeyBytes, null);
                     
-                    KeyFactory fact = KeyFactory.getInstance("EdDSA");
+                    KeyFactory fact = KeyFactory.getInstance(algName);
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
                     privateKey = fact.generatePrivate(keyspec);

@@ -87,7 +87,8 @@ public class RegressionTest extends TestBase {
             else System.out.print("... FAIL\n");
         }
         catch (CoseException e) {
-            if (e.getMessage() == "Unsupported key size") {
+            if (e.getMessage() == "Unsupported key size" || 
+                    e.getMessage() == "Unsupported Algorithm") {
                 System.out.print("... SKIP\nException " + e + "\n");                
             }
             else {
@@ -826,9 +827,22 @@ public class RegressionTest extends TestBase {
                             cnValue = CBORObject.FromObject(3);
                             break;
                                     
-                                    case "Ed25519":
-                                        cnValue = KeyKeys.OKP_Ed25519;
-                                        break;
+                        case "Ed25519":
+                            cnValue = KeyKeys.OKP_Ed25519;
+                            break;
+
+                        case "Ed448":
+                            cnValue = KeyKeys.OKP_Ed448;
+                            throw new CoseException("Unsupported Algorithm");
+                            // break;
+
+                        case "X25519":
+                            cnValue = KeyKeys.OKP_X25519;
+                            break;
+
+                        case "X448":
+                            cnValue = KeyKeys.OKP_X448;
+                            break;
                     }
                     
                             
@@ -963,7 +977,7 @@ public class RegressionTest extends TestBase {
         return false;
     }
      
-    int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) {
+    int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) throws CoseException {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject pFail;
 	CBORObject cnSign;
@@ -1016,6 +1030,9 @@ public class RegressionTest extends TestBase {
                 }
             }
         }
+        catch (CoseException e) {
+            throw e;
+        }
         catch (Exception e) {
             System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
@@ -1023,7 +1040,7 @@ public class RegressionTest extends TestBase {
         return 0;
     }
 
-    int ValidateSigned(CBORObject cnControl)
+    int ValidateSigned(CBORObject cnControl) throws CoseException
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
@@ -1031,7 +1048,7 @@ public class RegressionTest extends TestBase {
 	return _ValidateSigned(cnControl, rgb);
     }
 
-    int BuildSignedMessage(CBORObject cnControl)
+    int BuildSignedMessage(CBORObject cnControl) throws CoseException
     {
 	int iSigner;
         byte[] rgb;
@@ -1094,7 +1111,7 @@ public class RegressionTest extends TestBase {
         return f;
     } 
     
-int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
+int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject cnSign;
@@ -1132,6 +1149,9 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
                 if (!fFail && !fFailInput) CFails++;
             }
         }
+        catch (CoseException e) {
+            throw e;
+        }
         catch (Exception e) {
            System.out.print("... Exception " + e + "\n");
 
@@ -1140,7 +1160,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 	return 0;
     }
 
-    int ValidateSign0(CBORObject cnControl)  
+    int ValidateSign0(CBORObject cnControl) throws CoseException  
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
@@ -1148,7 +1168,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 	return _ValidateSign0(cnControl, rgb);
     }
 
-    int BuildSign0Message(CBORObject cnControl)
+    int BuildSign0Message(CBORObject cnControl) throws CoseException
     {
         byte[] rgb;
 	//
