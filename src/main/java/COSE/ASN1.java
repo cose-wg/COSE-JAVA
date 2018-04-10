@@ -76,14 +76,14 @@ public class ASN1 {
         //       subjectPublicKey BIT STRING CONTAINS  key bytes
         //  }
         try {        
-        ArrayList<byte[]> xxx = new ArrayList<byte[]>();
-        xxx.add(algorithm);
-        xxx.add(new byte[]{3});
-        xxx.add(GetLength(keyBytes.length+1));
-        xxx.add(new byte[]{0});
-        xxx.add(keyBytes);
-       
-        return Sequence(xxx);
+            ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+            xxx.add(algorithm);
+            xxx.add(new byte[]{3});
+            xxx.add(ComputeLength(keyBytes.length+1));
+            xxx.add(new byte[]{0});
+            xxx.add(keyBytes);
+
+            return Sequence(xxx);
         }
         catch (ArrayIndexOutOfBoundsException e) {
             System.out.print(e.toString());
@@ -112,15 +112,18 @@ public class ASN1 {
         ArrayList<byte[]> xxx = new ArrayList<byte[]>();
         xxx.add(new byte[]{2, 1, 1});
         xxx.add(OctetStringTag);
-        xxx.add(GetLength(keyBytes.length));
+        xxx.add(ComputeLength(keyBytes.length));
         xxx.add(keyBytes);
         xxx.add(new byte[]{(byte)0xa0});
-        xxx.add(GetLength(oid.length));
+        xxx.add(ComputeLength(oid.length));
         xxx.add(oid);
         if (spki != null) {
             xxx.add(new byte[]{(byte)0xa1});
-            xxx.add(GetLength(spki.length));
+            xxx.add(ComputeLength(spki.length+1));
+            xxx.add(new byte[]{0});
             xxx.add(spki);
+        }
+        
         byte[] ecPrivateKey = Sequence(xxx);
      
         return ecPrivateKey;
@@ -217,7 +220,8 @@ public class ASN1 {
      * @return byte array of encoded bytes
      * @throws CoseException
      */
-    public static byte[] EncodePKCS8(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
+    public static byte[] EncodePKCS8(byte[] algorithm, byte[] keyBytes, byte[] spki) throws CoseException
+    {
         //  PKCS#8 ::= SEQUENCE {
         //     version INTEGER {0}
         //      privateKeyALgorithm SEQUENCE {
@@ -233,10 +237,10 @@ public class ASN1 {
 
           ArrayList<byte[]> xxx = new ArrayList<byte[]>();
             xxx.add(new byte[]{2, 1, 0});
-            xxx.add(AlgorithmIdentifier(oid_ecPublicKey, oid));
-            xxx.add(OctetstringTag);
-            xxx.add(ComputeLength(ecPrivateKey.length));
-            xxx.add(ecPrivateKey);
+            xxx.add(algorithm);
+            xxx.add(OctetStringTag);
+            xxx.add(ComputeLength(keyBytes.length));
+            xxx.add(keyBytes);
 
             return Sequence(xxx);
         }
@@ -324,7 +328,7 @@ public class ASN1 {
     public static byte[] EncodeOctetString(byte[] data) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
         x.add(OctetStringTag);
-        x.add(GetLength(data.length));
+        x.add(ComputeLength(data.length));
         x.add(data);
         
         return ToBytes(x);

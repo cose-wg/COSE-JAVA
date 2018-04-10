@@ -87,8 +87,8 @@ public class RegressionTest extends TestBase {
             else System.out.print("... FAIL\n");
         }
         catch (CoseException e) {
-            if (e.getMessage() == "Unsupported key size" || 
-                    e.getMessage() == "Unsupported Algorithm") {
+            if (e.getMessage().equals("Unsupported key size") || 
+                e.getMessage().equals("Unsupported Algorithm")) {
                 System.out.print("... SKIP\nException " + e + "\n");                
             }
             else {

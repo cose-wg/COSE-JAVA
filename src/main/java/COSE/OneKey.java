@@ -5,7 +5,6 @@
  */
 package COSE;
 
-import static COSE.ASN1.oid_ecPublicKey;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.math.BigInteger;
@@ -289,7 +288,7 @@ public class OneKey {
                 if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
                 try {
                     byte[] privateBytes = ASN1.EncodeEcPrivateKey(oid, val.GetByteString(), null);
-                    byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid_ecPublicKey, oid), privateBytes, null);
+                    byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), privateBytes, null);
                     
                     KeyFactory fact = KeyFactory.getInstance("EC");
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
