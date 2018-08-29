@@ -1,11 +1,15 @@
 # COSE-JAVA Implementation [![Build Status](https://travis-ci.org/cose-wg/COSE-JAVA.svg?branch=master)](https://travis-ci.org/cose-wg/COSE-JAVA) [![Maven Central](https://img.shields.io/maven-central/v/com.augustcellars.cose/cose-java.svg?style=plastic)](https://search.maven.org/#search%7Cga%7C1%7Ccose-java)
 
 This project is a JAVA implementation of the IETF CBOR Encoded Message Syntax (COSE).
-There are currently two versions of the COSE document that can be read.
-The most current work in progress draft can be found on github in the [cose-wg/cose-spec](https://cose-wg.github.io/cose-spec/) project.
-The IETF also keeps a copy of the spec in the [COSE WG](https://tools.ietf.org/html/draft-ietf-cose-msg).
+COSE has reached RFC status and is now available at [RFC 8152](https://tools.ietf.org/html/rfc8152).
+
+In addition to the core document the following have also become RFCs:
+
+* [RFC 8230](https://tools.ietf.org/html/rfc8230) How to use RSA algorithms with COSE. (Not currently supported)
 
 The project is implemented using Bouncy Castle for the crypto libraries and uses the PeterO CBOR library for its CBOR implementation.
+
+There is a partial implementation of EdDSA using the library found at et.i2p.crypto which can be installed as a Cryptographic Provider.  While this is expected to be released soon, it is currently only avaible on the EdDSA branch.
 
 ## How to Install
 

@@ -25,6 +25,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
@@ -45,6 +47,80 @@ public class OneKey {
         
         keyMap = keyData;
         CheckKeyState();
+    }
+    
+    /**
+     * Create a OneKey object from Java Public/Private keys
+     * @param pubKey - public key to use - may be null
+     * @param privKey - private key to use - may be null
+     * @throws CoseException
+     */
+    public OneKey(PublicKey pubKey, PrivateKey privKey) throws CoseException {
+        keyMap = CBORObject.NewMap();
+        
+        if (pubKey != null) {
+            ArrayList<ASN1.TagValue> spki = ASN1.DecodeSubjectPublicKeyInfo(pubKey.getEncoded());
+            ArrayList<ASN1.TagValue> alg = spki.get(0).list;
+            if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
+                byte[] oid = (byte[]) alg.get(1).value;
+                if (oid == null) throw new CoseException("Invalid SPKI structure");
+                // EC2 Key
+                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+                if (Arrays.equals(oid, ASN1.Oid_secp256r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+                else if (Arrays.equals(oid, ASN1.Oid_secp384r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
+                else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P521);
+                else throw new CoseException("Unsupported curve");
+
+                byte[] keyData = (byte[]) spki.get(1).value;
+                if (keyData[1] == 2 || keyData[1] == 3) {
+                    keyMap.Add(KeyKeys.EC2_X.AsCBOR(), Arrays.copyOfRange(keyData, 2, keyData.length));
+                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), keyData[1] == 2 ? false : true);                
+                }
+                else if (keyData[1] == 4) {
+                    int keyLength = (keyData.length - 2)/2;
+                    keyMap.Add(KeyKeys.EC2_X.AsCBOR(), Arrays.copyOfRange(keyData, 2, 2+keyLength));
+                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), Arrays.copyOfRange(keyData, 2+keyLength, keyData.length));                    
+                }
+                else throw new CoseException("Invalid key data");
+            }
+            else {
+                throw new CoseException("Unsupported Algorithm");
+            }
+            
+            this.publicKey = pubKey;
+        }
+        
+        if (privKey != null) {
+            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8(privKey.getEncoded());
+            if (pkl.get(0).tag != 2) throw new CoseException("Invalid PKCS8 structure");
+            ArrayList<ASN1.TagValue> alg = pkl.get(1).list;
+            if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
+                byte[] oid = (byte[]) alg.get(1).value;
+                if (oid == null) throw new CoseException("Invalid PKCS8 structure");
+                // EC2 Key
+                if (!keyMap.ContainsKey(KeyKeys.KeyType.AsCBOR())) {
+                    keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+                    if (Arrays.equals(oid, ASN1.Oid_secp256r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+                    else if (Arrays.equals(oid, ASN1.Oid_secp384r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
+                    else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P521);
+                    else throw new CoseException("Unsupported curve");
+                }
+                else {
+                    if (!this.get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2)) {
+                        throw new CoseException("Public/Private key don't match");
+                    }
+                }
+
+                if (pkl.get(2).list.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
+                byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
+                keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
+            }
+            else {
+                throw new CoseException("Unsupported Algorithm");
+            }
+            
+            this.privateKey = privKey;            
+        }
     }
     
     public void add(KeyKeys keyValue, CBORObject value) {
@@ -177,6 +253,7 @@ public class OneKey {
         }
         else throw new CoseException("Unsupported key type");
     }
+    
     private void CheckECKey() throws CoseException {
         // ECParameterSpec         params = null; //   new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
         boolean                 needPublic = false;
@@ -262,20 +339,21 @@ public class OneKey {
                 spki = ASN1.EncodeSubjectPublicKeyInfo(oid, rgbKey);        
             }
        
-            KeyFactory fact = KeyFactory.getInstance("EC", "BC");
+            KeyFactory fact = KeyFactory.getInstance("EC"/*, "BC"*/);
             KeySpec keyspec = new X509EncodedKeySpec(spki);
             publicKey = fact.generatePublic(keyspec);
-            }
+        }
         catch (NoSuchAlgorithmException e) {
             throw new CoseException("Alorithm unsupported", e);
         }
         catch (InvalidKeySpecException e) {
             throw new CoseException("Internal error on SPKI", e);
        }
+        /*
         catch (NoSuchProviderException e) {
             throw new CoseException("BC not found");
         }
-        
+        */
 /*        
         X9ECParameters          curve = GetCurve();
         ECDomainParameters      params = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
