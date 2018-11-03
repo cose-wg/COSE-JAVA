@@ -32,7 +32,7 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
-            "Examples/CWT",
+            "Examples/eddsa-examples",
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
@@ -87,7 +87,8 @@ public class RegressionTest extends TestBase {
             else System.out.print("... FAIL\n");
         }
         catch (CoseException e) {
-            if (e.getMessage() == "Unsupported key size") {
+            if (e.getMessage().equals("Unsupported key size") || 
+                e.getMessage().equals("Unsupported Algorithm")) {
                 System.out.print("... SKIP\nException " + e + "\n");                
             }
             else {
@@ -802,6 +803,10 @@ public class RegressionTest extends TestBase {
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(2));
                             break;
                             
+                        case "OKP":
+                            cnKeyOut.set(CBORObject.FromObject(1), KeyKeys.KeyType_OKP);
+                            break;
+                            
                         case "oct":
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(4));
                             break;
@@ -820,6 +825,23 @@ public class RegressionTest extends TestBase {
                             
                         case "P-521":
                             cnValue = CBORObject.FromObject(3);
+                            break;
+                                    
+                        case "Ed25519":
+                            cnValue = KeyKeys.OKP_Ed25519;
+                            break;
+
+                        case "Ed448":
+                            cnValue = KeyKeys.OKP_Ed448;
+                            throw new CoseException("Unsupported Algorithm");
+                            // break;
+
+                        case "X25519":
+                            cnValue = KeyKeys.OKP_X25519;
+                            break;
+
+                        case "X448":
+                            cnValue = KeyKeys.OKP_X448;
                             break;
                     }
                     
@@ -935,6 +957,7 @@ public class RegressionTest extends TestBase {
          case "ECDH-SS-A192KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_192.AsCBOR();
          case "ECDH-ES-A256KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_256.AsCBOR();
          case "ECDH-SS-A256KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_256.AsCBOR();
+         case "EdDSA": return AlgorithmID.EDDSA.AsCBOR();
 
          default: return old;
          }
@@ -954,7 +977,7 @@ public class RegressionTest extends TestBase {
         return false;
     }
      
-    int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) {
+    int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) throws CoseException {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject pFail;
 	CBORObject cnSign;
@@ -1007,6 +1030,9 @@ public class RegressionTest extends TestBase {
                 }
             }
         }
+        catch (CoseException e) {
+            throw e;
+        }
         catch (Exception e) {
             System.out.print("... FAIL\nException " + e + "\n");
             CFails++;
@@ -1014,7 +1040,7 @@ public class RegressionTest extends TestBase {
         return 0;
     }
 
-    int ValidateSigned(CBORObject cnControl)
+    int ValidateSigned(CBORObject cnControl) throws CoseException
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
@@ -1022,7 +1048,7 @@ public class RegressionTest extends TestBase {
 	return _ValidateSigned(cnControl, rgb);
     }
 
-    int BuildSignedMessage(CBORObject cnControl)
+    int BuildSignedMessage(CBORObject cnControl) throws CoseException
     {
 	int iSigner;
         byte[] rgb;
@@ -1085,7 +1111,7 @@ public class RegressionTest extends TestBase {
         return f;
     } 
     
-int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
+int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject cnSign;
@@ -1123,13 +1149,18 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
                 if (!fFail && !fFailInput) CFails++;
             }
         }
+        catch (CoseException e) {
+            throw e;
+        }
         catch (Exception e) {
-            CFails++;
+           System.out.print("... Exception " + e + "\n");
+
+           CFails++;
         }
 	return 0;
     }
 
-    int ValidateSign0(CBORObject cnControl)  
+    int ValidateSign0(CBORObject cnControl) throws CoseException  
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
@@ -1137,7 +1168,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded)
 	return _ValidateSign0(cnControl, rgb);
     }
 
-    int BuildSign0Message(CBORObject cnControl)
+    int BuildSign0Message(CBORObject cnControl) throws CoseException
     {
         byte[] rgb;
 	//

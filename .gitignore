@@ -1,6 +1,8 @@
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
+*.gpg
+*.asc
 
 # Package Files #
 *.jar

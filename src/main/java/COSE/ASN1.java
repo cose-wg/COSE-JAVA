@@ -44,10 +44,18 @@ public class ASN1 {
     // 1.2.840.10045.2.1
     public static final byte[] oid_ecPublicKey = new byte[]{0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x2, 0x1};
     
+    // 1.3.101.110
+    public static final byte[] Oid_X25519 = new byte[]{0x6, 3, 0x2b, 101, 110};
+    // 1.3.101.111
+    public static final byte[] Oid_X448 = new byte[]{0x6, 3, 0x2b, 101, 111};
+    // 1.3.101.112
+    public static final byte[] Oid_Ed25519 = new byte[]{0x6, 0x3, 0x2b, 101, 112};
+    //  1.3.101.113
+    public static final byte[] Oid_Ed448 = new byte[]{0x6, 0x3, 0x2b, 101, 113};
     
-    private static final byte[] SequenceX = new byte[]{0x30};
-    private static final byte[] BitstringTag = new byte[]{0x3};
-    private static final byte[] OctetstringTag = new byte[]{0x4};
+    private static final byte[] SequenceTag = new byte[]{0x30};
+    private static final byte[] OctetStringTag = new byte[]{0x4};
+    private static final byte[] BitStringTag = new byte[]{0x3};
     
     /**
      * Encode a subject public key info structure from an OID and the data bytes
@@ -58,7 +66,7 @@ public class ASN1 {
      * @param keyBytes - encoded key bytes
      * @return - encoded SPKI
      */
-    public static byte[] EncodeSubjectPublicKeyInfo(byte[] oid, byte[] keyBytes) throws CoseException
+    public static byte[] EncodeSubjectPublicKeyInfo(byte[] algorithm, byte[] keyBytes) throws CoseException
     {
         //  SPKI ::= SEQUENCE {
         //       algorithm   SEQUENCE {
@@ -68,9 +76,9 @@ public class ASN1 {
         //       subjectPublicKey BIT STRING CONTAINS  key bytes
         //  }
         try {        
-            ArrayList<byte[]> xxx = new ArrayList<>();
-            xxx.add(AlgorithmIdentifier(oid_ecPublicKey, oid));
-            xxx.add(BitstringTag);
+            ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+            xxx.add(algorithm);
+            xxx.add(new byte[]{3});
             xxx.add(ComputeLength(keyBytes.length+1));
             xxx.add(new byte[]{0});
             xxx.add(keyBytes);
@@ -84,6 +92,44 @@ public class ASN1 {
     }
     
     /**
+     * Encode an EC Private key
+     * @param oid - curve to use
+     * @param keyBytes - bytes of the key
+     * @param spki - optional SPKI
+     * @return
+     * @throws CoseException
+     */
+    public static byte[] EncodeEcPrivateKey(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
+    {
+        //  ECPrivateKey ::= SEQUENCE {
+        //     version  INTEGER {1}
+        //     privateKey OCTET STRING
+        //     parameters [0] OBJECT IDENTIFIER = named curve
+        //     public key [1] BIT STRING OPTIONAL
+        //  }
+        //
+
+        ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+        xxx.add(new byte[]{2, 1, 1});
+        xxx.add(OctetStringTag);
+        xxx.add(ComputeLength(keyBytes.length));
+        xxx.add(keyBytes);
+        xxx.add(new byte[]{(byte)0xa0});
+        xxx.add(ComputeLength(oid.length));
+        xxx.add(oid);
+        if (spki != null) {
+            xxx.add(new byte[]{(byte)0xa1});
+            xxx.add(ComputeLength(spki.length+1));
+            xxx.add(new byte[]{0});
+            xxx.add(spki);
+        }
+        
+        byte[] ecPrivateKey = Sequence(xxx);
+     
+        return ecPrivateKey;
+    }
+
+    /*
      *  Decode an object which is supposed to be a SubjectPublicKeyInfo strucuture
      * and check that the right set of fields are in the right place
      * 
@@ -174,15 +220,8 @@ public class ASN1 {
      * @return byte array of encoded bytes
      * @throws CoseException
      */
-    public static byte[] EncodePKCS8(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
+    public static byte[] EncodePKCS8(byte[] algorithm, byte[] keyBytes, byte[] spki) throws CoseException
     {
-        //  ECPrivateKey ::= SEQUENCE {
-        //     version  INTEGER {1}
-        //     privateKey OCTET STRING
-        //     parameters [0] OBJECT IDENTIFIER = named curve
-        //     public key [1] BIT STRING OPTIONAL
-        //  }
-        //
         //  PKCS#8 ::= SEQUENCE {
         //     version INTEGER {0}
         //      privateKeyALgorithm SEQUENCE {
@@ -195,29 +234,13 @@ public class ASN1 {
         //   }
         
         try {
-            ArrayList<byte[]> xxx = new ArrayList<byte[]>();
-            xxx.add(new byte[]{2, 1, 1});
-            xxx.add(OctetstringTag);
+
+          ArrayList<byte[]> xxx = new ArrayList<byte[]>();
+            xxx.add(new byte[]{2, 1, 0});
+            xxx.add(algorithm);
+            xxx.add(OctetStringTag);
             xxx.add(ComputeLength(keyBytes.length));
             xxx.add(keyBytes);
-            xxx.add(new byte[]{(byte)0xa0});
-            xxx.add(ComputeLength(oid.length));
-            xxx.add(oid);
-            if (spki != null) {
-                xxx.add(new byte[]{(byte)0xa1});
-                xxx.add(ComputeLength(spki.length+1));
-                xxx.add(new byte[]{0});
-                xxx.add(spki);
-            }
-
-            byte[] ecPrivateKey = Sequence(xxx);
-
-            xxx = new ArrayList<byte[]>();
-            xxx.add(new byte[]{2, 1, 0});
-            xxx.add(AlgorithmIdentifier(oid_ecPublicKey, oid));
-            xxx.add(OctetstringTag);
-            xxx.add(ComputeLength(ecPrivateKey.length));
-            xxx.add(ecPrivateKey);
 
             return Sequence(xxx);
         }
@@ -294,7 +317,6 @@ public class ASN1 {
         return retValue;
     }
     
-    
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
         x.add(UnsignedInteger(r));
@@ -303,7 +325,16 @@ public class ASN1 {
         return Sequence(x);
     }
     
-    private static byte[] AlgorithmIdentifier(byte[] oid, byte[] params) throws CoseException
+    public static byte[] EncodeOctetString(byte[] data) throws CoseException {
+        ArrayList<byte[]> x = new ArrayList<byte[]>();
+        x.add(OctetStringTag);
+        x.add(ComputeLength(data.length));
+        x.add(data);
+        
+        return ToBytes(x);
+    }
+    
+    public static byte[] AlgorithmIdentifier(byte[] oid, byte[] params) throws CoseException
     {
         ArrayList<byte[]> xxx = new ArrayList<byte[]>();
         xxx.add(oid);
@@ -312,16 +343,18 @@ public class ASN1 {
         }
         return Sequence(xxx);
     }
+    
     private static byte[] Sequence(ArrayList<byte[]> members) throws CoseException
     {
         byte[] y = ToBytes(members);
         ArrayList<byte[]> x = new ArrayList<byte[]>();
-        x.add(SequenceX);
+        x.add(SequenceTag);
         x.add(ComputeLength(y.length));
         x.add(y);
         
         return ToBytes(x);
     }
+    
     private static byte[] UnsignedInteger(byte[] i) throws CoseException {
         int pad = 0, offset = 0;
 

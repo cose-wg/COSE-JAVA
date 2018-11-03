@@ -41,6 +41,9 @@ public abstract class SignCommon extends Message {
                 algName = "SHA512withECDSA";
                 sigLen = 66;
                 break;
+            case EDDSA:
+                algName = "NonewithEdDSA";
+                break;
                 
             default:
                 throw new CoseException("Unsupported Algorithm Specified");
@@ -61,7 +64,9 @@ public abstract class SignCommon extends Message {
             sig.initSign(privKey);
             sig.update(rgbToBeSigned);
             result = sig.sign();
-            result = convertDerToConcat(result, sigLen);
+            if (sigLen > 0) {
+                result = convertDerToConcat(result, sigLen);
+            }
         } catch (NoSuchAlgorithmException ex) {
             throw new CoseException("Algorithm not supported", ex);
         } catch (Exception ex) {
@@ -121,16 +126,24 @@ public abstract class SignCommon extends Message {
 
     static boolean validateSignature(AlgorithmID alg, byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         String algName = null;
+        boolean convert = false;
 
         switch (alg) {
         case ECDSA_256:
             algName = "SHA256withECDSA";
+            convert = true;
             break;
         case ECDSA_384:
             algName = "SHA384withECDSA";
+            convert = true;
             break;
         case ECDSA_512:
             algName = "SHA512withECDSA";
+            convert = true;
+            break;
+            
+        case EDDSA:
+            algName = "NonewithEdDSA";
             break;
 
         default:
@@ -152,7 +165,9 @@ public abstract class SignCommon extends Message {
             sig.initVerify(pubKey);
             sig.update(rgbToBeSigned);
 
-            rgbSignature = convertConcatToDer(rgbSignature);
+            if (convert) {
+                rgbSignature = convertConcatToDer(rgbSignature);
+            }
             result = sig.verify(rgbSignature);
         } catch (NoSuchAlgorithmException ex) {
             throw new CoseException("Algorithm not supported", ex);
