@@ -62,9 +62,10 @@ public class ASN1 {
      * for the key
      * This function assumes that we are encoding an EC Public key.d
      * 
-     * @param oid - encoded Object Identifier
+     * @param algorithm - encoded Object Identifier
      * @param keyBytes - encoded key bytes
      * @return - encoded SPKI
+     * @throws CoseException - ASN encoding error.
      */
     public static byte[] EncodeSubjectPublicKeyInfo(byte[] algorithm, byte[] keyBytes) throws CoseException
     {
@@ -96,8 +97,8 @@ public class ASN1 {
      * @param oid - curve to use
      * @param keyBytes - bytes of the key
      * @param spki - optional SPKI
-     * @return
-     * @throws CoseException
+     * @return encoded private key
+     * @throws CoseException - from lower level
      */
     public static byte[] EncodeEcPrivateKey(byte[] oid, byte[] keyBytes, byte[] spki) throws CoseException
     {
@@ -170,7 +171,7 @@ public class ASN1 {
      * @param offset - starting offset in array to begin decoding
      * @param encoding - bytes of the ASN.1 encoded value
      * @return Decoded structure
-     * @throws CoseException
+     * @throws CoseException - ASN.1 encoding errors
      */
     public static TagValue DecodeCompound(int offset, byte[] encoding) throws CoseException
     {
@@ -214,11 +215,11 @@ public class ASN1 {
     /**
      * Encode a private key into a PKCS#8 private key structure.
      * 
-     * @param oid - EC curve OID
+     * @param algorithm - EC curve OID
      * @param keyBytes - raw bytes of the key
      * @param spki - optional subject public key info structure to include
      * @return byte array of encoded bytes
-     * @throws CoseException
+     * @throws CoseException - ASN.1 encoding errors
      */
     public static byte[] EncodePKCS8(byte[] algorithm, byte[] keyBytes, byte[] spki) throws CoseException
     {
@@ -255,7 +256,7 @@ public class ASN1 {
      * 
      * @param encodedData bytes containing the private key
      * @return tag/value from the decoded object
-     * @throws CoseException
+     * @throws CoseException - ASN.1 encoding errors
      */
     public static ArrayList<TagValue> DecodePKCS8(byte[] encodedData) throws CoseException 
     {
