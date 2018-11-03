@@ -55,6 +55,7 @@ public class Signer extends Attribute {
      * 
      * @since COSE 0.9.1
      * @param keyIn key to be used for signing or verification
+     * @throws CoseException - Invalid key passed in
      */
     public void setKey(OneKey keyIn) throws CoseException {
         setupKey(keyIn);
@@ -64,7 +65,7 @@ public class Signer extends Attribute {
      * Set the key on the object, if there is not a signature on this object then set
      * the algorithm and the key id from the key if they exist on the key and do not exist in the message.
      * 
-     * @param key key to be used
+     * @param key key to be used]
      */
     private void setupKey(OneKey key) throws CoseException {
         CBORObject cn2;

@@ -344,7 +344,7 @@ public class Attribute {
      * Remove an attribute from the set of all attribute maps.
      * 
      * @param label attribute to be removed
-     * @throws CoseException 
+     * @throws CoseException - Label not present
      */
     public void removeAttribute(HeaderKeys label) throws CoseException {
         removeAttribute(label.AsCBOR());
@@ -353,7 +353,7 @@ public class Attribute {
     /**
      * Get the optional external data field to be authenticated
      * 
-     * * @return external authenticated data
+     * @return external authenticated data
      */
     public byte[] getExternal() {
         return externalData;

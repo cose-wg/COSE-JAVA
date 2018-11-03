@@ -90,7 +90,7 @@ public class Encrypt0Message extends EncryptCommon {
      * 
      * @param rgbKey key for decryption
      * @return the decrypted content
-     * @throws CoseException 
+     * @throws CoseException - Error during decryption
      */
     public byte[] decrypt(byte[] rgbKey) throws CoseException {
         return super.decryptWithKey(rgbKey);
@@ -100,8 +100,8 @@ public class Encrypt0Message extends EncryptCommon {
      * Encrypt the message using the passed in key.
      * 
      * @param rgbKey key used for encryption
-     * @throws CoseException
-     * @throws IllegalStateException
+     * @throws CoseException - Error during decryption
+     * @throws IllegalStateException - Error during decryption
      */
     public void encrypt(byte[] rgbKey) throws CoseException, IllegalStateException {
         super.encryptWithKey(rgbKey);
