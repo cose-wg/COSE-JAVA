@@ -611,6 +611,10 @@ public class OneKey {
         else {
             return null;
         }
+        
+        //  Allow them to use the same underlying public key object
+        
+        newKey.publicKey = publicKey;
 
         for (CBORObject obj : keyMap.getKeys()) {
             val = keyMap.get(obj);
