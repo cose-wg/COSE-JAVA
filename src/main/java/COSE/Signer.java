@@ -7,6 +7,8 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Signer class is used to implement the COSE_Signer object.
@@ -118,6 +120,42 @@ public class Signer extends Attribute {
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbSignature = obj.get(2).GetByteString();
         else if (!obj.get(2).isNull()) throw new CoseException("Invalid Signer structure");
+
+        CBORObject countersignature = this.findAttribute(HeaderKeys.CounterSignature, UNPROTECTED);
+        if (countersignature != null) {
+            if ((countersignature.getType() != CBORType.Array) ||
+                    (countersignature.getValues().isEmpty())) {
+                throw new CoseException("Invalid countersignature attribute");
+            }
+            
+            if (countersignature.get(0).getType() == CBORType.Array) {
+                for (CBORObject csObj : countersignature.getValues()) {
+                    if (csObj.getType() != CBORType.Array) {
+                        throw new CoseException("Invalid countersignature attribute");
+                    }
+                    
+                    CounterSign cs = new CounterSign(csObj);
+                    cs.setObject(this);
+                    this.addCountersignature(cs);
+                }
+            }
+            else {
+                CounterSign cs = new CounterSign(countersignature);
+                cs.setObject(this);
+                this.addCountersignature(cs);
+            }
+        }
+        
+        countersignature = this.findAttribute(HeaderKeys.CounterSignature0, UNPROTECTED);
+        if (countersignature != null) {
+            if (countersignature.getType() != CBORType.ByteString) {
+                throw new CoseException("Invalid Countersignature0 attribute");
+            }
+            
+            CounterSign1 cs = new CounterSign1(countersignature.GetByteString());
+            cs.setObject(this);
+            this.counterSign1 = cs;
+        }
     }    
     
     /**
@@ -155,7 +193,9 @@ public class Signer extends Attribute {
 
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
-        rgbSignature = SignCommon.computeSignature(alg, obj.EncodeToBytes(), cnKey);                
+        rgbSignature = SignCommon.computeSignature(alg, obj.EncodeToBytes(), cnKey);   
+        
+        ProcessCounterSignatures();
     }
     
     public boolean validate(byte[] rgbBodyProtected, byte[] rgbContent) throws CoseException
@@ -170,6 +210,58 @@ public class Signer extends Attribute {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
 
         return SignCommon.validateSignature(alg, obj.EncodeToBytes(), rgbSignature, cnKey);        
+    }
+
+    
+    
+    List<CounterSign> counterSignList = new ArrayList<CounterSign>();
+    CounterSign1 counterSign1;
+    
+    public void addCountersignature(CounterSign countersignature)
+    {
+        counterSignList.add(countersignature);
+    }
+    
+    public List<CounterSign> getCountersignerList() {
+        return counterSignList;
+    }
+    
+    public CounterSign1 getCountersign1() {
+        return counterSign1;
+    }
+    
+    public void setCountersign1(CounterSign1 value) {
+        counterSign1 = value;
+    }
+    
+    protected void ProcessCounterSignatures() throws CoseException {
+        if (!counterSignList.isEmpty()) {
+            if (counterSignList.size() == 1) {
+                counterSignList.get(0).sign(rgbProtected, rgbSignature);
+                addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(), Attribute.UNPROTECTED);
+            }
+            else {
+                CBORObject list = CBORObject.NewArray();
+                for (CounterSign sig : counterSignList) {
+                    sig.sign(rgbProtected, rgbSignature);
+                    list.Add(sig.EncodeToCBORObject());
+                }
+                addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+            }
+        }
+        
+        if (counterSign1 != null) {
+            counterSign1.sign(rgbProtected, rgbSignature);
+            addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+        }
+    }
+    
+    public boolean validate(CounterSign1 countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbSignature);
+    }
+    
+    public boolean validate(CounterSign countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbSignature);
     }
     
 }

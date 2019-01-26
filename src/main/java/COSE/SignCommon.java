@@ -72,7 +72,7 @@ public abstract class SignCommon extends Message {
         } catch (Exception ex) {
             throw new CoseException("Signature failure", ex);
         }
-        
+                
         return result;
     }
     

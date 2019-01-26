@@ -32,6 +32,8 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
+            "Examples/countersign",
+            "Examples/countersign0",
             "Examples/eddsa-examples",
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
@@ -150,6 +152,14 @@ public class RegressionTest extends TestBase {
         }
         SetSendingAttributes(msg, cnEncrypt, true);
 
+        if (cnEncrypt.ContainsKey("countersign0")) {
+            AddCounterSignature0(msg, cnEncrypt.get("countersign0"));
+        }
+        
+        if (cnEncrypt.ContainsKey("countersign")) {
+            AddCounterSignature(msg, cnEncrypt.get("countersign"));
+        }
+        
         CBORObject cnRecipients = cnEncrypt.get("recipients");
         cnRecipients = cnRecipients.get(0);
 
@@ -228,7 +238,17 @@ public class RegressionTest extends TestBase {
             }
             catch (Exception e) {
                if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
-            }            
+            }
+
+            CBORObject cnCounter = cnEncrypt.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(msg, cnCounter);
+            }
+
+            cnCounter = cnEncrypt.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(msg, cnCounter);
+            }
         }
         catch (CoseException e) {
             throw e;
@@ -263,6 +283,14 @@ public class RegressionTest extends TestBase {
         }
 
 	SetSendingAttributes(hEncObj, cnEnveloped, true);
+        
+        if (cnEnveloped.ContainsKey("countersign0")) {
+            AddCounterSignature0(hEncObj, cnEnveloped.get("countersign0"));
+        }
+        
+        if (cnEnveloped.ContainsKey("countersign")) {
+            AddCounterSignature(hEncObj, cnEnveloped.get("countersign"));
+        }
 
 	CBORObject cnRecipients = cnEnveloped.get("recipients");
 
@@ -300,6 +328,14 @@ public class RegressionTest extends TestBase {
         }
         
         SetSendingAttributes(msg, cnEncrypt, true);
+        
+        if (cnEncrypt.ContainsKey("countersign0")) {
+            AddCounterSignature0(msg, cnEncrypt.get("countersign0"));
+        }
+        
+        if (cnEncrypt.ContainsKey("countersign")) {
+            AddCounterSignature(msg, cnEncrypt.get("countersign"));
+        }
 
         CBORObject cnRecipients = cnEncrypt.get("recipients");
         cnRecipients = cnRecipients.get(0);
@@ -358,6 +394,15 @@ public class RegressionTest extends TestBase {
                 if ((pFail != null) && !pFail.AsBoolean()) CFails++;
             }
 
+            CBORObject cnCounter = cnMac.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(msg, cnCounter);
+            }
+
+            cnCounter = cnMac.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(msg, cnCounter);
+            }            
         }
         catch(CoseException e) {
             if (e.getMessage() == "Unsupported key size") {
@@ -431,6 +476,16 @@ public class RegressionTest extends TestBase {
                 if (fFail || fFailBody) return;
                 CFails++;
                 return;
+            }
+            
+            CBORObject cnCounter = cnMac.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(msg, cnCounter);
+            }
+
+            cnCounter = cnMac.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(msg, cnCounter);
             }
         }
         catch (CoseException e) {
@@ -511,7 +566,7 @@ public class RegressionTest extends TestBase {
             try {
                 byte[] rgbOut = hEnc.decrypt(hRecip);
                 if (fFailBody) fRet = false;
-                else fRet = true;
+                else fRet = true;            
             }
             catch(CoseException e) {
                 if (e.getMessage() == "Unsupported key size") {
@@ -524,6 +579,17 @@ public class RegressionTest extends TestBase {
                 if(!fFailBody) fRet = false;
                 else fRet = true;
             }
+
+            CBORObject cnCounter = cnEnveloped.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(msg, cnCounter);
+            }
+
+            cnCounter = cnEnveloped.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(msg, cnCounter);
+            }
+            
         }
         catch(CoseException e) {
             throw e;
@@ -636,6 +702,14 @@ public class RegressionTest extends TestBase {
 
 	SetSendingAttributes(hEncObj, cnEnveloped, true);
 
+        if (cnEnveloped.ContainsKey("countersign0")) {
+             AddCounterSignature0(hEncObj, cnEnveloped.get("countersign0"));
+         }
+
+         if (cnEnveloped.ContainsKey("countersign")) {
+             AddCounterSignature(hEncObj, cnEnveloped.get("countersign"));
+         }
+            
 	CBORObject cnRecipients = cnEnveloped.get("recipients");
 
 	for (iRecipient = 0; iRecipient<cnRecipients.size(); iRecipient++) {
@@ -982,6 +1056,7 @@ public class RegressionTest extends TestBase {
 	CBORObject pFail;
 	CBORObject cnSign;
 	CBORObject cnSigners;
+        CBORObject cnCounter;
 	SignMessage	hSig = null;
 	int type;
 	int iSigner;
@@ -1024,10 +1099,25 @@ public class RegressionTest extends TestBase {
                     if (!fFailBody && !fFailSigner) CFails++;
                 }
                 
-                CBORObject cSignInfo = cnSign.get("countersign");
-                if (cSignInfo != null) {
-                    CheckCounterSignatures(hSig, cSignInfo);
+                cnCounter = cnSigners.get(iSigner).get("countersign0");
+                if (cnCounter != null) {
+                    CheckCounterSignature0(hSigner, cnCounter);
                 }
+
+                cnCounter = cnSigners.get(iSigner).get("countersign");
+                if (cnCounter != null) {
+                    CheckCounterSignatures(hSigner, cnCounter);
+                }
+            }
+            
+            cnCounter = cnSign.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(hSig, cnCounter);
+            }
+
+            cnCounter = cnSign.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(hSig, cnCounter);
             }
         }
         catch (CoseException e) {
@@ -1076,6 +1166,14 @@ public class RegressionTest extends TestBase {
 
             SetSendingAttributes(hSignObj, cnSign, false);
 
+            if (cnSign.ContainsKey("countersign0")) {
+                AddCounterSignature0(hSignObj, cnSign.get("countersign0"));
+            }
+
+            if (cnSign.ContainsKey("countersign")) {
+                AddCounterSignature(hSignObj, cnSign.get("countersign"));
+            }
+
             CBORObject cnSigners = cnSign.get("signers");
 
             for (iSigner = 0; iSigner < cnSigners.size(); iSigner++) {
@@ -1087,16 +1185,29 @@ public class RegressionTest extends TestBase {
 
                 hSigner.setKey(cnkey);
 
+                if (cnSigners.get(iSigner).ContainsKey("countersign0")) {
+                    AddCounterSignature0(hSigner, cnSigners.get(iSigner).get("countersign0"));
+                }
+
+                if (cnSigners.get(iSigner).ContainsKey("countersign")) {
+                    AddCounterSignature(hSigner, cnSigners.get(iSigner).get("countersign"));
+                }
+
                 hSignObj.AddSigner(hSigner);
 
             }
 
-            hSignObj.sign();
-            
+            if (cnSign.ContainsKey("countersign0")) {
+                AddCounterSignature0(hSignObj, cnSigners.get("countersign0"));
+            }
+
             CBORObject cnCounterSign = cnSign.get("countersign");
             if (cnCounterSign != null) {
-                CreateCounterSignatures(hSignObj, cnCounterSign);
+                AddCounterSignature(hSignObj, cnCounterSign);
             }
+
+            hSignObj.sign();
+            
 
             rgb = hSignObj.EncodeToBytes();
         }
@@ -1148,6 +1259,16 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             catch (Exception e) {
                 if (!fFail && !fFailInput) CFails++;
             }
+
+            CBORObject cnCounter = cnSign.get("countersign0");
+            if (cnCounter != null) {
+                CheckCounterSignature0(hSig, cnCounter);
+            }
+
+            cnCounter = cnSign.get("countersign");
+            if (cnCounter != null) {
+                CheckCounterSignatures(hSig, cnCounter);
+                }
         }
         catch (CoseException e) {
             throw e;
@@ -1194,6 +1315,14 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 
             SetSendingAttributes(hSignObj, cnSign, false);
 
+            if (cnSign.ContainsKey("countersign0")) {
+               AddCounterSignature0(hSignObj, cnSign.get("countersign0"));
+            }
+
+            if (cnSign.ContainsKey("countersign")) {
+                AddCounterSignature(hSignObj, cnSign.get("countersign"));
+            }
+
             OneKey cnkey = BuildKey(cnSign.get("key"), false);
 
             hSignObj.sign(cnkey);
@@ -1209,36 +1338,97 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
         return 0;
     }
     
-    void CreateCounterSignatures(Message msg, CBORObject cSigInfo)
+    void AddCounterSignature0(Message msg, CBORObject cSigInfo) throws CoseException, Exception
     {
-        try {            
-            CBORObject cnResult = CBORObject.NewArray();
-            
-            CBORObject cSigConfig = cSigInfo.get("signers");
-            
-            
-            for (CBORObject csig : cSigConfig.getValues()) {
-                OneKey cnKey = BuildKey(csig.get("key"), false);
-                
-                CounterSign sig = new CounterSign();
-                
-                SetSendingAttributes(sig, csig, false);
-                
-                sig.setKey(cnKey);
-                
-                sig.Sign(msg);
-                
-                if (cSigConfig.size() == 1) cnResult = sig.EncodeToCBORObject();
-                else cnResult.Add(sig.EncodeToBytes());
+        if (cSigInfo.getType() == CBORType.Map) {
+            if ((!cSigInfo.ContainsKey("signers") || (cSigInfo.get("signers").getType() != CBORType.Array) ||
+                 (cSigInfo.get("signers").getValues().size() != 1))) {
+                throw new CoseException("Invalid input file");
             }
+
+            CBORObject cSigner = cSigInfo.get("signers").get(0);
+            OneKey cnkey = BuildKey(cSigner.get("key"), false);
+
+            CounterSign1 hSigner = new CounterSign1();
+
+            SetSendingAttributes(hSigner, cSigner, false);
             
-            msg.addAttribute(HeaderKeys.CounterSignature, cnResult, Attribute.UNPROTECTED);
             
+
+            hSigner.setKey(cnkey);
+
+            msg.setCountersign1(hSigner);
         }
-        catch (Exception e) {
-            CFails++;
+        else {
+            throw new CoseException("Invalid input file");
         }
     }
+
+    void AddCounterSignature0(Signer msg, CBORObject cSigInfo) throws CoseException, Exception
+    {
+        if (cSigInfo.getType() == CBORType.Map) {
+            if ((!cSigInfo.ContainsKey("signers") || (cSigInfo.get("signers").getType() != CBORType.Array) ||
+                 (cSigInfo.get("signers").getValues().size() != 1))) {
+                throw new CoseException("Invalid input file");
+            }
+
+            CBORObject cSigner = cSigInfo.get("signers").get(0);
+            OneKey cnkey = BuildKey(cSigner.get("key"), false);
+
+            CounterSign1 hSigner = new CounterSign1();
+
+            SetSendingAttributes(hSigner, cSigner, false);
+
+            hSigner.setKey(cnkey);
+
+            msg.setCountersign1(hSigner);
+        }
+        else {
+            throw new CoseException("Invalid input file");
+        }
+    }
+
+    void AddCounterSignature(Message msg, CBORObject cSigInfo) throws CoseException, Exception
+    {
+        if ((cSigInfo.getType() != CBORType.Map) || !cSigInfo.ContainsKey("signers") ||
+            (cSigInfo.get("signers").getType() != CBORType.Array)) {
+            throw new CoseException("invalid input file");
+        }
+
+        for (CBORObject signer : cSigInfo.get("signers").getValues()) {
+            OneKey cnKey = BuildKey(signer.get("key"), false);
+
+            CounterSign hSigner = new CounterSign();
+
+            SetSendingAttributes(hSigner, signer, false);
+
+            hSigner.setKey(cnKey);
+
+            msg.addCountersignature(hSigner);
+
+        }
+    }
+
+    void AddCounterSignature(Signer msg, CBORObject cSigInfo) throws CoseException, Exception
+    {
+        if ((cSigInfo.getType() != CBORType.Map) || !cSigInfo.ContainsKey("signers") ||
+            (cSigInfo.get("signers").getType() != CBORType.Array)) {
+            throw new CoseException("invalid input file");
+        }
+
+        for (CBORObject signer : cSigInfo.get("signers").getValues()) {
+            OneKey cnKey = BuildKey(signer.get("key"), false);
+
+            CounterSign hSigner = new CounterSign();
+
+            SetSendingAttributes(hSigner, signer, false);
+
+            hSigner.setKey(cnKey);
+
+            msg.addCountersignature(hSigner);
+        }
+    }
+    
     void CheckCounterSignatures(Message msg, CBORObject cSigInfo)
     {
         try {
@@ -1254,29 +1444,23 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             }
 
             CBORObject cSigConfig = cSigInfo.get("signers");
-            if ((cSigConfig.size() > 1) && (cSigs.size() != cSigConfig.size())) {
+            if ((cSigConfig.getValues().size() > 1) && 
+                    (cSigs.getValues().size() != msg.getCountersignerList().size())) {
                 CFails++;
                 return;
             }
 
             int iCSign;
-            for (iCSign=0; iCSign<cSigConfig.size(); iCSign++) {
-                CounterSign sig;
-                if (cSigs.get(0).getType() != CBORType.Array) {
-                    sig = new CounterSign();
-                    sig.DecodeFromCBORObject(cSigs);
-                }
-                else {
-                    sig = new CounterSign(cSigs.get(iCSign).GetByteString());
-                }
+            for (iCSign = 0; iCSign < cSigConfig.getValues().size(); iCSign++) {
+                CounterSign sig = msg.getCountersignerList().get(iCSign);
 
-                OneKey cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), false);
+                OneKey cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), true);
                 SetReceivingAttributes(sig, cSigConfig.get(iCSign));
 
                 sig.setKey(cnKey);
 
                 try {
-                    boolean f = sig.Validate(msg);
+                    Boolean f = msg.validate(sig);
                     if (!f) CFails++;
                 }
                 catch (Exception e) {
@@ -1284,9 +1468,138 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
                 }
             }
         }
-        catch(Exception e) {
-            System.out.print("... FAIL\nException " + e + "\n");
+        catch (Exception e) {
             CFails++;
         }
     }
+
+    void CheckCounterSignatures(Signer msg, CBORObject cSigInfo)
+    {
+        try {
+            CBORObject cSigs = msg.findAttribute(HeaderKeys.CounterSignature);
+            if (cSigs == null) {
+                CFails++;
+                return;
+            }
+
+            if (cSigs.getType() != CBORType.Array) {
+                CFails++;
+                return;
+            }
+
+            CBORObject cSigConfig = cSigInfo.get("signers");
+            if ((cSigConfig.getValues().size() > 1) && 
+                    (cSigs.getValues().size() != msg.getCountersignerList().size())) {
+                CFails++;
+                return;
+            }
+
+            int iCSign;
+            for (iCSign = 0; iCSign < cSigConfig.getValues().size(); iCSign++) {
+                CounterSign sig = msg.getCountersignerList().get(iCSign);
+
+                OneKey cnKey = BuildKey(cSigConfig.get(iCSign).get("key"), true);
+                SetReceivingAttributes(sig, cSigConfig.get(iCSign));
+
+                sig.setKey(cnKey);
+
+                try {
+                    Boolean f = msg.validate(sig);
+                    if (!f) CFails++;
+                }
+                catch (Exception e) {
+                    CFails++;
+                }
+            }
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+    }
+
+    void CheckCounterSignature0(Message msg, CBORObject cSigInfo)
+    {
+        try {
+            CBORObject cSigs = msg.findAttribute(HeaderKeys.CounterSignature0);
+
+            if (cSigs == null) {
+                CFails++;
+                return;
+            }
+
+            if (cSigs.getType() != CBORType.ByteString) {
+                CFails++;
+                return;
+            }
+
+            CBORObject cSigConfig = cSigInfo.get("signers");
+            if (1 != cSigConfig.getValues().size()) {
+                CFails++;
+                return;
+            }
+
+            CounterSign1 sig = msg.getCountersign1();
+
+            SetReceivingAttributes(sig, cSigConfig.get(0));
+
+            OneKey cnKey = BuildKey(cSigConfig.get(0).get("key"), true);
+            sig.setKey(cnKey);
+
+            try {
+                Boolean f = msg.validate(sig);
+                if (!f) {
+                    throw new Exception("Failed countersignature validation");
+                }
+            }
+            catch (Exception e) {
+                throw new Exception("Failed countersignature validation");
+            }
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+    }
+
+    void CheckCounterSignature0(Signer msg, CBORObject cSigInfo)
+    {
+        try {
+            CBORObject cSigs = msg.findAttribute(HeaderKeys.CounterSignature0);
+
+            if (cSigs == null) {
+                CFails++;
+                return;
+            }
+
+            if (cSigs.getType() != CBORType.ByteString) {
+                CFails++;
+                return;
+            }
+
+            CBORObject cSigConfig = cSigInfo.get("signers");
+            if (1 != cSigConfig.getValues().size()) {
+                CFails++;
+                return;
+            }
+
+            CounterSign1 sig = msg.getCountersign1();
+
+            SetReceivingAttributes(sig, cSigConfig.get(0));
+
+            OneKey cnKey = BuildKey(cSigConfig.get(0).get("key"), true);
+            sig.setKey(cnKey);
+
+            try {
+                Boolean f = msg.validate(sig);
+                if (!f) {
+                    throw new Exception("Failed countersignature validation");
+                }
+            }
+            catch (Exception e) {
+                throw new Exception("Failed countersignature validation");
+            }
+        }
+        catch (Exception e) {
+            CFails++;
+        }
+    }    
  }

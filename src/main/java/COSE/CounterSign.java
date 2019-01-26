@@ -22,6 +22,11 @@ public class CounterSign extends Signer {
         DecodeFromBytes(rgb);
     }
     
+    public CounterSign(CBORObject cbor) throws CoseException {
+        DecodeFromCBORObject(cbor);
+        contextString = "CounterSignature";
+    }
+    
     public void DecodeFromBytes(byte[] rgb) throws CoseException
     {
         CBORObject obj = CBORObject.DecodeFromBytes(rgb);
@@ -47,6 +52,19 @@ public class CounterSign extends Signer {
         else rgbBodyProtect = new byte[0];
         
         return validate(rgbBodyProtect, message.rgbContent);
+    }
+    
+    private Message m_msgToSign;
+    private Signer m_signerToSign;
+    
+    public void setObject(Message msg)
+    {
+        m_msgToSign = msg;
+    }
+    
+    public void setObject(Signer signer)
+    {
+        m_signerToSign = signer;
     }
 
 }
