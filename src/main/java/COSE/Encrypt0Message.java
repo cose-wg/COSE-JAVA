@@ -62,6 +62,8 @@ public class Encrypt0Message extends EncryptCommon {
         
         if (obj.get(2).getType() == CBORType.ByteString) rgbEncrypt = obj.get(2).GetByteString();
         else if (!obj.get(2).isNull()) throw new CoseException("Invalid Encrypt0 structure");
+        
+        
     }
     
     /**

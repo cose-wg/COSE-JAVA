@@ -76,6 +76,8 @@ public class Sign1Message extends SignCommon {
         obj.Add(rgbContent);
         
         rgbSignature = computeSignature(obj.EncodeToBytes(), key);
+        
+        ProcessCounterSignatures();
     }
     
     /**

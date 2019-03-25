@@ -168,6 +168,8 @@ public class SignMessage extends Message {
         for (Signer r : signerList) {
             r.sign(rgbProtected, rgbContent);
         }
+        
+        ProcessCounterSignatures();
     }
     
     /**
