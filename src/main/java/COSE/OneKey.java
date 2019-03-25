@@ -428,7 +428,11 @@ public class OneKey {
             case ECDSA_512:
                 returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521);
                 break;
-
+                
+            case EDDSA:
+                returnThis = generateOkpKey("EdDSA", KeyKeys.OKP_Ed25519);
+                break;
+                
             default:
                 throw new CoseException("Unknown algorithm");
         }
@@ -439,26 +443,43 @@ public class OneKey {
     
     static public OneKey generateKey(CBORObject curve) throws CoseException {
         String curveName;
+        OneKey returnThis;
         
         switch (curve.AsInt32()) {
             case 1:
                 curveName = "P-256";
-                break;
-            
+                returnThis = generateECDHKey(curveName, curve);
+                return returnThis;
+
             case 2:
                 curveName = "P-384";
-                break;
+                returnThis = generateECDHKey(curveName, curve);
+                return returnThis;
             
             case 3:
                 curveName = "P-521";
-                break;
+                returnThis = generateECDHKey(curveName, curve);
+                return returnThis;
+                
+            case 6:
+                curveName = "Ed25519";
+                return generateOkpKey(curveName, curve);
+                
+            case 7:
+                curveName = "Ed448";
+                return generateOkpKey(curveName, curve);
+                
+            case 4:
+                curveName = "X25519";
+                return generateOkpKey(curveName, curve);
+                
+            case 5:
+                curveName = "X448";
+                return generateOkpKey(curveName, curve);
 
             default:
-                throw new CoseException("Unkonwn curve");
+                throw new CoseException("Unknown curve");
         }
-
-        OneKey returnThis = generateECDHKey(curveName, curve);
-        return returnThis;
     }
     
     static private OneKey generateECDHKey(String curveName, CBORObject curve) throws CoseException {
@@ -794,6 +815,11 @@ public class OneKey {
                 case "Ed25519":
                     
                     break;
+                    
+                case "Ed448":
+                case "X22519":
+                case "X448":
+                    throw new CoseException("Algorithm not supported.");
 
                 default:
                     throw new CoseException("Internal Error");
@@ -805,12 +831,12 @@ public class OneKey {
             
             KeyPair keyPair = gen.genKeyPair();
                                     
-            byte[] rgbX = ((EdDSAPublicKey) keyPair.getPublic()).getEncoded();
-            byte[] rgbD = ((EdDSAPrivateKey) keyPair.getPrivate()).getEncoded();
+            byte[] rgbX = ((EdDSAPublicKey) keyPair.getPublic()).getAbyte();
+            byte[] rgbD = ((EdDSAPrivateKey) keyPair.getPrivate()).getSeed();
 
             OneKey key = new OneKey();
 
-            key.add(KeyKeys.KeyType, KeyKeys.KeyType_EC2);
+            key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
             key.add(KeyKeys.OKP_Curve, curve);
             key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
             key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
