@@ -3,7 +3,10 @@ language: java
 jdk:
   - oraclejdk8
   - oraclejdk9
+  - oraclejdk11
   - openjdk8
+  - openjdk10
+  - openjdk11
 
 before_install:
   - sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g' ~/.m2/settings.xml
