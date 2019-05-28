@@ -67,12 +67,12 @@ public abstract class Message extends Attribute {
         if (messageObject.getType() != CBORType.Array)  throw new CoseException("Message is not a COSE security Message");
         
         if (messageObject.isTagged()) {
-            if (messageObject.GetTags().length != 1) throw new CoseException("Malformed message - too many tags");
+            if (messageObject.GetAllTags().length != 1) throw new CoseException("Malformed message - too many tags");
             
             if (defaultTag == MessageTag.Unknown) {
-                defaultTag = MessageTag.FromInt(messageObject.getInnermostTag().intValue());
+                defaultTag = MessageTag.FromInt(messageObject.getMostInnerTag().ToInt32Unchecked());
             }
-            else if (defaultTag != MessageTag.FromInt(messageObject.getInnermostTag().intValue())) {
+            else if (defaultTag != MessageTag.FromInt(messageObject.getMostInnerTag().ToInt32Unchecked())) {
                 throw new CoseException("Passed in tag does not match actual tag");
             }
         }

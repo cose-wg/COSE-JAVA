@@ -109,12 +109,12 @@
         <dependency>
             <groupId>com.upokecenter</groupId>
             <artifactId>cbor</artifactId>
-            <version>2.4.1</version>
+            <version>3.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.peteroupc</groupId>
             <artifactId>numbers</artifactId>
-            <version>0.3.0</version>
+            <version>1.2.1</version>
         </dependency>
 
         <dependency>
