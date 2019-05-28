@@ -91,6 +91,8 @@ public abstract class EncryptCommon extends Message {
             default:
                 throw new CoseException("Unsupported Algorithm Specified");
         }
+        
+        ProcessCounterSignatures();
     }
     
     private int getAES_CCM_IVSize(AlgorithmID alg) throws CoseException {
@@ -287,8 +289,9 @@ public abstract class EncryptCommon extends Message {
         CBORObject obj = CBORObject.NewArray();
         
         obj.Add(context);
-        if (objProtected.size() == 0) obj.Add(CBORObject.FromObject(new byte[0]));
-        else obj.Add(objProtected.EncodeToBytes());
+        if (objProtected.size() == 0) rgbProtected = new byte[0];
+        else rgbProtected = objProtected.EncodeToBytes();
+        obj.Add(rgbProtected);
         obj.Add(CBORObject.FromObject(externalData));
         return obj.EncodeToBytes();
     }
@@ -313,5 +316,35 @@ public abstract class EncryptCommon extends Message {
      */
     public void setEncryptedContent(byte[] rgb) {
         rgbEncrypt = rgb;
+    }
+
+    protected void ProcessCounterSignatures() throws CoseException {
+        if (!counterSignList.isEmpty()) {
+            if (counterSignList.size() == 1) {
+                counterSignList.get(0).sign(rgbProtected, rgbEncrypt);
+                addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(), Attribute.UNPROTECTED);
+            }
+            else {
+                CBORObject list = CBORObject.NewArray();
+                for (CounterSign sig : counterSignList) {
+                    sig.sign(rgbProtected, rgbEncrypt);
+                    list.Add(sig.EncodeToCBORObject());
+                }
+                addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+            }
+        }
+        
+        if (counterSign1 != null) {
+            counterSign1.sign(rgbProtected, rgbEncrypt);
+            addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+        }
+    }
+
+    public boolean validate(CounterSign1 countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbEncrypt);
+    }
+    
+    public boolean validate(CounterSign countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbEncrypt);
     }
 }

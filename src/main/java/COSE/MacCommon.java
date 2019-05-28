@@ -56,6 +56,8 @@ public abstract class MacCommon extends Message {
             default:
                 throw new CoseException("Unsupported MAC Algorithm");
         }
+        
+        ProcessCounterSignatures();
     }
     
     protected boolean Validate(byte[] rgbKey) throws CoseException {

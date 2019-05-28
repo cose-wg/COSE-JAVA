@@ -61,6 +61,7 @@ public class MAC0Message extends MacCommon {
         super.CreateWithKey(rgbKey);
     }
     
+    @Override
     public boolean Validate(byte[] rgbKey) throws CoseException {
         return super.Validate(rgbKey);
     }

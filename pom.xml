@@ -6,7 +6,7 @@
 
     <groupId>com.augustcellars.cose</groupId>
     <artifactId>cose-java</artifactId>
-    <version>0.9.7</version>
+    <version>0.9.9</version>
 
     <name>com.augustcellars.cose:cose-java</name>
     <description>A Java implementation that supports the COSE secure message specification.</description>
@@ -135,6 +135,12 @@
                     <artifactId>selenium-remote-driver</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
+            <version>0.2.0</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 
