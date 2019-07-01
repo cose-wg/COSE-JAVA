@@ -6,7 +6,7 @@
 
     <groupId>com.augustcellars.cose</groupId>
     <artifactId>cose-java</artifactId>
-    <version>0.9.9</version>
+    <version>0.9.10</version>
 
     <name>com.augustcellars.cose:cose-java</name>
     <description>A Java implementation that supports the COSE secure message specification.</description>
@@ -109,12 +109,12 @@
         <dependency>
             <groupId>com.upokecenter</groupId>
             <artifactId>cbor</artifactId>
-            <version>2.4.1</version>
+            <version>3.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.peteroupc</groupId>
             <artifactId>numbers</artifactId>
-            <version>0.3.0</version>
+            <version>1.2.1</version>
         </dependency>
 
         <dependency>

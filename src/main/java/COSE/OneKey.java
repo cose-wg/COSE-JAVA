@@ -430,7 +430,7 @@ public class OneKey {
                 break;
                 
             case EDDSA:
-                returnThis = generateOkpKey("EdDSA", KeyKeys.OKP_Ed25519);
+                returnThis = generateOkpKey("Ed25519", KeyKeys.OKP_Ed25519);
                 break;
                 
             default:
@@ -630,12 +630,10 @@ public class OneKey {
             newKey.add(KeyKeys.EC2_X, get(KeyKeys.EC2_X));
             newKey.add(KeyKeys.EC2_Y, get(KeyKeys.EC2_Y));
         }
-        /*
         else if (val.equals(KeyKeys.KeyType_OKP)) {
             newKey.add(KeyKeys.OKP_Curve, get(KeyKeys.OKP_Curve));
             newKey.add(KeyKeys.OKP_X, get(KeyKeys.OKP_X));
         }
-        */
         else {
             return null;
         }
