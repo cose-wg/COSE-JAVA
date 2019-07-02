@@ -958,6 +958,14 @@ public class RegressionTest extends TestBase {
                 case "k_hex":
                     cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
+                    
+                case "kid":
+                    cnKeyOut.set(CBORObject.FromObject(KeyKeys.KeyId), CBORObject.FromObject(StandardCharsets.UTF_8.encode(cnValue.AsString()).array()));
+                    break;
+                    
+                case "kid_hex":
+                    cnKeyOut.set(CBORObject.FromObject(KeyKeys.KeyId), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
             }
         }
         
