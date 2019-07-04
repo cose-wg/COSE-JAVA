@@ -8,6 +8,7 @@ package COSE;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
@@ -174,7 +175,14 @@ public class OneKey {
      * @return {@code true} if the current key has the provided identifier assigned, or {@code false}
      *         otherwise
      */
+    @Deprecated
     public boolean HasKeyID(String id) {
+        byte[] idB = StandardCharsets.UTF_8.encode(id).array();
+        return HasKeyID(idB);
+    }
+    
+    public boolean HasKeyID(byte[] id)
+    {
         CBORObject thatObj = (id == null) ? null : CBORObject.FromObject(id);
         CBORObject thisObj = get(KeyKeys.KeyId);
         boolean result;
@@ -183,7 +191,7 @@ public class OneKey {
         } else {
             result = thatObj.equals(thisObj);
         }    
-        return result;
+        return result;        
     }
 
     /**

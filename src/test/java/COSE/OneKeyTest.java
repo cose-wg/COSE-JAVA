@@ -7,6 +7,7 @@ package COSE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -100,6 +101,7 @@ public class OneKeyTest extends TestBase {
 
     /**
      * Test of get method, of class OneKey.
+     * @throws java.lang.Exception
      */
     @Ignore
     @Test
@@ -116,6 +118,7 @@ public class OneKeyTest extends TestBase {
 
     /**
      * Test of generateKey method, of class OneKey.
+     * @throws java.lang.Exception
      */
     @Ignore
     @Test
@@ -176,6 +179,7 @@ public class OneKeyTest extends TestBase {
 
     /**
      * Test of AsPublicKey method, of class OneKey.
+     * @throws java.lang.Exception
      */
     @Test
     public void testAsPublicKey() throws Exception {
@@ -195,6 +199,7 @@ public class OneKeyTest extends TestBase {
 
     /**
      * Test of AsPrivateKey method, of class OneKey.
+     * @throws java.lang.Exception
      */
     @Test
     public void testAsPrivateKey() throws Exception {
@@ -237,16 +242,18 @@ public class OneKeyTest extends TestBase {
     @Test
     public void testHasKeyID_null() {
         OneKey key = new OneKey();
-        Assert.assertTrue(key.HasKeyID(null));
+        Assert.assertTrue(key.HasKeyID((byte[]) null));
     }
 
     @Test
     public void testHasKeyID_value() {
         String idStr = "testId";
+        byte[] bStr = StandardCharsets.UTF_8.encode(idStr).array();
         OneKey key = new OneKey();
-        CBORObject id = CBORObject.FromObject(idStr);
+        CBORObject id = CBORObject.FromObject(bStr);
         key.add(KeyKeys.KeyId, id);
         Assert.assertTrue(key.HasKeyID(idStr));
+        Assert.assertTrue(key.HasKeyID(bStr));
     }
 
     @Test
