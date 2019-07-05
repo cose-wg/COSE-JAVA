@@ -168,7 +168,7 @@ public abstract class Message extends Attribute {
      * Given a CBOR tree, parse the message.  This is an abstract function that is implemented for each different supported COSE message. 
      * 
      * @param messageObject CBORObject to be converted to a message.
-     * @throws CoseException 
+     * @throws CoseException Internal COSE Exception
      */
     
     protected abstract void DecodeFromCBORObject(CBORObject messageObject) throws CoseException;
@@ -178,7 +178,7 @@ public abstract class Message extends Attribute {
      * This is an internal function, as such it does not add the tag on the front and is implemented on a per message object.
      * 
      * @return CBORObject representing the message.
-     * @throws CoseException 
+     * @throws CoseException Internal COSE Exception
      */
     protected abstract CBORObject EncodeCBORObject() throws CoseException;
     
@@ -186,7 +186,7 @@ public abstract class Message extends Attribute {
      * Encode the COSE message object to a CBORObject tree.  This function call will force cryptographic operations to be executed as needed.
      * 
      * @return CBORObject representing the message.
-     * @throws CoseException 
+     * @throws CoseException Internal COSE Exception
      */
     public CBORObject EncodeToCBORObject() throws CoseException {
         CBORObject obj;

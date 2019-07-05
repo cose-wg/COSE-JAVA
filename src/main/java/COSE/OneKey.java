@@ -57,7 +57,7 @@ public class OneKey {
      * Create a OneKey object from Java Public/Private keys
      * @param pubKey - public key to use - may be null
      * @param privKey - private key to use - may be null
-     * @throws CoseException
+     * @throws CoseException Internal COSE Exception
      */
     public OneKey(PublicKey pubKey, PrivateKey privKey) throws CoseException {
         keyMap = CBORObject.NewMap();
@@ -677,7 +677,7 @@ public class OneKey {
     /**
      * Return the key as a CBOR object
      * 
-     * @return 
+     * @return The key
      */
     public CBORObject AsCBOR()
     {
@@ -713,7 +713,7 @@ public class OneKey {
      * 
      * The user data object allows for an application to associate a piece of arbitrary
      * data with a key and retrieve it later.  
-     * @return
+     * @return the user data object
      */
     public Object getUserData() {
         return UserData;
