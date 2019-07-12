@@ -97,24 +97,24 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.54</version>
+            <version>1.62</version>
 	    <scope>test</scope>
 	</dependency>
         <dependency>
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcpkix-jdk15on</artifactId>
-          <version>1.54</version>
+          <version>1.62</version>
 	  <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.upokecenter</groupId>
             <artifactId>cbor</artifactId>
-            <version>3.4.0</version>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.peteroupc</groupId>
             <artifactId>numbers</artifactId>
-            <version>1.2.1</version>
+            <version>1.4.0</version>
         </dependency>
 
         <dependency>
@@ -139,7 +139,7 @@
         <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
-            <version>0.2.0</version>
+            <version>0.3.0</version>
             <type>jar</type>
         </dependency>
     </dependencies>

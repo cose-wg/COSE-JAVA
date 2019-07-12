@@ -767,7 +767,7 @@ public class OneKey {
                     byte[] privateKeyBytes = ASN1.EncodeOctetString(val.GetByteString());
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), privateKeyBytes, null);
                     
-                    KeyFactory fact = KeyFactory.getInstance(algName);
+                    KeyFactory fact = KeyFactory.getInstance(algName, "EdDSA");
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
                     privateKey = fact.generatePrivate(keyspec);
@@ -803,12 +803,12 @@ public class OneKey {
                 spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(oid, null), rgbKey);        
             }
        
-            KeyFactory fact = KeyFactory.getInstance("EdDSA");
+            KeyFactory fact = KeyFactory.getInstance("EdDSA", "EdDSA");
             KeySpec keyspec = new X509EncodedKeySpec(spki);
             publicKey = fact.generatePublic(keyspec);
         }
-        catch (NoSuchAlgorithmException e) {
-            throw new CoseException("Alorithm unsupported", e);
+        catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new CoseException("Algorithm unsupported", e);
         }
         catch (InvalidKeySpecException e) {
             throw new CoseException("Internal error on SPKI", e);
@@ -832,7 +832,7 @@ public class OneKey {
             }
 
             EdDSAGenParameterSpec paramSpec = new EdDSAGenParameterSpec(curveName);
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("EdDSA");
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("EdDSA", "EdDSA");
             gen.initialize(paramSpec);
             
             KeyPair keyPair = gen.genKeyPair();
@@ -851,7 +851,7 @@ public class OneKey {
             
             return key;
         }
-        catch (NoSuchAlgorithmException e) {
+        catch (NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new CoseException("No provider for algorithm", e);
         }
         catch (InvalidAlgorithmParameterException e) {
