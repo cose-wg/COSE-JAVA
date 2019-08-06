@@ -26,6 +26,7 @@ public abstract class SignCommon extends Message {
 
     static byte[] computeSignature(AlgorithmID alg, byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
         String      algName = null;
+        String      provider = null;
         int         sigLen = 0;
         
         switch (alg) {
@@ -43,6 +44,7 @@ public abstract class SignCommon extends Message {
                 break;
             case EDDSA:
                 algName = "NonewithEdDSA";
+                provider = "EdDSA";
                 break;
                 
             default:
@@ -60,7 +62,8 @@ public abstract class SignCommon extends Message {
         
         byte[]      result = null;
         try {
-            Signature sig = Signature.getInstance(algName);
+            Signature sig = provider == null ? Signature.getInstance(algName) :
+                    Signature.getInstance(algName, provider);
             sig.initSign(privKey);
             sig.update(rgbToBeSigned);
             result = sig.sign();
@@ -126,6 +129,7 @@ public abstract class SignCommon extends Message {
 
     static boolean validateSignature(AlgorithmID alg, byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         String algName = null;
+        String provider = null;
         boolean convert = false;
 
         switch (alg) {
@@ -144,6 +148,7 @@ public abstract class SignCommon extends Message {
             
         case EDDSA:
             algName = "NonewithEdDSA";
+            provider = "EdDSA";
             break;
 
         default:
@@ -161,7 +166,8 @@ public abstract class SignCommon extends Message {
 
         boolean result = false;
         try {
-            Signature sig = Signature.getInstance(algName);
+            Signature sig = provider == null ? Signature.getInstance(algName) :
+                    Signature.getInstance(algName, provider);
             sig.initVerify(pubKey);
             sig.update(rgbToBeSigned);
 
