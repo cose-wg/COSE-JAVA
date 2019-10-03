@@ -5,8 +5,7 @@ matrix:
     - jdk: oraclejdk8
       dist: trusty
     - jdk: oraclejdk9
-    - jdk: oraclejdk8
-    - jdk: oraclejdk9
+      dist: trusty
     - jdk: oraclejdk11
     - jdk: openjdk8
     - jdk: openjdk10
