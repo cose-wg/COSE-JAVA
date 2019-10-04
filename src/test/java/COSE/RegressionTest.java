@@ -985,7 +985,7 @@ public class RegressionTest extends TestBase {
     
     static CBORObject AlgorithmMap(CBORObject old)
      {
-         if (old.getType() == CBORType.Number) {
+         if (old.getType() == CBORType.Integer) {
              return old;
          }
 

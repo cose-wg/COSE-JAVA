@@ -27,6 +27,8 @@ public class CounterSign1 extends Signer {
     public CounterSign1(OneKey key) {
         super(key);
         contextString = "CounterSignature0";
+        objUnprotected.Clear();
+        objProtected.Clear();
     }
     
     private Message m_msgToSign;
@@ -42,6 +44,11 @@ public class CounterSign1 extends Signer {
         m_signerToSign = signer;
     }
     
+    public void setKey(OneKey key)
+    {
+        cnKey = key;
+    }
+    
     @Override
     public void DecodeFromCBORObject(CBORObject cbor) throws CoseException {
         if (cbor.getType() != CBORType.ByteString) {
@@ -54,7 +61,7 @@ public class CounterSign1 extends Signer {
     
     public CBORObject EncodeToCBORObject() throws CoseException {
         if (!objProtected.getValues().isEmpty() || !objUnprotected.getValues().isEmpty()) {
-            throw new CoseException("CoutnerSign1 object cannot have protected or unprotected attributes");
+            throw new CoseException("CounterSign1 object cannot have protected or unprotected attributes");
         }
         
         return CBORObject.FromObject(rgbSignature);

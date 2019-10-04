@@ -111,7 +111,7 @@ public class Attribute {
 
     public void addAttribute(CBORObject label, CBORObject value, int where) throws CoseException {
         removeAttribute(label);
-        if ((label.getType() != CBORType.Number) &&  (label.getType() != CBORType.TextString)) {
+        if ((label.getType() != CBORType.Integer) &&  (label.getType() != CBORType.TextString)) {
             throw new CoseException("Labels must be integers or strings");
         }
         switch (where) {
