@@ -157,13 +157,13 @@ public class SignWikiTest extends TestBase {
                   
                     CBORObject ops = k.get(KeyKeys.Key_Ops);
                     if (ops != null) {
-                        if (ops.getType() == CBORType.Number) {
+                        if (ops.getType() == CBORType.Integer) {
                             if (ops.AsInt32() != 2) continue;
                         } 
                         else if (ops.getType() == CBORType.Array) {
                             boolean found = false;
                             for (int i=0; i<ops.size(); i++) {
-                                if ((ops.get(i).getType() == CBORType.Number) && (ops.get(i).AsInt32() == 2)) {
+                                if ((ops.get(i).getType() == CBORType.Integer) && (ops.get(i).AsInt32() == 2)) {
                                     found = true;
                                     break;
                                 }

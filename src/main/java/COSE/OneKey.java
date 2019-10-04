@@ -140,7 +140,7 @@ public class OneKey {
     }
     
     public CBORObject get(CBORObject keyValue) throws CoseException {
-        if ((keyValue.getType() != CBORType.Number) && (keyValue.getType() != CBORType.TextString)) throw new CoseException("keyValue type is incorrect");
+        if ((keyValue.getType() != CBORType.Integer) && (keyValue.getType() != CBORType.TextString)) throw new CoseException("keyValue type is incorrect");
         return keyMap.get(keyValue);
     }
  
@@ -232,13 +232,13 @@ public class OneKey {
             result = (thisObj == null);
         } else {
             result = false;
-            if (thisObj.getType() == CBORType.Number) {
+            if (thisObj.getType() == CBORType.Integer) {
                 if (thisObj.AsInt32() == that) {
                     result = true;
                 }
             } else if (thisObj.getType() == CBORType.Array) {
                 for (int i = 0; i < thisObj.size(); i++) {
-                    if ((thisObj.get(i).getType() == CBORType.Number) && (thisObj.get(i).AsInt32() == that)) {
+                    if ((thisObj.get(i).getType() == CBORType.Integer) && (thisObj.get(i).AsInt32() == that)) {
                         result = true;
                         break;
                     }
@@ -253,7 +253,7 @@ public class OneKey {
         
         //  Must have a key type
         val = OneKey.this.get(KeyKeys.KeyType);
-        if ((val == null) || (val.getType() != CBORType.Number)) throw new CoseException("Missing or incorrect key type field");
+        if ((val == null) || (val.getType() != CBORType.Integer)) throw new CoseException("Missing or incorrect key type field");
         
         if (val.equals(KeyKeys.KeyType_Octet)) {
             val = OneKey.this.get(KeyKeys.Octet_K);
@@ -652,7 +652,7 @@ public class OneKey {
 
         for (CBORObject obj : keyMap.getKeys()) {
             val = keyMap.get(obj);
-            if (obj.getType() == CBORType.Number) {
+            if (obj.getType() == CBORType.Integer) {
                 if (obj.AsInt32() > 0) {
                     newKey.add(obj, val);
                 }
