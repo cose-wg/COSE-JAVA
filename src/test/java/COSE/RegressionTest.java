@@ -8,15 +8,27 @@ package COSE;
 import org.junit.*;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import org.junit.runner.RunWith;
@@ -32,6 +44,8 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
+            // "Examples/X509",
+            // "Examples/anima",
             "Examples/countersign",
             "Examples/countersign0",
             "Examples/eddsa-examples",
@@ -51,6 +65,7 @@ public class RegressionTest extends TestBase {
             "Examples/sign-tests",
             "Examples/sign1-tests",
             "Examples/RFC8152",
+            // "Examples/X509",
             "Examples/CWT"
            });
     }
@@ -77,6 +92,7 @@ public class RegressionTest extends TestBase {
 
     public void ProcessFile(String test) {
         
+        if (!test.endsWith(".json")) return;
         try {
             int fails = CFails;
             System.out.print("Check: " + test);
@@ -864,8 +880,10 @@ public class RegressionTest extends TestBase {
         }
     }
     
-    public OneKey BuildKey(CBORObject keyIn, boolean fPublicKey) throws CoseException {
+    public OneKey BuildKey(CBORObject keyIn, boolean fPublicKey) throws CoseException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, IOException {
         CBORObject cnKeyOut = CBORObject.NewMap();
+        PrivateKey privateKey = null;
+        PublicKey publicKey = null;
  
         for (CBORObject key : keyIn.getKeys()) {
             CBORObject cnValue = keyIn.get(key);
@@ -966,13 +984,65 @@ public class RegressionTest extends TestBase {
                 case "kid_hex":
                     cnKeyOut.set(CBORObject.FromObject(KeyKeys.KeyId), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
+                    
+                case "pkcs8_b64":
+                    byte[] pkcs8 = Base64.getDecoder().decode(cnValue.AsString());
+                    
+                    privateKey = ImportPKCS8(pkcs8);
+                    break;
+                    
+                case "x509_b64":
+                    byte[] x509 = Base64.getDecoder().decode(cnValue.AsString());
+                    CertificateFactory factX509 = CertificateFactory.getInstance("X.509");
+                    X509Certificate x509Cert = (X509Certificate) factX509.generateCertificate(new ByteArrayInputStream(x509));
+                    publicKey = x509Cert.getPublicKey();
+                    break;
             }
+        }
+        
+        if (publicKey != null || privateKey != null) {
+            if (fPublicKey) {
+                return new OneKey(publicKey, null);
+            }
+            return new OneKey(publicKey, privateKey);
         }
         
         return new OneKey( cnKeyOut);
     }
             
+    private PrivateKey ImportPKCS8(byte[] pkcs8) throws InvalidKeySpecException, NoSuchAlgorithmException
+    {
+        PKCS8EncodedKeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
+        PrivateKey privateKey;
+
+        try {
+            KeyFactory fact = KeyFactory.getInstance("EdDSA", new BouncyCastleProvider());
+            privateKey = fact.generatePrivate(keyspec);
+            return privateKey;
+        } 
+        catch (Exception e) {
             
+        }
+
+        try {
+            KeyFactory fact = KeyFactory.getInstance("ECDSA");
+            privateKey = fact.generatePrivate(keyspec);
+            return privateKey;
+        } 
+        catch (Exception e) {
+            
+        }
+
+        try {
+            KeyFactory fact = KeyFactory.getInstance("RSA");
+            privateKey = fact.generatePrivate(keyspec);
+            return privateKey;
+        } 
+        catch (NoSuchAlgorithmException e) {
+            throw e;
+        }
+    }
+    
     public byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];

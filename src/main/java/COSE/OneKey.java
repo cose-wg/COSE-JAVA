@@ -87,6 +87,12 @@ public class OneKey {
                 }
                 else throw new CoseException("Invalid key data");
             }
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
+                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+                keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                byte[] keyData = (byte[]) spki.get(1).value;
+                keyMap.Add(KeyKeys.OKP_X.AsCBOR(), Arrays.copyOfRange(keyData, 1, keyData.length-1));
+            }
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -119,6 +125,11 @@ public class OneKey {
                 byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
             }
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
+                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+                keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                keyMap.Add(KeyKeys.OKP_D.AsCBOR(), (byte[]) pkl.get(2).value);
+            }            
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -264,6 +275,9 @@ public class OneKey {
         }
         else if (val.equals(KeyKeys.KeyType_OKP)) {
             CheckOkpKey();
+        }
+        else if (val.equals(KeyKeys.KeyType_RSA)) {
+            CheckRsaKey();
         }
         else throw new CoseException("Unsupported key type");
     }
@@ -858,4 +872,15 @@ public class OneKey {
             throw new CoseException("The curve is not supported", e);
         }
     }    
+
+    private void CheckRsaKey() throws CoseException {
+        /*
+        try {
+            
+        }
+        catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new CoseException("No provider for algorithm", e);
+        }
+*/
+    }
 }

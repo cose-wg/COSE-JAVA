@@ -32,6 +32,7 @@ public enum KeyKeys {
     public final static CBORObject KeyType_OKP = CBORObject.FromObject(1);
     public final static CBORObject KeyType_EC2 = CBORObject.FromObject(2);
     public final static CBORObject KeyType_Octet =  CBORObject.FromObject(4);
+    public final static CBORObject KeyType_RSA = CBORObject.FromObject(3);
     
     public final static CBORObject EC2_P256 = CBORObject.FromObject(1);
     public final static CBORObject EC2_P384 = CBORObject.FromObject(2);

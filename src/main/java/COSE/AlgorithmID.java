@@ -55,6 +55,10 @@ public enum AlgorithmID {
     ECDH_SS_HKDF_256_AES_KW_128(-32, 0, 0),
     ECDH_SS_HKDF_256_AES_KW_192(-33, 0, 0),
     ECDH_SS_HKDF_256_AES_KW_256(-34, 0, 0),
+    
+    RSA_PSS_256(-37, 0, 0),
+    RSA_PSS_384(-38, 0, 0),
+    RSA_PSS_512(-39, 0, 0),
     ;
  
     private final CBORObject value;
