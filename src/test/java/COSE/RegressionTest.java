@@ -65,6 +65,7 @@ public class RegressionTest extends TestBase {
             "Examples/sign-tests",
             "Examples/sign1-tests",
             "Examples/RFC8152",
+            "Examples/rsa-pss-examples",
             // "Examples/X509",
             "Examples/CWT"
            });
@@ -902,6 +903,10 @@ public class RegressionTest extends TestBase {
                         case "oct":
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(4));
                             break;
+
+                        case "RSA":
+                            cnKeyOut.set(CBORObject.FromObject(1), KeyKeys.KeyType_RSA);
+                            break;
                     }
                     break;
                     
@@ -964,6 +969,10 @@ public class RegressionTest extends TestBase {
                     break;
 
                 case "d_hex":
+                    if(keyIn.get("kty").AsString().equals("RSA")) {
+                        cnKeyOut.set(KeyKeys.RSA_D.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                        break;
+                    }
                     if (!fPublicKey) {
                         cnKeyOut.set(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     }
@@ -996,6 +1005,28 @@ public class RegressionTest extends TestBase {
                     CertificateFactory factX509 = CertificateFactory.getInstance("X.509");
                     X509Certificate x509Cert = (X509Certificate) factX509.generateCertificate(new ByteArrayInputStream(x509));
                     publicKey = x509Cert.getPublicKey();
+                    break;
+
+                case "n_hex":
+                    cnKeyOut.set(KeyKeys.RSA_N.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "e_hex":
+                    cnKeyOut.set(KeyKeys.RSA_E.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "p_hex":
+                    cnKeyOut.set(KeyKeys.RSA_P.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "q_hex":
+                    cnKeyOut.set(KeyKeys.RSA_Q.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "dP_hex":
+                    cnKeyOut.set(KeyKeys.RSA_DP.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "dQ_hex":
+                    cnKeyOut.set(KeyKeys.RSA_DQ.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
+                    break;
+                case "qi_hex":
+                    cnKeyOut.set(KeyKeys.RSA_QI.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
             }
         }
@@ -1110,6 +1141,9 @@ public class RegressionTest extends TestBase {
          case "ECDH-ES-A256KW": return AlgorithmID.ECDH_ES_HKDF_256_AES_KW_256.AsCBOR();
          case "ECDH-SS-A256KW": return AlgorithmID.ECDH_SS_HKDF_256_AES_KW_256.AsCBOR();
          case "EdDSA": return AlgorithmID.EDDSA.AsCBOR();
+         case "RSA-PSS-256": return AlgorithmID.RSA_PSS_256.AsCBOR();
+         case "RSA-PSS-384": return AlgorithmID.RSA_PSS_384.AsCBOR();
+         case "RSA-PSS-512": return AlgorithmID.RSA_PSS_512.AsCBOR();
 
          default: return old;
          }

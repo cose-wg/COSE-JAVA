@@ -17,14 +17,30 @@ public enum KeyKeys {
     KeyId(2),
     Key_Ops(4),
     Base_IV(5),
+
     Octet_K(-1),
+
     EC2_Curve(-1),
     EC2_X(-2),
     EC2_Y(-3),
     EC2_D(-4),
+
     OKP_Curve(-1),
     OKP_X(-2),
     OKP_D(-4),
+
+    RSA_N(-1),
+    RSA_E(-2),
+    RSA_D(-3),
+    RSA_P(-4),
+    RSA_Q(-5),
+    RSA_DP(-6),
+    RSA_DQ(-7),
+    RSA_QI(-8),
+    RSA_OTHER(-9),
+    RSA__R_I(-10),
+    RSA__D_I(-11),
+    RSA__T_I(-12),
             ;
     
     private final CBORObject value;

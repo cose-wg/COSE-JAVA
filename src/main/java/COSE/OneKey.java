@@ -25,10 +25,14 @@ import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -874,13 +878,53 @@ public class OneKey {
     }    
 
     private void CheckRsaKey() throws CoseException {
-        /*
-        try {
-            
+        CBORObject n = this.get(KeyKeys.RSA_N); // modulus, positive int
+        CBORObject e = this.get(KeyKeys.RSA_E); // public exponent, positive int
+        CBORObject d = this.get(KeyKeys.RSA_D); // private exponent, positive int
+
+        // Public key
+        if(n != null && e != null) {
+            if(n.getType() != CBORType.ByteString || e.getType() != CBORType.ByteString) {
+                throw new CoseException("Malformed key structure");
+            }
+
+            RSAPublicKeySpec spec = new RSAPublicKeySpec(
+                    new BigInteger(1, n.GetByteString()),
+                    new BigInteger(1, e.GetByteString())
+            );
+
+            try {
+                KeyFactory factory = KeyFactory.getInstance("RSA");
+                publicKey = factory.generatePublic(spec);
+            } catch (NoSuchAlgorithmException ex) {
+                throw new CoseException("No provider for algorithm", ex);
+            } catch (InvalidKeySpecException ex) {
+                throw new CoseException("Invalid Public Key", ex);
+            }
         }
-        catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            throw new CoseException("No provider for algorithm", e);
+
+        // Private key with two primes
+        if(n != null && d != null) {
+            if(n.getType() != CBORType.ByteString || d.getType() != CBORType.ByteString) {
+                throw new CoseException("Malformed key structure");
+            }
+
+            // modulus then private exponent
+            RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(
+                    new BigInteger(1, n.GetByteString()),
+                    new BigInteger(1, d.GetByteString())
+            );
+
+            try {
+                KeyFactory factory = KeyFactory.getInstance("RSA");
+                privateKey = factory.generatePrivate(privateKeySpec);
+            } catch (NoSuchAlgorithmException ex) {
+                throw new CoseException("No provider for algorithm", ex);
+            } catch (InvalidKeySpecException ex) {
+                throw new CoseException("Invalid Private Key", ex);
+            }
         }
-*/
+
+        // TODO Private key with more than two primes
     }
 }
