@@ -20,6 +20,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
@@ -458,6 +459,12 @@ public class OneKey {
                 
             case EDDSA:
                 returnThis = generateOkpKey("Ed25519", KeyKeys.OKP_Ed25519);
+                break;
+
+            case RSA_PSS_256:
+            case RSA_PSS_384:
+            case RSA_PSS_512:
+                returnThis = generateRSAKey();
                 break;
                 
             default:
@@ -992,6 +999,39 @@ public class OneKey {
             } catch (InvalidKeySpecException ex) {
                 throw new CoseException("Invalid Private Key", ex);
             }
+        }
+    }
+
+    static public OneKey generateRSAKey() throws CoseException {
+        try {
+
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+            gen.initialize(2048); // 2048 bits, maybe we should make this a parameter ?
+
+            KeyPair keyPair = gen.genKeyPair();
+
+            RSAPrivateCrtKey priv = (RSAPrivateCrtKey) keyPair.getPrivate();
+
+            OneKey key = new OneKey();
+
+            key.add(KeyKeys.KeyType, KeyKeys.KeyType_RSA);
+            key.add(KeyKeys.RSA_N, CBORObject.FromObject(priv.getModulus().toByteArray()));
+            key.add(KeyKeys.RSA_E, CBORObject.FromObject(priv.getPublicExponent().toByteArray()));
+            key.add(KeyKeys.RSA_D, CBORObject.FromObject(priv.getPrivateExponent().toByteArray()));
+            key.add(KeyKeys.RSA_P, CBORObject.FromObject(priv.getPrimeP().toByteArray()));
+            key.add(KeyKeys.RSA_Q, CBORObject.FromObject(priv.getPrimeQ().toByteArray()));
+            key.add(KeyKeys.RSA_DP, CBORObject.FromObject(priv.getPrimeExponentP().toByteArray()));
+            key.add(KeyKeys.RSA_DQ, CBORObject.FromObject(priv.getPrimeExponentQ().toByteArray()));
+            key.add(KeyKeys.RSA_QI, CBORObject.FromObject(priv.getCrtCoefficient().toByteArray()));
+
+            key.publicKey = keyPair.getPublic();
+            key.privateKey = keyPair.getPrivate();
+
+            return key;
+
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new CoseException("No provider for algorithm", e);
         }
     }
 }
