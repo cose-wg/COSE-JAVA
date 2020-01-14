@@ -668,6 +668,10 @@ public class OneKey {
             newKey.add(KeyKeys.OKP_Curve, get(KeyKeys.OKP_Curve));
             newKey.add(KeyKeys.OKP_X, get(KeyKeys.OKP_X));
         }
+        else if (val.equals(KeyKeys.KeyType_RSA)) {
+            newKey.add(KeyKeys.RSA_N, get(KeyKeys.RSA_N));
+            newKey.add(KeyKeys.RSA_E, get(KeyKeys.RSA_E));
+        }
         else {
             return null;
         }
