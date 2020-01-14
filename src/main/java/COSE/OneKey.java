@@ -25,8 +25,9 @@ import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAMultiPrimePrivateCrtKeySpec;
+import java.security.spec.RSAOtherPrimeInfo;
+import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -878,13 +879,19 @@ public class OneKey {
     }    
 
     private void CheckRsaKey() throws CoseException {
-        CBORObject n = this.get(KeyKeys.RSA_N); // modulus, positive int
-        CBORObject e = this.get(KeyKeys.RSA_E); // public exponent, positive int
-        CBORObject d = this.get(KeyKeys.RSA_D); // private exponent, positive int
+        CBORObject n = this.get(KeyKeys.RSA_N);         // modulus, positive int
+        CBORObject e = this.get(KeyKeys.RSA_E);         // public exponent, positive int
+        CBORObject d = this.get(KeyKeys.RSA_D);         // private exponent, positive int
+        CBORObject p = this.get(KeyKeys.RSA_P);         // the prime factor p of n
+        CBORObject q = this.get(KeyKeys.RSA_Q);         // the prime factor q of n
+        CBORObject dP = this.get(KeyKeys.RSA_DP);       // d mod (p - 1)
+        CBORObject dQ = this.get(KeyKeys.RSA_DQ);       // d mod (q - 1)
+        CBORObject qInv = this.get(KeyKeys.RSA_QI);     // CRT coefficient
+        CBORObject other = this.get(KeyKeys.RSA_OTHER); // other prime info, contains map of (ri, di, ti)
 
         // Public key
-        if(n != null && e != null) {
-            if(n.getType() != CBORType.ByteString || e.getType() != CBORType.ByteString) {
+        if (n != null && e != null) {
+            if (n.getType() != CBORType.ByteString || e.getType() != CBORType.ByteString) {
                 throw new CoseException("Malformed key structure");
             }
 
@@ -903,17 +910,79 @@ public class OneKey {
             }
         }
 
-        // Private key with two primes
-        if(n != null && d != null) {
-            if(n.getType() != CBORType.ByteString || d.getType() != CBORType.ByteString) {
+        // Private key
+        if (n != null && e != null && d != null && p != null &&
+                q != null && dP != null && dQ != null && qInv != null) {
+            if (n.getType() != CBORType.ByteString ||
+                    e.getType() != CBORType.ByteString ||
+                    d.getType() != CBORType.ByteString ||
+                    p.getType() != CBORType.ByteString ||
+                    q.getType() != CBORType.ByteString ||
+                    dP.getType() != CBORType.ByteString ||
+                    dQ.getType() != CBORType.ByteString ||
+                    qInv.getType() != CBORType.ByteString) {
                 throw new CoseException("Malformed key structure");
             }
 
-            // modulus then private exponent
-            RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(
-                    new BigInteger(1, n.GetByteString()),
-                    new BigInteger(1, d.GetByteString())
-            );
+            RSAPrivateKeySpec privateKeySpec;
+            if (other == null) {
+                // Single prime private key
+                privateKeySpec = new RSAPrivateCrtKeySpec(
+                        new BigInteger(1, n.GetByteString()),
+                        new BigInteger(1, e.GetByteString()),
+                        new BigInteger(1, d.GetByteString()),
+                        new BigInteger(1, p.GetByteString()),
+                        new BigInteger(1, q.GetByteString()),
+                        new BigInteger(1, dP.GetByteString()),
+                        new BigInteger(1, dQ.GetByteString()),
+                        new BigInteger(1, qInv.GetByteString())
+                );
+            } else {
+                // Multi prime private key
+                if (other.getType() != CBORType.Array)
+                    throw new CoseException("Malformed key structure");
+
+                // Validate and build an array of other prime
+                RSAOtherPrimeInfo[] others = new RSAOtherPrimeInfo[other.size()];
+                for (int i = 0; i < other.size(); i++) {
+                    CBORObject object = other.get(i);
+
+                    if (object.getType() != CBORType.Map)
+                        throw new CoseException("Malformed key structure");
+
+                    CBORObject ri = object.get(KeyKeys.RSA__R_I.AsCBOR());
+                    CBORObject di = object.get(KeyKeys.RSA__D_I.AsCBOR());
+                    CBORObject ti = object.get(KeyKeys.RSA__T_I.AsCBOR());
+
+                    if (ri == null || di == null || ti == null)
+                        throw new CoseException("Malformed key structure");
+
+                    if (ri.getType() != CBORType.ByteString ||
+                            di.getType() != CBORType.ByteString ||
+                            ti.getType() != CBORType.ByteString) {
+                        throw new CoseException("Malformed key structure");
+                    }
+
+                    others[i] = new RSAOtherPrimeInfo(
+                            new BigInteger(1, ri.GetByteString()),
+                            new BigInteger(1, di.GetByteString()),
+                            new BigInteger(1, ti.GetByteString())
+                    );
+                }
+
+                privateKeySpec = new RSAMultiPrimePrivateCrtKeySpec(
+                        new BigInteger(1, n.GetByteString()),
+                        new BigInteger(1, e.GetByteString()),
+                        new BigInteger(1, d.GetByteString()),
+                        new BigInteger(1, p.GetByteString()),
+                        new BigInteger(1, q.GetByteString()),
+                        new BigInteger(1, dP.GetByteString()),
+                        new BigInteger(1, dQ.GetByteString()),
+                        new BigInteger(1, qInv.GetByteString()),
+                        others
+                );
+            }
+
 
             try {
                 KeyFactory factory = KeyFactory.getInstance("RSA");
@@ -924,7 +993,5 @@ public class OneKey {
                 throw new CoseException("Invalid Private Key", ex);
             }
         }
-
-        // TODO Private key with more than two primes
     }
 }
