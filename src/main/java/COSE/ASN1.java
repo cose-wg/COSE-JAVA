@@ -33,6 +33,41 @@ public class ASN1 {
             tag = tagIn;
             list = listIn;
         }
+
+        @Override
+        public String toString() {
+            String t = tagToString(tag);
+            if(list != null) {
+                return "TagValue{tag=" + t + ", size = " + list.size() + "}";
+            } else {
+                return "TagValue{tag=" + t + ", value=" + bytesToHex(value) + '}';
+            }
+        }
+
+        private static String bytesToHex(byte[] bytes) {
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for(byte b: bytes)
+                sb.append(String.format("%02x", b & 0xff));
+            return sb.toString();
+        }
+        private static String tagToString(int tag) {
+            switch (tag) {
+                case 0x2:
+                    return "INTEGER";
+                case 0x3:
+                    return "BITSTRING";
+                case 0x4:
+                    return "OCTETSTRING";
+                case 0x5:
+                    return "NULL";
+                case 0x6:
+                    return "OBJECTIDENTIFIER";
+                case 0x30:
+                    return "SEQUENCE";
+                default:
+                    return Integer.toString(tag);
+            }
+        }
     }
     
     // 1.2.840.10045.3.1.7
