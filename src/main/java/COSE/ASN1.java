@@ -291,80 +291,13 @@ public class ASN1 {
     }
     
     /**
-     * Decode an EC PKCS#8 private key structure
      * 
+     * Decode a PKCS#8 private key structure, leaving the private key as an octetstring.
      * @param encodedData bytes containing the private key
      * @return tag/value from the decoded object
      * @throws CoseException - ASN.1 encoding errors
      */
-    public static ArrayList<TagValue> DecodePKCS8(byte[] encodedData) throws CoseException 
-    {
-        TagValue pkcs8 = DecodeCompound(0, encodedData);
-        if (pkcs8.tag != 0x30) throw new CoseException("Invalid PKCS8 structure");
-        ArrayList<TagValue> retValue = pkcs8.list;
-        if (retValue.size() != 3 && retValue.size() != 4) {
-            throw new CoseException("Invalid PKCS8 structure");
-        }
-
-        // Version number - we currently only support one version
-        if (retValue.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 0) {
-            throw new CoseException("Invalid PKCS8 structure");
-        }
-
-        // Algorithm identifier
-        if (retValue.get(1).tag != 0x30) throw new CoseException("Invalid PKCS8 structure");
-        if (retValue.get(1).list.isEmpty() || retValue.get(1).list.size() > 2) {
-            throw new CoseException("Invalid PKCS8 structure");
-        }
-        if (retValue.get(1).list.get(0).tag != 6) throw new CoseException("Invalid PKCS8 structure");
-        //  Dont check the next item as it is an ANY
-        
-        if (retValue.get(2).tag != 4) throw new CoseException("Invalid PKCS8 structure");
-        
-        // This is attributes, but we are not going to check for correctness.
-        if (retValue.size() == 4 && retValue.get(3).tag != 0xa0) {
-            throw new CoseException("Invalid PKCS8 structure");
-        }
-        
-        //  Decode the contents of the octet string PrivateKey
-        
-        byte[] pk = (byte[]) retValue.get(2).value;
-        TagValue pkd = DecodeCompound(0, pk);
-        ArrayList<TagValue> pkdl = pkd.list;
-        if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
-        if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
-        
-        if (pkdl.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 1) {
-            throw new CoseException("Invalid ECPrivateKey");
-        }
-        
-        if (pkdl.get(1).tag != 4) throw new CoseException("Invalid ECPrivateKey");
-        
-        if (pkdl.size() > 2) {
-            if ((pkdl.get(2).tag & 0xff) != 0xA0) {
-                if (pkdl.size() != 3 || (pkdl.get(2).tag & 0xff) != 0xa1) {
-                    throw new CoseException("Invalid ECPrivateKey");
-                }
-            } else {
-                if (pkdl.size() == 4 && (pkdl.get(3).tag & 0xff) != 0xa1) throw new CoseException("Invalid ECPrivateKey");                
-            }
-        }
-        
-        retValue.get(2).list = pkdl;
-        retValue.get(2).value = null;
-        retValue.get(2).tag = 0x30;
-        
-        return retValue;
-    }
-
-    /**
-     * Decode a RSA PKCS#8 private key structure
-     *
-     * @param encodedData bytes containing the private key
-     * @return tag/val from the decoded object
-     * @throws CoseException - ASN.1 encoding errors
-     */
-    public static ArrayList<TagValue> DecodePKCS8RSA(byte[] encodedData) throws CoseException
+    public static ArrayList<TagValue> DecodePKCS8Structure(byte[] encodedData) throws CoseException
     {
         TagValue pkcs8 = DecodeCompound(0, encodedData);
         if (pkcs8.tag != 0x30) throw new CoseException("Invalid PKCS8 structure");
@@ -385,24 +318,38 @@ public class ASN1 {
         }
         if (retValue.get(1).list.get(0).tag != 6) throw new CoseException("Invalid PKCS8 structure");
         //  Dont check the next item as it is an ANY
-
+        
         if (retValue.get(2).tag != 4) throw new CoseException("Invalid PKCS8 structure");
-
+        
         // This is attributes, but we are not going to check for correctness.
         if (retValue.size() == 4 && retValue.get(3).tag != 0xa0) {
             throw new CoseException("Invalid PKCS8 structure");
         }
 
+        return retValue;
+    }
+
+
+
+    /**
+     * Decode a RSA PKCS#8 private key octet string
+     *
+     * @param pkcs8 The decoded PKCS#8 structure
+     * @return tag/value from the decoded object
+     * @throws CoseException - ASN.1 encoding errors
+     */
+    public static ArrayList<TagValue> DecodePKCS8RSA(ArrayList<TagValue> pkcs8) throws CoseException {
         //  Decode the contents of the octet string PrivateKey
 
-        byte[] pk = retValue.get(2).value;
+        byte[] pk = pkcs8.get(2).value;
+
         TagValue pkd = DecodeCompound(0, pk);
         ArrayList<TagValue> pkdl = pkd.list;
         if (pkd.tag != 0x30) throw new CoseException("Invalid RSAPrivateKey");
         if (pkdl.size() < 8 || pkdl.size() > 11) throw new CoseException("Invalid RSAPrivateKey");
 
         // We don't support multi-prime decoding (version 1), but we do support single prime (version 0)
-        if (pkdl.get(0).tag != IntegerTag && retValue.get(0).value[0] != 1) {
+        if (pkdl.get(0).tag != IntegerTag && pkcs8.get(0).value[0] != 1) {
             throw new CoseException("Invalid RSAPrivateKey");
         }
 
@@ -410,12 +357,46 @@ public class ASN1 {
             if(tagValue.tag  != IntegerTag) throw new CoseException("Invalid RSAPrivateKey");
         }
 
-        retValue.get(2).list = pkdl;
-        retValue.get(2).value = null;
-        retValue.get(2).tag = 0x30;
-
-        return retValue;
+        return pkdl;
     }
+
+    /**
+     * Decode an EC PKCS#8 private key octet string
+     *
+     * @param pkcs8 The decoded PKCS#8 structure
+     * @return tag/value from the decoded object
+     * @throws CoseException - ASN.1 encoding errors
+     */
+    public static ArrayList<TagValue> DecodePKCS8EC(ArrayList<TagValue> pkcs8) throws CoseException {
+        //  Decode the contents of the octet string PrivateKey
+
+        byte[] pk = pkcs8.get(2).value;
+
+        TagValue pkd = DecodeCompound(0, pk);
+        ArrayList<TagValue> pkdl = pkd.list;
+        if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
+        if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
+
+        if (pkdl.get(0).tag != 2 && pkcs8.get(0).value[0] != 1) {
+            throw new CoseException("Invalid ECPrivateKey");
+        }
+
+        if (pkdl.get(1).tag != 4) throw new CoseException("Invalid ECPrivateKey");
+
+        if (pkdl.size() > 2) {
+            if ((pkdl.get(2).tag & 0xff) != 0xA0) {
+                if (pkdl.size() != 3 || (pkdl.get(2).tag & 0xff) != 0xa1) {
+                    throw new CoseException("Invalid ECPrivateKey");
+                }
+            } else {
+                if (pkdl.size() == 4 && (pkdl.get(3).tag & 0xff) != 0xa1) throw new CoseException("Invalid ECPrivateKey");
+            }
+        }
+
+        return pkdl;
+    }
+
+
     
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();

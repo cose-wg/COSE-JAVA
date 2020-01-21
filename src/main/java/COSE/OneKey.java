@@ -96,11 +96,11 @@ public class OneKey {
         }
 
         if (privKey != null) {
-            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8RSA(privKey.getEncoded());
+            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
 
             byte[] oid = pkl.get(1).list.get(0).value;
             if (Arrays.equals(oid, ASN1.Oid_rsaEncryption)) {
-                ArrayList<ASN1.TagValue> pkdl = pkl.get(2).list;
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8RSA(pkl);
 
                 if(!keyMap.ContainsKey(KeyKeys.RSA_N.AsCBOR()))
                     keyMap.Add(KeyKeys.RSA_N.AsCBOR(), pkdl.get(1).value);
@@ -173,7 +173,7 @@ public class OneKey {
         }
         
         if (privKey != null) {
-            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8(privKey.getEncoded());
+            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
             if (pkl.get(0).tag != 2) throw new CoseException("Invalid PKCS8 structure");
             ArrayList<ASN1.TagValue> alg = pkl.get(1).list;
             if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
@@ -193,8 +193,9 @@ public class OneKey {
                     }
                 }
 
-                if (pkl.get(2).list.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
-                byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
+                if (pkdl.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
+                byte[] keyData = (byte[]) pkdl.get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
             }
             else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
