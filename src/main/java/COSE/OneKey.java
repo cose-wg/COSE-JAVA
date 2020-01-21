@@ -977,23 +977,26 @@ public class OneKey {
                 );
             } else {
                 // Multi prime private key
-                if (other.getType() != CBORType.Array)
+                if (other.getType() != CBORType.Array) {
                     throw new CoseException("Malformed key structure");
+                }
 
                 // Validate and build an array of other prime
                 RSAOtherPrimeInfo[] others = new RSAOtherPrimeInfo[other.size()];
                 for (int i = 0; i < other.size(); i++) {
                     CBORObject object = other.get(i);
 
-                    if (object.getType() != CBORType.Map)
+                    if (object.getType() != CBORType.Map) {
                         throw new CoseException("Malformed key structure");
+                    }
 
                     CBORObject ri = object.get(KeyKeys.RSA__R_I.AsCBOR());
                     CBORObject di = object.get(KeyKeys.RSA__D_I.AsCBOR());
                     CBORObject ti = object.get(KeyKeys.RSA__T_I.AsCBOR());
 
-                    if (ri == null || di == null || ti == null)
+                    if (ri == null || di == null || ti == null) {
                         throw new CoseException("Malformed key structure");
+                    }
 
                     if (ri.getType() != CBORType.ByteString ||
                             di.getType() != CBORType.ByteString ||
