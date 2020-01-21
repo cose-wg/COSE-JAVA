@@ -93,12 +93,6 @@ public class OneKey {
                 }
                 else throw new CoseException("Invalid key data");
             }
-            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
-                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
-                keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
-                byte[] keyData = (byte[]) spki.get(1).value;
-                keyMap.Add(KeyKeys.OKP_X.AsCBOR(), Arrays.copyOfRange(keyData, 1, keyData.length-1));
-            }
             else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
                 ASN1.TagValue compound = ASN1.DecodeCompound(1, spki.get(1).value);
                 if(compound.list == null || compound.list.size() != 2) {
@@ -149,11 +143,6 @@ public class OneKey {
                 byte[] keyData = pkdl.get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
             }
-            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
-                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
-                keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
-                keyMap.Add(KeyKeys.OKP_D.AsCBOR(), (byte[]) pkl.get(2).value);
-            }            
             else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
                 ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8RSA(pkl);
 
