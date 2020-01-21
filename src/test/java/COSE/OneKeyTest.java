@@ -328,7 +328,7 @@ public class OneKeyTest extends TestBase {
     @Test
     public void testRSARoundTrip() throws CoseException {
         OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256);
-        OneKey keyTwo = new OneKey((RSAPublicKey) keyOne.AsPublicKey(), (RSAPrivateKey) keyOne.AsPrivateKey());
+        OneKey keyTwo = new OneKey(keyOne.AsPublicKey(), keyOne.AsPrivateKey());
 
         Assert.assertEquals(keyOne.AsPublicKey(), keyTwo.AsPublicKey());
         Assert.assertEquals(keyOne.AsPrivateKey(), keyTwo.AsPrivateKey());
@@ -342,6 +342,18 @@ public class OneKeyTest extends TestBase {
         assertSameKey.accept(KeyKeys.RSA_DP);
         assertSameKey.accept(KeyKeys.RSA_DQ);
         assertSameKey.accept(KeyKeys.RSA_QI);
+    }
+
+    @Test
+    public void testRSAPublicRoundTrip() throws CoseException {
+        OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256);
+        OneKey keyTwo = new OneKey(keyOne.AsPublicKey(), null);
+
+        Assert.assertEquals(keyOne.AsPublicKey(), keyTwo.AsPublicKey());
+
+        Consumer<KeyKeys> assertSameKey = (KeyKeys k) -> Assert.assertEquals(keyOne.get(k), keyTwo.get(k));
+        assertSameKey.accept(KeyKeys.RSA_N);
+        assertSameKey.accept(KeyKeys.RSA_E);
     }
      
     static String byteArrayToHex(byte[] a) {

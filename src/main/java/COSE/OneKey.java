@@ -21,8 +21,6 @@ import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
@@ -62,71 +60,7 @@ public class OneKey {
     }
 
     /**
-     * Create a OneKey object from Java RSA Public/Private keys.
-     * @param pubKey public key to use - may be null
-     * @param privKey private key to use - may be null
-     * @throws CoseException Internal COSE Exception
-     */
-    public OneKey(RSAPublicKey pubKey, RSAPrivateKey privKey) throws CoseException {
-        keyMap = CBORObject.NewMap();
-
-        if (pubKey != null) {
-            ArrayList<ASN1.TagValue> spki = ASN1.DecodeSubjectPublicKeyInfo(pubKey.getEncoded());
-            ArrayList<ASN1.TagValue> alg = spki.get(0).list;
-
-            if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
-                ASN1.TagValue compound = ASN1.DecodeCompound(1, spki.get(1).value);
-                if(compound.list == null || compound.list.size() != 2)
-                    throw new CoseException("Invalid SPKI structure");
-
-                ASN1.TagValue n = compound.list.get(0);
-                ASN1.TagValue e = compound.list.get(1);
-
-                if(n.tag != 2 || e.tag != 2)
-                    throw new CoseException("Invalid SPKI structure");
-
-                keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
-                keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
-            }
-            else {
-                throw new CoseException("Unsupported Algorithm");
-            }
-
-            this.publicKey = pubKey;
-        }
-
-        if (privKey != null) {
-            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
-
-            byte[] oid = pkl.get(1).list.get(0).value;
-            if (Arrays.equals(oid, ASN1.Oid_rsaEncryption)) {
-                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8RSA(pkl);
-
-                if(!keyMap.ContainsKey(KeyKeys.RSA_N.AsCBOR()))
-                    keyMap.Add(KeyKeys.RSA_N.AsCBOR(), pkdl.get(1).value);
-
-                if(!keyMap.ContainsKey(KeyKeys.RSA_E.AsCBOR()))
-                    keyMap.Add(KeyKeys.RSA_E.AsCBOR(), pkdl.get(2).value);
-
-                keyMap.Add(KeyKeys.RSA_D.AsCBOR(), pkdl.get(3).value);
-                keyMap.Add(KeyKeys.RSA_P.AsCBOR(), pkdl.get(4).value);
-                keyMap.Add(KeyKeys.RSA_Q.AsCBOR(), pkdl.get(5).value);
-                keyMap.Add(KeyKeys.RSA_DP.AsCBOR(), pkdl.get(6).value);
-                keyMap.Add(KeyKeys.RSA_DQ.AsCBOR(), pkdl.get(7).value);
-                keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
-
-                // todo multi prime keys
-            }
-            else {
-                throw new CoseException("Unsupported Algorithm");
-            }
-
-            this.privateKey = privKey;
-        }
-    }
-    
-    /**
-     * Create a OneKey object from Java Public/Private keys. Support only EC keys.
+     * Create a OneKey object from Java Public/Private keys.
      * @param pubKey - public key to use - may be null
      * @param privKey - private key to use - may be null
      * @throws CoseException Internal COSE Exception
@@ -165,6 +99,22 @@ public class OneKey {
                 byte[] keyData = (byte[]) spki.get(1).value;
                 keyMap.Add(KeyKeys.OKP_X.AsCBOR(), Arrays.copyOfRange(keyData, 1, keyData.length-1));
             }
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
+                ASN1.TagValue compound = ASN1.DecodeCompound(1, spki.get(1).value);
+                if(compound.list == null || compound.list.size() != 2) {
+                    throw new CoseException("Invalid SPKI structure");
+                }
+
+                ASN1.TagValue n = compound.list.get(0);
+                ASN1.TagValue e = compound.list.get(1);
+
+                if(n.tag != 2 || e.tag != 2) {
+                    throw new CoseException("Invalid SPKI structure");
+                }
+
+                keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
+                keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
+            }
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -176,6 +126,7 @@ public class OneKey {
             ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
             if (pkl.get(0).tag != 2) throw new CoseException("Invalid PKCS8 structure");
             ArrayList<ASN1.TagValue> alg = pkl.get(1).list;
+
             if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
                 byte[] oid = (byte[]) alg.get(1).value;
                 if (oid == null) throw new CoseException("Invalid PKCS8 structure");
@@ -195,7 +146,7 @@ public class OneKey {
 
                 ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
                 if (pkdl.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
-                byte[] keyData = (byte[]) pkdl.get(1).value;
+                byte[] keyData = pkdl.get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
             }
             else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)) {
@@ -203,6 +154,26 @@ public class OneKey {
                 keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
                 keyMap.Add(KeyKeys.OKP_D.AsCBOR(), (byte[]) pkl.get(2).value);
             }            
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8RSA(pkl);
+
+                if(!keyMap.ContainsKey(KeyKeys.RSA_N.AsCBOR())) {
+                    keyMap.Add(KeyKeys.RSA_N.AsCBOR(), pkdl.get(1).value);
+                }
+
+                if(!keyMap.ContainsKey(KeyKeys.RSA_E.AsCBOR())){
+                    keyMap.Add(KeyKeys.RSA_E.AsCBOR(), pkdl.get(2).value);
+                }
+
+                keyMap.Add(KeyKeys.RSA_D.AsCBOR(), pkdl.get(3).value);
+                keyMap.Add(KeyKeys.RSA_P.AsCBOR(), pkdl.get(4).value);
+                keyMap.Add(KeyKeys.RSA_Q.AsCBOR(), pkdl.get(5).value);
+                keyMap.Add(KeyKeys.RSA_DP.AsCBOR(), pkdl.get(6).value);
+                keyMap.Add(KeyKeys.RSA_DQ.AsCBOR(), pkdl.get(7).value);
+                keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
+
+                // todo multi prime keys
+            }
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
