@@ -467,10 +467,23 @@ public class OneKey {
         if (cnCurve == KeyKeys.EC2_P521) return new ECGenParameterSpec("secp521r1");
         throw new CoseException("Unsupported curve " + cnCurve);        
     }
-    
-    
+
     static public OneKey generateKey(AlgorithmID algorithm) throws CoseException {
-        OneKey returnThis = null;
+        return generateKey(algorithm, null);
+    }
+
+    /**
+     * Generate a random key pair based on the given algorithm.
+     * Some algorithm can take a parameter. For example, the RSA_PSS family of algorithm
+     * can take the RSA key size as a parameter.
+     *
+     * @param algorithm the algorithm to generate a key pair for
+     * @param parameters optional parameters to the key pair generator
+     * @return the generated Key Pair
+     * @throws CoseException
+     */
+    static public OneKey generateKey(AlgorithmID algorithm, String parameters) throws CoseException {
+        OneKey returnThis;
         switch(algorithm) {
             case ECDSA_256:
                 returnThis = generateECDSAKey("P-256", KeyKeys.EC2_P256); 
@@ -491,7 +504,13 @@ public class OneKey {
             case RSA_PSS_256:
             case RSA_PSS_384:
             case RSA_PSS_512:
-                returnThis = generateRSAKey();
+                int keySize = 2048;
+                if(parameters != null) {
+                    try {
+                        keySize = Integer.parseInt(parameters);
+                    } catch (NumberFormatException ignored) {}
+                }
+                returnThis = generateRSAKey(keySize);
                 break;
                 
             default:
@@ -1036,11 +1055,10 @@ public class OneKey {
         }
     }
 
-    static public OneKey generateRSAKey() throws CoseException {
+    static private OneKey generateRSAKey(int keySize) throws CoseException {
         try {
-
             KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-            gen.initialize(2048); // 2048 bits, maybe we should make this a parameter ?
+            gen.initialize(keySize);
 
             KeyPair keyPair = gen.genKeyPair();
 

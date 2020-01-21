@@ -346,7 +346,7 @@ public class OneKeyTest extends TestBase {
 
     @Test
     public void testRSAPublicRoundTrip() throws CoseException {
-        OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256);
+        OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256, "3096");
         OneKey keyTwo = new OneKey(keyOne.AsPublicKey(), null);
 
         Assert.assertEquals(keyOne.AsPublicKey(), keyTwo.AsPublicKey());
