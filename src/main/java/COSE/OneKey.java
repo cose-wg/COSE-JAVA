@@ -20,15 +20,21 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAMultiPrimePrivateCrtKeySpec;
+import java.security.spec.RSAOtherPrimeInfo;
+import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -52,9 +58,9 @@ public class OneKey {
         keyMap = keyData;
         CheckKeyState();
     }
-    
+
     /**
-     * Create a OneKey object from Java Public/Private keys
+     * Create a OneKey object from Java Public/Private keys.
      * @param pubKey - public key to use - may be null
      * @param privKey - private key to use - may be null
      * @throws CoseException Internal COSE Exception
@@ -87,6 +93,22 @@ public class OneKey {
                 }
                 else throw new CoseException("Invalid key data");
             }
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
+                ASN1.TagValue compound = ASN1.DecodeCompound(1, spki.get(1).value);
+                if(compound.list == null || compound.list.size() != 2) {
+                    throw new CoseException("Invalid SPKI structure");
+                }
+
+                ASN1.TagValue n = compound.list.get(0);
+                ASN1.TagValue e = compound.list.get(1);
+
+                if(n.tag != 2 || e.tag != 2) {
+                    throw new CoseException("Invalid SPKI structure");
+                }
+
+                keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
+                keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
+            }
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -95,9 +117,10 @@ public class OneKey {
         }
         
         if (privKey != null) {
-            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8(privKey.getEncoded());
+            ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
             if (pkl.get(0).tag != 2) throw new CoseException("Invalid PKCS8 structure");
             ArrayList<ASN1.TagValue> alg = pkl.get(1).list;
+
             if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
                 byte[] oid = (byte[]) alg.get(1).value;
                 if (oid == null) throw new CoseException("Invalid PKCS8 structure");
@@ -115,9 +138,30 @@ public class OneKey {
                     }
                 }
 
-                if (pkl.get(2).list.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
-                byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
+                if (pkdl.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
+                byte[] keyData = pkdl.get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
+            }
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_rsaEncryption)) {
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8RSA(pkl);
+
+                if(!keyMap.ContainsKey(KeyKeys.RSA_N.AsCBOR())) {
+                    keyMap.Add(KeyKeys.RSA_N.AsCBOR(), pkdl.get(1).value);
+                }
+
+                if(!keyMap.ContainsKey(KeyKeys.RSA_E.AsCBOR())){
+                    keyMap.Add(KeyKeys.RSA_E.AsCBOR(), pkdl.get(2).value);
+                }
+
+                keyMap.Add(KeyKeys.RSA_D.AsCBOR(), pkdl.get(3).value);
+                keyMap.Add(KeyKeys.RSA_P.AsCBOR(), pkdl.get(4).value);
+                keyMap.Add(KeyKeys.RSA_Q.AsCBOR(), pkdl.get(5).value);
+                keyMap.Add(KeyKeys.RSA_DP.AsCBOR(), pkdl.get(6).value);
+                keyMap.Add(KeyKeys.RSA_DQ.AsCBOR(), pkdl.get(7).value);
+                keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
+
+                // todo multi prime keys
             }
             else {
                 throw new CoseException("Unsupported Algorithm");
@@ -264,6 +308,9 @@ public class OneKey {
         }
         else if (val.equals(KeyKeys.KeyType_OKP)) {
             CheckOkpKey();
+        }
+        else if (val.equals(KeyKeys.KeyType_RSA)) {
+            CheckRsaKey();
         }
         else throw new CoseException("Unsupported key type");
     }
@@ -420,10 +467,23 @@ public class OneKey {
         if (cnCurve == KeyKeys.EC2_P521) return new ECGenParameterSpec("secp521r1");
         throw new CoseException("Unsupported curve " + cnCurve);        
     }
-    
-    
+
     static public OneKey generateKey(AlgorithmID algorithm) throws CoseException {
-        OneKey returnThis = null;
+        return generateKey(algorithm, null);
+    }
+
+    /**
+     * Generate a random key pair based on the given algorithm.
+     * Some algorithm can take a parameter. For example, the RSA_PSS family of algorithm
+     * can take the RSA key size as a parameter.
+     *
+     * @param algorithm the algorithm to generate a key pair for
+     * @param parameters optional parameters to the key pair generator
+     * @return the generated Key Pair
+     * @throws CoseException
+     */
+    static public OneKey generateKey(AlgorithmID algorithm, String parameters) throws CoseException {
+        OneKey returnThis;
         switch(algorithm) {
             case ECDSA_256:
                 returnThis = generateECDSAKey("P-256", KeyKeys.EC2_P256); 
@@ -439,6 +499,18 @@ public class OneKey {
                 
             case EDDSA:
                 returnThis = generateOkpKey("Ed25519", KeyKeys.OKP_Ed25519);
+                break;
+
+            case RSA_PSS_256:
+            case RSA_PSS_384:
+            case RSA_PSS_512:
+                int keySize = 2048;
+                if(parameters != null) {
+                    try {
+                        keySize = Integer.parseInt(parameters);
+                    } catch (NumberFormatException ignored) {}
+                }
+                returnThis = generateRSAKey(keySize);
                 break;
                 
             default:
@@ -641,6 +713,10 @@ public class OneKey {
         else if (val.equals(KeyKeys.KeyType_OKP)) {
             newKey.add(KeyKeys.OKP_Curve, get(KeyKeys.OKP_Curve));
             newKey.add(KeyKeys.OKP_X, get(KeyKeys.OKP_X));
+        }
+        else if (val.equals(KeyKeys.KeyType_RSA)) {
+            newKey.add(KeyKeys.RSA_N, get(KeyKeys.RSA_N));
+            newKey.add(KeyKeys.RSA_E, get(KeyKeys.RSA_E));
         }
         else {
             return null;
@@ -858,4 +934,156 @@ public class OneKey {
             throw new CoseException("The curve is not supported", e);
         }
     }    
+
+    private void CheckRsaKey() throws CoseException {
+        CBORObject n = this.get(KeyKeys.RSA_N);         // modulus, positive int
+        CBORObject e = this.get(KeyKeys.RSA_E);         // public exponent, positive int
+        CBORObject d = this.get(KeyKeys.RSA_D);         // private exponent, positive int
+        CBORObject p = this.get(KeyKeys.RSA_P);         // the prime factor p of n
+        CBORObject q = this.get(KeyKeys.RSA_Q);         // the prime factor q of n
+        CBORObject dP = this.get(KeyKeys.RSA_DP);       // d mod (p - 1)
+        CBORObject dQ = this.get(KeyKeys.RSA_DQ);       // d mod (q - 1)
+        CBORObject qInv = this.get(KeyKeys.RSA_QI);     // CRT coefficient
+        CBORObject other = this.get(KeyKeys.RSA_OTHER); // other prime info, contains map of (ri, di, ti)
+
+        // Public key
+        if (n != null && e != null) {
+            if (n.getType() != CBORType.ByteString || e.getType() != CBORType.ByteString) {
+                throw new CoseException("Malformed key structure");
+            }
+
+            RSAPublicKeySpec spec = new RSAPublicKeySpec(
+                    new BigInteger(1, n.GetByteString()),
+                    new BigInteger(1, e.GetByteString())
+            );
+
+            try {
+                KeyFactory factory = KeyFactory.getInstance("RSA");
+                publicKey = factory.generatePublic(spec);
+            } catch (NoSuchAlgorithmException ex) {
+                throw new CoseException("No provider for algorithm", ex);
+            } catch (InvalidKeySpecException ex) {
+                throw new CoseException("Invalid Public Key", ex);
+            }
+        }
+
+        // Private key
+        if (n != null && e != null && d != null && p != null &&
+                q != null && dP != null && dQ != null && qInv != null) {
+            if (n.getType() != CBORType.ByteString ||
+                    e.getType() != CBORType.ByteString ||
+                    d.getType() != CBORType.ByteString ||
+                    p.getType() != CBORType.ByteString ||
+                    q.getType() != CBORType.ByteString ||
+                    dP.getType() != CBORType.ByteString ||
+                    dQ.getType() != CBORType.ByteString ||
+                    qInv.getType() != CBORType.ByteString) {
+                throw new CoseException("Malformed key structure");
+            }
+
+            RSAPrivateKeySpec privateKeySpec;
+            if (other == null) {
+                // Single prime private key
+                privateKeySpec = new RSAPrivateCrtKeySpec(
+                        new BigInteger(1, n.GetByteString()),
+                        new BigInteger(1, e.GetByteString()),
+                        new BigInteger(1, d.GetByteString()),
+                        new BigInteger(1, p.GetByteString()),
+                        new BigInteger(1, q.GetByteString()),
+                        new BigInteger(1, dP.GetByteString()),
+                        new BigInteger(1, dQ.GetByteString()),
+                        new BigInteger(1, qInv.GetByteString())
+                );
+            } else {
+                // Multi prime private key
+                if (other.getType() != CBORType.Array) {
+                    throw new CoseException("Malformed key structure");
+                }
+
+                // Validate and build an array of other prime
+                RSAOtherPrimeInfo[] others = new RSAOtherPrimeInfo[other.size()];
+                for (int i = 0; i < other.size(); i++) {
+                    CBORObject object = other.get(i);
+
+                    if (object.getType() != CBORType.Map) {
+                        throw new CoseException("Malformed key structure");
+                    }
+
+                    CBORObject ri = object.get(KeyKeys.RSA__R_I.AsCBOR());
+                    CBORObject di = object.get(KeyKeys.RSA__D_I.AsCBOR());
+                    CBORObject ti = object.get(KeyKeys.RSA__T_I.AsCBOR());
+
+                    if (ri == null || di == null || ti == null) {
+                        throw new CoseException("Malformed key structure");
+                    }
+
+                    if (ri.getType() != CBORType.ByteString ||
+                            di.getType() != CBORType.ByteString ||
+                            ti.getType() != CBORType.ByteString) {
+                        throw new CoseException("Malformed key structure");
+                    }
+
+                    others[i] = new RSAOtherPrimeInfo(
+                            new BigInteger(1, ri.GetByteString()),
+                            new BigInteger(1, di.GetByteString()),
+                            new BigInteger(1, ti.GetByteString())
+                    );
+                }
+
+                privateKeySpec = new RSAMultiPrimePrivateCrtKeySpec(
+                        new BigInteger(1, n.GetByteString()),
+                        new BigInteger(1, e.GetByteString()),
+                        new BigInteger(1, d.GetByteString()),
+                        new BigInteger(1, p.GetByteString()),
+                        new BigInteger(1, q.GetByteString()),
+                        new BigInteger(1, dP.GetByteString()),
+                        new BigInteger(1, dQ.GetByteString()),
+                        new BigInteger(1, qInv.GetByteString()),
+                        others
+                );
+            }
+
+
+            try {
+                KeyFactory factory = KeyFactory.getInstance("RSA");
+                privateKey = factory.generatePrivate(privateKeySpec);
+            } catch (NoSuchAlgorithmException ex) {
+                throw new CoseException("No provider for algorithm", ex);
+            } catch (InvalidKeySpecException ex) {
+                throw new CoseException("Invalid Private Key", ex);
+            }
+        }
+    }
+
+    static private OneKey generateRSAKey(int keySize) throws CoseException {
+        try {
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+            gen.initialize(keySize);
+
+            KeyPair keyPair = gen.genKeyPair();
+
+            RSAPrivateCrtKey priv = (RSAPrivateCrtKey) keyPair.getPrivate();
+
+            OneKey key = new OneKey();
+
+            key.add(KeyKeys.KeyType, KeyKeys.KeyType_RSA);
+            key.add(KeyKeys.RSA_N, CBORObject.FromObject(priv.getModulus().toByteArray()));
+            key.add(KeyKeys.RSA_E, CBORObject.FromObject(priv.getPublicExponent().toByteArray()));
+            key.add(KeyKeys.RSA_D, CBORObject.FromObject(priv.getPrivateExponent().toByteArray()));
+            key.add(KeyKeys.RSA_P, CBORObject.FromObject(priv.getPrimeP().toByteArray()));
+            key.add(KeyKeys.RSA_Q, CBORObject.FromObject(priv.getPrimeQ().toByteArray()));
+            key.add(KeyKeys.RSA_DP, CBORObject.FromObject(priv.getPrimeExponentP().toByteArray()));
+            key.add(KeyKeys.RSA_DQ, CBORObject.FromObject(priv.getPrimeExponentQ().toByteArray()));
+            key.add(KeyKeys.RSA_QI, CBORObject.FromObject(priv.getCrtCoefficient().toByteArray()));
+
+            key.publicKey = keyPair.getPublic();
+            key.privateKey = keyPair.getPrivate();
+
+            return key;
+
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new CoseException("No provider for algorithm", e);
+        }
+    }
 }

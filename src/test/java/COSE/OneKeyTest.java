@@ -15,9 +15,13 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.function.Consumer;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -319,6 +323,37 @@ public class OneKeyTest extends TestBase {
             Assert.assertTrue("Need to implement this", false);
         }
         Assert.assertArrayEquals(oneKey2.get(KeyKeys.EC2_D).GetByteString(), oneKey.get(KeyKeys.EC2_D).GetByteString());
+    }
+
+    @Test
+    public void testRSARoundTrip() throws CoseException {
+        OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256);
+        OneKey keyTwo = new OneKey(keyOne.AsPublicKey(), keyOne.AsPrivateKey());
+
+        Assert.assertEquals(keyOne.AsPublicKey(), keyTwo.AsPublicKey());
+        Assert.assertEquals(keyOne.AsPrivateKey(), keyTwo.AsPrivateKey());
+
+        Consumer<KeyKeys> assertSameKey = (KeyKeys k) -> Assert.assertEquals(keyOne.get(k), keyTwo.get(k));
+        assertSameKey.accept(KeyKeys.RSA_N);
+        assertSameKey.accept(KeyKeys.RSA_E);
+        assertSameKey.accept(KeyKeys.RSA_D);
+        assertSameKey.accept(KeyKeys.RSA_P);
+        assertSameKey.accept(KeyKeys.RSA_Q);
+        assertSameKey.accept(KeyKeys.RSA_DP);
+        assertSameKey.accept(KeyKeys.RSA_DQ);
+        assertSameKey.accept(KeyKeys.RSA_QI);
+    }
+
+    @Test
+    public void testRSAPublicRoundTrip() throws CoseException {
+        OneKey keyOne = OneKey.generateKey(AlgorithmID.RSA_PSS_256, "3096");
+        OneKey keyTwo = new OneKey(keyOne.AsPublicKey(), null);
+
+        Assert.assertEquals(keyOne.AsPublicKey(), keyTwo.AsPublicKey());
+
+        Consumer<KeyKeys> assertSameKey = (KeyKeys k) -> Assert.assertEquals(keyOne.get(k), keyTwo.get(k));
+        assertSameKey.accept(KeyKeys.RSA_N);
+        assertSameKey.accept(KeyKeys.RSA_E);
     }
      
     static String byteArrayToHex(byte[] a) {

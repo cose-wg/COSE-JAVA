@@ -47,6 +47,18 @@ public abstract class SignCommon extends Message {
                 provider = "EdDSA";
                 break;
                 
+            case RSA_PSS_256:
+                algName = "SHA256withRSA/PSS";
+                break;
+                
+            case RSA_PSS_384:
+                algName = "SHA384withRSA/PSS";
+                break;
+                
+            case RSA_PSS_512:
+                algName = "SHA512withRSA/PSS";
+                break;
+                
             default:
                 throw new CoseException("Unsupported Algorithm Specified");
         }
@@ -150,6 +162,18 @@ public abstract class SignCommon extends Message {
             algName = "NonewithEdDSA";
             provider = "EdDSA";
             break;
+ 
+        case RSA_PSS_256:
+             algName = "SHA256withRSA/PSS";
+             break;
+
+         case RSA_PSS_384:
+             algName = "SHA384withRSA/PSS";
+             break;
+
+         case RSA_PSS_512:
+             algName = "SHA512withRSA/PSS";
+             break;
 
         default:
             throw new CoseException("Unsupported Algorithm Specified");
