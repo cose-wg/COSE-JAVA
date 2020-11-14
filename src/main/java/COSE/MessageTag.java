@@ -16,7 +16,8 @@ public enum MessageTag {
     Sign1(18),
     Sign(98),
     MAC(97),
-    MAC0(17);
+    MAC0(17), 
+    Hash(20);
     
     public final int value;
     

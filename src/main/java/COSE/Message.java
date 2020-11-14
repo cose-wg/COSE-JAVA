@@ -39,6 +39,7 @@ public abstract class Message extends Attribute {
      * What is the plain text content of the message.
      */
     protected byte[] rgbContent = null;
+   
   
     /**
      * Decode a COSE message object.  This function assumes that the message
@@ -108,7 +109,11 @@ public abstract class Message extends Attribute {
             case Sign:
                 msg = new SignMessage();
                 break;
-                
+     
+            case Hash:
+                msg = new HashMessage();
+                break;
+            
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
         }
