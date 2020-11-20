@@ -30,7 +30,7 @@ public abstract class HashCommon extends Message {
 			algName = "SHA3-256";
 			break;
 
-		default:
+        default:
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
 
@@ -39,8 +39,7 @@ public abstract class HashCommon extends Message {
 			rgbHash = messageDigest.digest(rgbToBeHashed);
 			return rgbHash;
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-			return null;
+			throw new CoseException("Hashing not possible. Unsupported Algorithm Specified");
 		}
 
 	}

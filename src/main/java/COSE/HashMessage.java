@@ -29,7 +29,6 @@ public class HashMessage extends HashCommon {
 	 * 
 	 * @param emitTag     emit leading tag when message is serialized
 	 * @param emitContent emit the content as part of the message
-	 * @since COSE 0.9.1
 	 */
 	public HashMessage(boolean emitTag, boolean emitContent) {
 		this.emitTag = emitTag;
