@@ -41,7 +41,7 @@ import java.security.Provider;
 
 public class InstallBouncyCastle {
    private static final Provider PROVIDER;
-   
+
    public static void installProvider() throws Exception {
        if (PROVIDER != null) return;
        PROVIDER = new BouncyCastleProvider();
@@ -66,4 +66,4 @@ Go ahead, file issues, make pull requests.  There is an automated build process 
 
 Currently setup to build in the NetBeans IDE.  Automated checking is performed using the [COSE Examples](https://github.com/cose-wg/Examples) as part of the suite.
 
-The examples are located by the following method. 1) If 'c:\\Projects\\cose\\" exists then it uses that as the directory to look in for the examples. 2) It expects that the examples are in the same directory as the pom.xml file.
+The examples are imported into `src/test/resources/Examples`.

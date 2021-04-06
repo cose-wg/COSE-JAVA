@@ -30,27 +30,32 @@ public class RegressionTest extends TestBase {
     @Parameters(name = "{index}: {0})")
     public static Collection<Object> data() {
         return Arrays.asList(new Object[] {
-            "Examples/countersign",
-            "Examples/countersign0",
-            "Examples/eddsa-examples",
+            "Examples/CWT",
+            "Examples/RFC8152",
+            "Examples/X25519-tests",
             "Examples/aes-ccm-examples",
             "Examples/aes-gcm-examples",
             "Examples/aes-wrap-examples",
             "Examples/cbc-mac-examples",
+            //TODO "Examples/chacha-poly-examples",
+            "Examples/countersign",
+            "Examples/countersign1",
             "Examples/ecdh-direct-examples",
             "Examples/ecdh-wrap-examples",
             "Examples/ecdsa-examples",
+            "Examples/eddsa-examples",
             "Examples/encrypted-tests",
             "Examples/enveloped-tests",
+            //TODO "Examples/hashsig",
+            //TODO "Examples/hkdf-aes-examples",
             "Examples/hkdf-hmac-sha-examples",
             "Examples/hmac-examples",
-            "Examples/mac-tests",
             "Examples/mac0-tests",
-            "Examples/sign-tests",
-            "Examples/sign1-tests",
-            "Examples/RFC8152",
+            "Examples/mac-tests",
+            //TODO "Examples/rsa-oaep-examples",
             "Examples/rsa-pss-examples",
-            "Examples/CWT"
+            "Examples/sign1-tests",
+            "Examples/sign-tests"
            });
     }
 
@@ -58,55 +63,55 @@ public class RegressionTest extends TestBase {
     public /* NOT private */ String directoryName;
 
     public int CFails = 0;
-         
+
     @Test
     public void ProcessDirectory() {
         CFails=0;
-        File directory = new File(directoryName);
-        if (!directory.isDirectory()) {
-            directory = new File("D:\\Projects\\cose\\" + directoryName);
-        }
+        File directory = new File("src/test/resources/" + directoryName);
+        org.junit.Assert.assertTrue(directory.isDirectory());
         File[] contents = directory.listFiles();
         org.junit.Assert.assertNotNull(directoryName, contents);
         for ( File f : contents) {
             ProcessFile(f.getAbsolutePath());
-        }    
+        }
         assertEquals(0, CFails);
     }
 
     public void ProcessFile(String test) {
-        
+
         if (!test.endsWith(".json")) return;
         try {
             int fails = CFails;
             System.out.print("Check: " + test);
             InputStream str = new FileInputStream(test);
             CBORObject foo = CBORObject.ReadJSON(str);
-            
+
 
             ProcessJSON(foo);
             if (fails == CFails) System.out.print("... PASS\n");
             else System.out.print("... FAIL\n");
         }
         catch (CoseException e) {
-            if (e.getMessage().equals("Unsupported key size") || 
+            if (e.getMessage().equals("Unsupported key size") ||
                 e.getMessage().equals("Unsupported Algorithm")) {
-                System.out.print("... SKIP\nException " + e + "\n");                
+                System.out.print("... SKIP\nException " + e + "\n");
             }
             else {
-                System.out.print("... FAIL\nException " + e + "\n");                
-                CFails++;            
+                System.out.print("... FAIL\nException " + e + "\n");
+                e.printStackTrace();
+                CFails++;
             }
         }
         catch(Exception e) {
             System.out.print("... FAIL\nException " + e + "\n");
+            e.printStackTrace();
             CFails++;
         }
     }
-    
+
     public void ProcessJSON(CBORObject control) throws CoseException, IllegalStateException, Exception {
         CBORObject input = control.get("input");
-        
+
         if (input.ContainsKey("mac0")) {
             VerifyMac0Test(control);
             BuildMac0Test(control);
@@ -132,16 +137,16 @@ public class RegressionTest extends TestBase {
             BuildSign0Message(control);
         }
     }
-    
+
     public void BuildEncryptTest(CBORObject cnControl) throws CoseException, IllegalStateException, Exception {
         CBORObject cnFail = cnControl.get("fail");
         if ((cnFail != null) && cnFail.AsBoolean()) return;
-        
+
         CBORObject cnInput = cnControl.get("input");
         CBORObject cnEncrypt = cnInput.get("encrypted");
-        
+
         Encrypt0Message msg = new Encrypt0Message();
-        
+
         CBORObject cn = cnInput.get("plaintext");
         if (cn == null) {
             cn = cnInput.get("plaintext_hex");
@@ -155,11 +160,11 @@ public class RegressionTest extends TestBase {
         if (cnEncrypt.ContainsKey("countersign0")) {
             AddCounterSignature0(msg, cnEncrypt.get("countersign0"));
         }
-        
+
         if (cnEncrypt.ContainsKey("countersign")) {
             AddCounterSignature(msg, cnEncrypt.get("countersign"));
         }
-        
+
         CBORObject cnRecipients = cnEncrypt.get("recipients");
         cnRecipients = cnRecipients.get(0);
 
@@ -168,18 +173,18 @@ public class RegressionTest extends TestBase {
         CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
         msg.encrypt(kk.GetByteString());
-        
+
         byte[] rgb = msg.EncodeToBytes();
-        
+
         _VerifyEncrypt(cnControl, rgb);
     }
-    
+
     public void VerifyEncryptTest(CBORObject control) throws CoseException {
         String strExample = control.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyEncrypt(control, rgb);
     }
-    
+
     public void _VerifyEncrypt(CBORObject control, byte[] rgbData) throws CoseException {
  	CBORObject cnInput = control.get("input");
 	boolean fFail = false;
@@ -217,7 +222,7 @@ public class RegressionTest extends TestBase {
             try {
                 byte[] rgbContent = enc0.decrypt(kk.GetByteString());
                 if ((cnFail != null) && !cnFail.AsBoolean()) CFails++;
-                
+
                 byte[] oldContent;
                 CBORObject cnOldContent = cnInput.get("plaintext");
                 if (cnOldContent == null) {
@@ -227,7 +232,7 @@ public class RegressionTest extends TestBase {
                 else {
                     oldContent = cnInput.get("plaintext").AsString().getBytes(StandardCharsets.UTF_8);
                 }
-                                
+
                 assertArrayEquals(oldContent, rgbContent);
             }
             catch(CoseException e) {
@@ -235,9 +240,11 @@ public class RegressionTest extends TestBase {
                     throw e;
                 }
                if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
+               e.printStackTrace();
             }
             catch (Exception e) {
                if (!fFailBody && ((cnFail == null) || !cnFail.AsBoolean())) CFails ++;
+               e.printStackTrace();
             }
 
             CBORObject cnCounter = cnEncrypt.get("countersign0");
@@ -283,11 +290,11 @@ public class RegressionTest extends TestBase {
         }
 
 	SetSendingAttributes(hEncObj, cnEnveloped, true);
-        
+
         if (cnEnveloped.ContainsKey("countersign0")) {
             AddCounterSignature0(hEncObj, cnEnveloped.get("countersign0"));
         }
-        
+
         if (cnEnveloped.ContainsKey("countersign")) {
             AddCounterSignature(hEncObj, cnEnveloped.get("countersign"));
         }
@@ -308,16 +315,16 @@ public class RegressionTest extends TestBase {
 
         return;
     }
-    
+
     public void BuildMac0Test(CBORObject cnControl) throws CoseException, IllegalStateException, Exception {
         CBORObject cnFail = cnControl.get("fail");
         if ((cnFail != null) && cnFail.AsBoolean()) return;
-        
+
         CBORObject cnInput = cnControl.get("input");
         CBORObject cnEncrypt = cnInput.get("mac0");
-        
+
         MAC0Message msg = new MAC0Message();
-        
+
         CBORObject cn = cnInput.get("plaintext");
         if (cn == null) {
             cn = cnInput.get("plaintext_hex");
@@ -326,13 +333,13 @@ public class RegressionTest extends TestBase {
         else {
             msg.SetContent(cn.AsString());
         }
-        
+
         SetSendingAttributes(msg, cnEncrypt, true);
-        
+
         if (cnEncrypt.ContainsKey("countersign0")) {
             AddCounterSignature0(msg, cnEncrypt.get("countersign0"));
         }
-        
+
         if (cnEncrypt.ContainsKey("countersign")) {
             AddCounterSignature(msg, cnEncrypt.get("countersign"));
         }
@@ -345,9 +352,9 @@ public class RegressionTest extends TestBase {
         CBORObject kk = cnKey.get(CBORObject.FromObject(-1));
 
         msg.Create(kk.GetByteString());
-        
+
         byte[] rgb = msg.EncodeToBytes();
-        
+
         _VerifyMac0(cnControl, rgb);
     }
 
@@ -356,7 +363,7 @@ public class RegressionTest extends TestBase {
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac0(control, rgb);
     }
-    
+
     public void _VerifyMac0(CBORObject control, byte[] rgbData) throws CoseException {
 	CBORObject cnInput = control.get("input");
 	int type;
@@ -402,7 +409,7 @@ public class RegressionTest extends TestBase {
             cnCounter = cnMac.get("countersign");
             if (cnCounter != null) {
                 CheckCounterSignatures(msg, cnCounter);
-            }            
+            }
         }
         catch(CoseException e) {
             if (e.getMessage() == "Unsupported key size") {
@@ -420,7 +427,7 @@ public class RegressionTest extends TestBase {
         byte[] rgb =  hexStringToByteArray(strExample);
         _VerifyMac(control, rgb);
     }
-    
+
     public void _VerifyMac(CBORObject control, byte[] rgbData) throws CoseException {
 	CBORObject cnInput = control.get("input");
 	boolean fFail = false;
@@ -450,7 +457,7 @@ public class RegressionTest extends TestBase {
             OneKey cnKey = BuildKey(cnRecipients.get("key"), false);
             Recipient recipient = mac.getRecipient(0);
             recipient.SetKey(cnKey);
-            
+
             CBORObject cnStatic = cnRecipients.get("sender_key");
             if (cnStatic != null) {
                 if (recipient.findAttribute(HeaderKeys.ECDH_SPK) == null) {
@@ -477,7 +484,7 @@ public class RegressionTest extends TestBase {
                 CFails++;
                 return;
             }
-            
+
             CBORObject cnCounter = cnMac.get("countersign0");
             if (cnCounter != null) {
                 CheckCounterSignature0(msg, cnCounter);
@@ -566,7 +573,7 @@ public class RegressionTest extends TestBase {
             try {
                 byte[] rgbOut = hEnc.decrypt(hRecip);
                 if (fFailBody) fRet = false;
-                else fRet = true;            
+                else fRet = true;
             }
             catch(CoseException e) {
                 if (e.getMessage() == "Unsupported key size") {
@@ -589,7 +596,7 @@ public class RegressionTest extends TestBase {
             if (cnCounter != null) {
                 CheckCounterSignatures(msg, cnCounter);
             }
-            
+
         }
         catch(CoseException e) {
             throw e;
@@ -614,7 +621,7 @@ public class RegressionTest extends TestBase {
 
 	cnEnveloped = cnInput.get("enveloped");
 	cnRecipients = cnEnveloped.get("recipients");
-        
+
 	for (iRecipient=0; iRecipient<cnRecipients.size(); iRecipient++) {
             CBORObject cnRecipient = cnRecipients.get(iRecipient);
             if (!cnRecipient.ContainsKey("recipients")) {
@@ -709,7 +716,7 @@ public class RegressionTest extends TestBase {
          if (cnEnveloped.ContainsKey("countersign")) {
              AddCounterSignature(hEncObj, cnEnveloped.get("countersign"));
          }
-            
+
 	CBORObject cnRecipients = cnEnveloped.get("recipients");
 
 	for (iRecipient = 0; iRecipient<cnRecipients.size(); iRecipient++) {
@@ -726,7 +733,7 @@ public class RegressionTest extends TestBase {
 
         return;
     }
-    
+
     public void SetReceivingAttributes(Attribute msg, CBORObject cnIn) throws Exception
     {
 	boolean f = false;
@@ -738,7 +745,7 @@ public class RegressionTest extends TestBase {
             msg.setExternal(hexStringToByteArray(cnExternal.AsString()));
         }
     }
-    
+
     void SetSendingAttributes(Attribute msg, CBORObject cnIn, boolean fPublicKey) throws Exception
     {
         SetAttributes(msg, cnIn.get("protected"), Attribute.PROTECTED, fPublicKey);
@@ -751,61 +758,61 @@ public class RegressionTest extends TestBase {
         }
     }
 
-    
+
     public void SetAttributes(Attribute msg, CBORObject cnAttributes, int which, boolean fPublicKey) throws Exception {
         if (cnAttributes == null) return;
-        
+
         CBORObject cnKey;
         CBORObject cnValue;
-        
+
         for (CBORObject attr : cnAttributes.getKeys()) {
             switch (attr.AsString()) {
                 case "alg":
                     cnKey = HeaderKeys.Algorithm.AsCBOR();
                     cnValue = AlgorithmMap(cnAttributes.get(attr));
                     break;
-                    
+
                 case "kid":
                     cnKey= HeaderKeys.KID.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "spk_kid":
                     cnKey = HeaderKeys.ECDH_SKID.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "IV_hex":
                     cnKey = HeaderKeys.IV.AsCBOR();
                     cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
                     break;
-                    
+
                 case "partialIV_hex":
                     cnKey = HeaderKeys.PARTIAL_IV.AsCBOR();
                     cnValue = CBORObject.FromObject(hexStringToByteArray(cnAttributes.get(attr).AsString()));
                     break;
-                    
+
                 case "salt":
                     cnKey = HeaderKeys.HKDF_Salt.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "apu_id":
                     cnKey = HeaderKeys.HKDF_Context_PartyU_ID.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "apv_id":
                     cnKey = HeaderKeys.HKDF_Context_PartyV_ID.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "apu_nonce":
                 case "apu_nonce_hex":
                     cnKey = HeaderKeys.HKDF_Context_PartyU_nonce.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "apv_nonce":
                     cnKey = HeaderKeys.HKDF_Context_PartyV_nonce.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
@@ -825,7 +832,7 @@ public class RegressionTest extends TestBase {
                     cnKey = HeaderKeys.HKDF_SuppPub_Other.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
                     break;
-                    
+
                 case "priv_other":
                     cnKey = HeaderKeys.HKDF_SuppPriv_Other.AsCBOR();
                     cnValue = CBORObject.FromObject(cnAttributes.get(attr).AsString().getBytes());
@@ -835,7 +842,7 @@ public class RegressionTest extends TestBase {
                     cnKey = HeaderKeys.CONTENT_TYPE.AsCBOR();
                     cnValue = cnAttributes.get(attr);
                     break;
-                    
+
                 case "crit":
                     cnKey = HeaderKeys.CriticalHeaders.AsCBOR();
                     cnValue = CBORObject.NewArray();
@@ -843,17 +850,18 @@ public class RegressionTest extends TestBase {
                         cnValue.Add(HeaderMap(x));
                     }
                     break;
-                    
+
+                case "compressed":
                 case "reserved":
                     cnKey = attr;
                     cnValue = cnAttributes.get(attr);
                     break;
-                    
+
                 case "epk":
                     cnKey = null;
                     cnValue = null;
                     break;
-                    
+
                 default:
                     throw new Exception("Attribute " + attr.AsString() + " is not part of SetAttributes");
             }
@@ -863,24 +871,24 @@ public class RegressionTest extends TestBase {
             }
         }
     }
-    
+
     public OneKey BuildKey(CBORObject keyIn, boolean fPublicKey) throws CoseException {
         CBORObject cnKeyOut = CBORObject.NewMap();
 
         for (CBORObject key : keyIn.getKeys()) {
             CBORObject cnValue = keyIn.get(key);
-            
+
             switch (key.AsString()) {
                 case "kty":
                     switch (cnValue.AsString()) {
                         case "EC":
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(2));
                             break;
-                            
+
                         case "OKP":
                             cnKeyOut.set(CBORObject.FromObject(1), KeyKeys.KeyType_OKP);
                             break;
-                            
+
                         case "oct":
                             cnKeyOut.set(CBORObject.FromObject(1), CBORObject.FromObject(4));
                             break;
@@ -890,21 +898,21 @@ public class RegressionTest extends TestBase {
                             break;
                     }
                     break;
-                    
+
                 case "crv":
                     switch (cnValue.AsString()) {
                         case "P-256":
                             cnValue = CBORObject.FromObject(1);
                             break;
-                            
+
                         case "P-384":
                             cnValue = CBORObject.FromObject(2);
                             break;
-                            
+
                         case "P-521":
                             cnValue = CBORObject.FromObject(3);
                             break;
-                                    
+
                         case "Ed25519":
                             cnValue = KeyKeys.OKP_Ed25519;
                             break;
@@ -922,15 +930,15 @@ public class RegressionTest extends TestBase {
                             cnValue = KeyKeys.OKP_X448;
                             break;
                     }
-                    
-                            
+
+
                     cnKeyOut.set(CBORObject.FromObject(-1), cnValue);
                     break;
-                    
+
                 case "x":
                     cnKeyOut.set(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
                     break;
-                    
+
                 case "x_hex":
                     cnKeyOut.set(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
@@ -962,15 +970,15 @@ public class RegressionTest extends TestBase {
                 case "k":
                     cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(Base64.getUrlDecoder().decode(cnValue.AsString())));
                     break;
-                    
+
                 case "k_hex":
                     cnKeyOut.set(CBORObject.FromObject(-1), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
-                    
+
                 case "kid":
                     cnKeyOut.set(CBORObject.FromObject(KeyKeys.KeyId), CBORObject.FromObject(StandardCharsets.UTF_8.encode(cnValue.AsString()).array()));
                     break;
-                    
+
                 case "kid_hex":
                     cnKeyOut.set(CBORObject.FromObject(KeyKeys.KeyId), CBORObject.FromObject(hexStringToByteArray(cnValue.AsString())));
                     break;
@@ -998,7 +1006,7 @@ public class RegressionTest extends TestBase {
                     break;
             }
         }
-        
+
         return new OneKey( cnKeyOut);
     }
 
@@ -1010,8 +1018,8 @@ public class RegressionTest extends TestBase {
                     + Character.digit(s.charAt(i+1), 16));
         }
         return data;
-    }  
-    
+    }
+
     static CBORObject AlgorithmMap(CBORObject old)
      {
          if (old.getType() == CBORType.Integer) {
@@ -1076,12 +1084,12 @@ public class RegressionTest extends TestBase {
          default: return old;
          }
      }
-    
+
     static CBORObject HeaderMap(CBORObject obj) {
         switch (obj.AsString()) {
             default:
                 return obj;
-                
+
         }
     }
 
@@ -1090,7 +1098,7 @@ public class RegressionTest extends TestBase {
         if (cnFail != null && cnFail.AsBoolean()) return true;
         return false;
     }
-     
+
     int _ValidateSigned(CBORObject cnControl, byte[] pbEncoded) throws CoseException {
 	CBORObject cnInput = cnControl.get("input");
 	CBORObject pFail;
@@ -1103,7 +1111,7 @@ public class RegressionTest extends TestBase {
 	boolean fFailBody;
 
         fFailBody = HasFailMarker(cnControl);
-        
+
         try {
             cnSign = cnInput.get("sign");
             cnSigners = cnSign.get("signers");
@@ -1116,7 +1124,7 @@ public class RegressionTest extends TestBase {
                 }
                 catch(Exception e) {
                     if (fFailBody) return 0;
-                    
+
                 }
 
                 SetReceivingAttributes(hSig, cnSign);
@@ -1138,7 +1146,7 @@ public class RegressionTest extends TestBase {
                 catch (Exception e) {
                     if (!fFailBody && !fFailSigner) CFails++;
                 }
-                
+
                 cnCounter = cnSigners.get(iSigner).get("countersign0");
                 if (cnCounter != null) {
                     CheckCounterSignature0(hSigner, cnCounter);
@@ -1149,7 +1157,7 @@ public class RegressionTest extends TestBase {
                     CheckCounterSignatures(hSigner, cnCounter);
                 }
             }
-            
+
             cnCounter = cnSign.get("countersign0");
             if (cnCounter != null) {
                 CheckCounterSignature0(hSig, cnCounter);
@@ -1182,7 +1190,7 @@ public class RegressionTest extends TestBase {
     {
 	int iSigner;
         byte[] rgb;
-        
+
 	//
 	//  We don't run this for all control sequences - skip those marked fail.
 	//
@@ -1238,7 +1246,7 @@ public class RegressionTest extends TestBase {
             }
 
             if (cnSign.ContainsKey("countersign0")) {
-                AddCounterSignature0(hSignObj, cnSigners.get("countersign0"));
+                AddCounterSignature0(hSignObj, cnSign.get("countersign0"));
             }
 
             CBORObject cnCounterSign = cnSign.get("countersign");
@@ -1247,21 +1255,21 @@ public class RegressionTest extends TestBase {
             }
 
             hSignObj.sign();
-            
+
 
             rgb = hSignObj.EncodeToBytes();
         }
         catch(Exception e) {
            System.out.print("... Exception " + e + "\n");
-             
+
             CFails++;
             return 0;
         }
 
 	int f = _ValidateSigned(cnControl, rgb);
         return f;
-    } 
-    
+    }
+
 int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 {
 	CBORObject cnInput = cnControl.get("input");
@@ -1321,7 +1329,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 	return 0;
     }
 
-    int ValidateSign0(CBORObject cnControl) throws CoseException  
+    int ValidateSign0(CBORObject cnControl) throws CoseException
     {
         String strExample = cnControl.get("output").get("cbor").AsString();
         byte[] rgb =  hexStringToByteArray(strExample);
@@ -1377,7 +1385,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
 	int f = _ValidateSign0(cnControl, rgb);
         return 0;
     }
-    
+
     void AddCounterSignature0(Message msg, CBORObject cSigInfo) throws CoseException, Exception
     {
         if (cSigInfo.getType() == CBORType.Map) {
@@ -1392,8 +1400,8 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             CounterSign1 hSigner = new CounterSign1();
 
             SetSendingAttributes(hSigner, cSigner, false);
-            
-            
+
+
 
             hSigner.setKey(cnkey);
 
@@ -1468,7 +1476,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             msg.addCountersignature(hSigner);
         }
     }
-    
+
     void CheckCounterSignatures(Message msg, CBORObject cSigInfo)
     {
         try {
@@ -1484,7 +1492,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             }
 
             CBORObject cSigConfig = cSigInfo.get("signers");
-            if ((cSigConfig.getValues().size() > 1) && 
+            if ((cSigConfig.getValues().size() > 1) &&
                     (cSigs.getValues().size() != msg.getCountersignerList().size())) {
                 CFails++;
                 return;
@@ -1528,7 +1536,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
             }
 
             CBORObject cSigConfig = cSigInfo.get("signers");
-            if ((cSigConfig.getValues().size() > 1) && 
+            if ((cSigConfig.getValues().size() > 1) &&
                     (cSigs.getValues().size() != msg.getCountersignerList().size())) {
                 CFails++;
                 return;
@@ -1640,6 +1648,7 @@ int _ValidateSign0(CBORObject cnControl, byte[] pbEncoded) throws CoseException
         }
         catch (Exception e) {
             CFails++;
+            e.printStackTrace();
         }
-    }    
+    }
  }
