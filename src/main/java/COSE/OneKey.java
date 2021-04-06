@@ -34,6 +34,7 @@ import java.security.spec.X509EncodedKeySpec;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
+
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
@@ -402,12 +403,13 @@ public class OneKey {
                      rgbKey[0] = (byte) (2 + (this.get(KeyKeys.EC2_Y).AsBoolean() ? 1 : 0));
                  }
                  else {
-                     rgbKey = new byte[X.length*2+1];
-                     System.arraycopy(X, 0,rgbKey, 1, X.length);
                      byte[] Y = this.get(KeyKeys.EC2_Y).GetByteString();
-                     System.arraycopy(Y, 0, rgbKey, 1+X.length, X.length);
+                     rgbKey = new byte[X.length+Y.length+1];
+                     System.arraycopy(X, 0, rgbKey, 1, X.length);
+                     System.arraycopy(Y, 0, rgbKey, 1 + X.length, Y.length);
                      rgbKey[0] = 4;
                  }
+
 
                 spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), rgbKey);
             }
