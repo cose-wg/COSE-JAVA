@@ -17,6 +17,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -47,14 +48,22 @@ public class OneKey {
     protected CBORObject keyMap;
     private PrivateKey privateKey;
     private PublicKey publicKey;
-    
+    private CryptoContext cryptoContext = new CryptoContext(null);
+
     public OneKey() {
         keyMap = CBORObject.NewMap();
     }
-    
+
+    /**
+     * Gets the {@link CryptoContext} to set a different JCA Provider
+     */
+    public CryptoContext getCryptoContext() {
+        return cryptoContext;
+    }
+
     public OneKey(CBORObject keyData) throws CoseException {
         if (keyData.getType() != CBORType.Map) throw new CoseException("Key data is malformed");
-        
+
         keyMap = keyData;
         CheckKeyState();
     }
@@ -67,7 +76,7 @@ public class OneKey {
      */
     public OneKey(PublicKey pubKey, PrivateKey privKey) throws CoseException {
         keyMap = CBORObject.NewMap();
-        
+
         if (pubKey != null) {
             ArrayList<ASN1.TagValue> spki = ASN1.DecodeSubjectPublicKeyInfo(pubKey.getEncoded());
             ArrayList<ASN1.TagValue> alg = spki.get(0).list;
@@ -84,12 +93,12 @@ public class OneKey {
                 byte[] keyData = (byte[]) spki.get(1).value;
                 if (keyData[1] == 2 || keyData[1] == 3) {
                     keyMap.Add(KeyKeys.EC2_X.AsCBOR(), Arrays.copyOfRange(keyData, 2, keyData.length));
-                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), keyData[1] == 2 ? false : true);                
+                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), keyData[1] == 2 ? false : true);
                 }
                 else if (keyData[1] == 4) {
                     int keyLength = (keyData.length - 2)/2;
                     keyMap.Add(KeyKeys.EC2_X.AsCBOR(), Arrays.copyOfRange(keyData, 2, 2+keyLength));
-                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), Arrays.copyOfRange(keyData, 2+keyLength, keyData.length));                    
+                    keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), Arrays.copyOfRange(keyData, 2+keyLength, keyData.length));
                 }
                 else throw new CoseException("Invalid key data");
             }
@@ -112,10 +121,10 @@ public class OneKey {
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
-            
+
             this.publicKey = pubKey;
         }
-        
+
         if (privKey != null) {
             ArrayList<ASN1.TagValue> pkl = ASN1.DecodePKCS8Structure(privKey.getEncoded());
             if (pkl.get(0).tag != 2) throw new CoseException("Invalid PKCS8 structure");
@@ -166,32 +175,32 @@ public class OneKey {
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
-            
-            this.privateKey = privKey;            
+
+            this.privateKey = privKey;
         }
     }
-    
+
     public void add(KeyKeys keyValue, CBORObject value) {
         keyMap.Add(keyValue.AsCBOR(), value);
     }
-    
+
     public void add(CBORObject keyValue, CBORObject value) {
         keyMap.Add(keyValue, value);
     }
-    
+
     public CBORObject get(KeyKeys keyValue) {
         return keyMap.get(keyValue.AsCBOR());
     }
-    
+
     public CBORObject get(CBORObject keyValue) throws CoseException {
         if ((keyValue.getType() != CBORType.Integer) && (keyValue.getType() != CBORType.TextString)) throw new CoseException("keyValue type is incorrect");
         return keyMap.get(keyValue);
     }
- 
+
     /**
      * Compares the key's assigned algorithm with the provided value, indicating if the values are the
      * same.
-     * 
+     *
      * @param algorithmId
      *          the algorithm to compare or {@code null} to check for no assignment.
      * @return {@code true} if the current key has the provided algorithm assigned, or {@code false}
@@ -213,7 +222,7 @@ public class OneKey {
     /**
      * Compares the key's assigned identifier with the provided value, indicating if the values are
      * the same.
-     * 
+     *
      * @param id
      *          the identifier to compare or {@code null} to check for no assignment.
      * @return {@code true} if the current key has the provided identifier assigned, or {@code false}
@@ -224,7 +233,7 @@ public class OneKey {
         byte[] idB = StandardCharsets.UTF_8.encode(id).array();
         return HasKeyID(idB);
     }
-    
+
     public boolean HasKeyID(byte[] id)
     {
         CBORObject thatObj = (id == null) ? null : CBORObject.FromObject(id);
@@ -234,14 +243,14 @@ public class OneKey {
             result = (thisObj == null);
         } else {
             result = thatObj.equals(thisObj);
-        }    
-        return result;        
+        }
+        return result;
     }
 
     /**
     * Compares the key's assigned key type with the provided value, indicating if the values are the
     * same.
-    * 
+    *
     * @param keyTypeObj
     *          the key type to compare or {@code null} to check for no assignment.
     * @return {@code true} if the current key has the provided identifier assigned, or {@code false}
@@ -258,11 +267,11 @@ public class OneKey {
         }
         return result;
     }
-  
+
     /**
      * Compares the key's assigned key operations with the provided value, indicating if the provided
      * value was found in the key operation values assigned to the key.
-     * 
+     *
      * @param that
      *          the integer operation value to attempt to find in the values provided by the key or
      *          {@code null} to check for no assignment.
@@ -294,11 +303,11 @@ public class OneKey {
 
     private void CheckKeyState() throws CoseException {
         CBORObject val;
-        
+
         //  Must have a key type
         val = OneKey.this.get(KeyKeys.KeyType);
         if ((val == null) || (val.getType() != CBORType.Integer)) throw new CoseException("Missing or incorrect key type field");
-        
+
         if (val.equals(KeyKeys.KeyType_Octet)) {
             val = OneKey.this.get(KeyKeys.Octet_K);
             if ((val== null) || (val.getType() != CBORType.ByteString)) throw new CoseException("Malformed key structure");
@@ -314,7 +323,7 @@ public class OneKey {
         }
         else throw new CoseException("Unsupported key type");
     }
-    
+
     private void CheckECKey() throws CoseException {
         // ECParameterSpec         params = null; //   new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
         boolean                 needPublic = false;
@@ -344,8 +353,10 @@ public class OneKey {
                 try {
                     byte[] privateBytes = ASN1.EncodeEcPrivateKey(oid, val.GetByteString(), null);
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), privateBytes, null);
-                    
-                    KeyFactory fact = KeyFactory.getInstance("EC");
+
+                    KeyFactory fact = cryptoContext.getProvider() != null ?
+                            KeyFactory.getInstance("EC", cryptoContext.getProvider()) :
+                            KeyFactory.getInstance("EC");
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
                     privateKey = fact.generatePrivate(keyspec);
@@ -398,10 +409,12 @@ public class OneKey {
                      rgbKey[0] = 4;
                  }
 
-                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), rgbKey);        
+                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(ASN1.oid_ecPublicKey, oid), rgbKey);
             }
-       
-            KeyFactory fact = KeyFactory.getInstance("EC"/*, "BC"*/);
+
+            KeyFactory fact = cryptoContext.getProvider() != null ?
+                    KeyFactory.getInstance("EC", cryptoContext.getProvider()) :
+                    KeyFactory.getInstance("EC");
             KeySpec keyspec = new X509EncodedKeySpec(spki);
             publicKey = fact.generatePublic(keyspec);
         }
@@ -416,7 +429,7 @@ public class OneKey {
             throw new CoseException("BC not found");
         }
         */
-/*        
+/*
         X9ECParameters          curve = GetCurve();
         ECDomainParameters      params = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
         boolean                 needPublic = false;
@@ -461,11 +474,11 @@ public class OneKey {
     public ECGenParameterSpec GetCurve2() throws CoseException {
         if (OneKey.this.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) throw new CoseException("Not an EC2 key");
         CBORObject cnCurve = OneKey.this.get(KeyKeys.EC2_Curve);
-        
+
         if (cnCurve == KeyKeys.EC2_P256) return new ECGenParameterSpec("secp256r1");
         if (cnCurve == KeyKeys.EC2_P384) return new ECGenParameterSpec("secp384r1");
         if (cnCurve == KeyKeys.EC2_P521) return new ECGenParameterSpec("secp521r1");
-        throw new CoseException("Unsupported curve " + cnCurve);        
+        throw new CoseException("Unsupported curve " + cnCurve);
     }
 
     static public OneKey generateKey(AlgorithmID algorithm) throws CoseException {
@@ -483,22 +496,37 @@ public class OneKey {
      * @throws CoseException
      */
     static public OneKey generateKey(AlgorithmID algorithm, String parameters) throws CoseException {
+        return generateKey(algorithm, null, null);
+    }
+
+    /**
+     * Generate a random key pair based on the given algorithm.
+     * Some algorithm can take a parameter. For example, the RSA_PSS family of algorithm
+     * can take the RSA key size as a parameter.
+     *
+     * @param algorithm the algorithm to generate a key pair for
+     * @param parameters optional parameters to the key pair generator
+     * @param provider JCA provider to use
+     * @return the generated Key Pair
+     * @throws CoseException
+     */
+    static public OneKey generateKey(AlgorithmID algorithm, String parameters, Provider provider) throws CoseException {
         OneKey returnThis;
         switch(algorithm) {
             case ECDSA_256:
-                returnThis = generateECDSAKey("P-256", KeyKeys.EC2_P256); 
+                returnThis = generateECDSAKey("P-256", KeyKeys.EC2_P256, provider);
                 break;
-                
+
             case ECDSA_384:
-                returnThis = generateECDSAKey("P-384", KeyKeys.EC2_P384);
+                returnThis = generateECDSAKey("P-384", KeyKeys.EC2_P384, provider);
                 break;
-                
+
             case ECDSA_512:
-                returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521);
+                returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521, provider);
                 break;
-                
+
             case EDDSA:
-                returnThis = generateOkpKey("Ed25519", KeyKeys.OKP_Ed25519);
+                returnThis = generateOkpKey("Ed25519", KeyKeys.OKP_Ed25519, provider);
                 break;
 
             case RSA_PSS_256:
@@ -510,63 +538,67 @@ public class OneKey {
                         keySize = Integer.parseInt(parameters);
                     } catch (NumberFormatException ignored) {}
                 }
-                returnThis = generateRSAKey(keySize);
+                returnThis = generateRSAKey(keySize, provider);
                 break;
-                
+
             default:
                 throw new CoseException("Unknown algorithm");
         }
-        
+
         returnThis.add(KeyKeys.Algorithm, algorithm.AsCBOR());
         return returnThis;
     }
-    
+
     static public OneKey generateKey(CBORObject curve) throws CoseException {
+        return generateKey(curve, null);
+    }
+
+    static public OneKey generateKey(CBORObject curve, Provider provider) throws CoseException {
         String curveName;
         OneKey returnThis;
-        
+
         switch (curve.AsInt32()) {
             case 1:
                 curveName = "P-256";
-                returnThis = generateECDHKey(curveName, curve);
+                returnThis = generateECDHKey(curveName, curve, provider);
                 return returnThis;
 
             case 2:
                 curveName = "P-384";
-                returnThis = generateECDHKey(curveName, curve);
+                returnThis = generateECDHKey(curveName, curve, provider);
                 return returnThis;
-            
+
             case 3:
                 curveName = "P-521";
-                returnThis = generateECDHKey(curveName, curve);
+                returnThis = generateECDHKey(curveName, curve, provider);
                 return returnThis;
-                
+
             case 6:
                 curveName = "Ed25519";
-                return generateOkpKey(curveName, curve);
-                
+                return generateOkpKey(curveName, curve, provider);
+
             case 7:
                 curveName = "Ed448";
-                return generateOkpKey(curveName, curve);
-                
+                return generateOkpKey(curveName, curve, provider);
+
             case 4:
                 curveName = "X25519";
-                return generateOkpKey(curveName, curve);
-                
+                return generateOkpKey(curveName, curve, provider);
+
             case 5:
                 curveName = "X448";
-                return generateOkpKey(curveName, curve);
+                return generateOkpKey(curveName, curve, provider);
 
             default:
                 throw new CoseException("Unknown curve");
         }
     }
-    
-    static private OneKey generateECDHKey(String curveName, CBORObject curve) throws CoseException {
+
+    static private OneKey generateECDHKey(String curveName, CBORObject curve, Provider provider) throws CoseException {
         try {
-            
+
             int curveSize;
-            
+
             switch (curveName) {
                 case "P-256":
                     curveName = "secp256r1";
@@ -582,19 +614,21 @@ public class OneKey {
                     curveName = "secp521r1";
                     curveSize = 521;
                     break;
-                    
+
                 default:
                     throw new CoseException("Internal Error");
             }
 
             ECGenParameterSpec paramSpec = new ECGenParameterSpec(curveName);
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+            KeyPairGenerator gen = provider != null ?
+                    KeyPairGenerator.getInstance("EC", provider) :
+                    KeyPairGenerator.getInstance("EC");
             gen.initialize(paramSpec);
-            
+
             KeyPair keyPair = gen.genKeyPair();
-            
+
             ECPoint pubPoint = ((ECPublicKey) keyPair.getPublic()).getW();
-                        
+
             byte[] rgbX = ArrayFromBigNum(pubPoint.getAffineX(), curveSize);
             byte[] rgbY = ArrayFromBigNum(pubPoint.getAffineY(), curveSize);
             byte[] rgbD = ArrayFromBigNum(((ECPrivateKey) keyPair.getPrivate()).getS(), curveSize);
@@ -608,7 +642,7 @@ public class OneKey {
             key.add(KeyKeys.EC2_D, CBORObject.FromObject(rgbD));
             key.publicKey = keyPair.getPublic();
             key.privateKey = keyPair.getPrivate();
-            
+
             return key;
 
         }
@@ -619,7 +653,7 @@ public class OneKey {
             throw new CoseException("THe curve is not supported", e);
         }
     }
-    
+
     static private byte[] ArrayFromBigNum(BigInteger n, int curveSize) {
         byte[] rgb = new byte[(curveSize+7)/8];
         byte[] rgb2 = n.toByteArray();
@@ -632,12 +666,12 @@ public class OneKey {
         }
         return rgb;
     }
-    
-    static private OneKey generateECDSAKey(String curveName, CBORObject curve) throws CoseException { 
+
+    static private OneKey generateECDSAKey(String curveName, CBORObject curve, Provider provider) throws CoseException {
         try {
-            
+
             int curveSize;
-            
+
             switch (curveName) {
                 case "P-256":
                     curveName = "secp256r1";
@@ -653,19 +687,21 @@ public class OneKey {
                     curveName = "secp521r1";
                     curveSize = 521;
                     break;
-                    
+
                 default:
                     throw new CoseException("Internal Error");
             }
 
             ECGenParameterSpec paramSpec = new ECGenParameterSpec(curveName);
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+            KeyPairGenerator gen = provider != null ?
+                    KeyPairGenerator.getInstance("EC", provider) :
+                    KeyPairGenerator.getInstance("EC");
             gen.initialize(paramSpec);
-            
+
             KeyPair keyPair = gen.genKeyPair();
-            
+
             ECPoint pubPoint = ((ECPublicKey) keyPair.getPublic()).getW();
-                        
+
             byte[] rgbX = ArrayFromBigNum(pubPoint.getAffineX(), curveSize);
             byte[] rgbY = ArrayFromBigNum(pubPoint.getAffineY(), curveSize);
             byte[] rgbD = ArrayFromBigNum(((ECPrivateKey) keyPair.getPrivate()).getS(), curveSize);
@@ -679,7 +715,7 @@ public class OneKey {
             key.add(KeyKeys.EC2_D, CBORObject.FromObject(rgbD));
             key.publicKey = keyPair.getPublic();
             key.privateKey = keyPair.getPrivate();
-            
+
             return key;
 
         }
@@ -690,12 +726,12 @@ public class OneKey {
             throw new CoseException("The curve is not supported", e);
         }
     }
-    
+
     /**
-     * Create a OneKey object with only the public fields.  Filters out the 
+     * Create a OneKey object with only the public fields.  Filters out the
      * private key fields but leaves all positive number labels and text labels
      * along with negative number labels that are public fields.
-     * 
+     *
      * @return public version of the key
      */
     public OneKey PublicKey()
@@ -721,9 +757,9 @@ public class OneKey {
         else {
             return null;
         }
-        
+
         //  Allow them to use the same underlying public key object
-        
+
         newKey.publicKey = publicKey;
 
         for (CBORObject obj : keyMap.getKeys()) {
@@ -739,30 +775,30 @@ public class OneKey {
         }
         return newKey;
     }
-    
+
     /**
      * Encode to a byte string
-     * 
+     *
      * @return encoded object as bytes.
      */
     public byte[] EncodeToBytes()
     {
         return keyMap.EncodeToBytes();
     }
-    
+
     /**
      * Return the key as a CBOR object
-     * 
+     *
      * @return The key
      */
     public CBORObject AsCBOR()
     {
         return keyMap;
     }
-    
+
     /**
      * Return a java.security.PublicKey that is the same as the OneKey key
-     * 
+     *
      * @return the key
      * @throws CoseException If there is a conversion error
      */
@@ -770,10 +806,10 @@ public class OneKey {
     {
         return publicKey;
     }
-    
+
     /**
      * Return a java.security.PrivateKey that is the same as the OneKey key
-     * 
+     *
      * @return the key
      * @throws CoseException if there is a conversion error
      */
@@ -781,23 +817,23 @@ public class OneKey {
     {
         return privateKey;
     }
-    
+
     private Object UserData;
-    
+
     /**
      * Return the user data field.
-     * 
+     *
      * The user data object allows for an application to associate a piece of arbitrary
-     * data with a key and retrieve it later.  
+     * data with a key and retrieve it later.
      * @return the user data object
      */
     public Object getUserData() {
         return UserData;
     }
-    
+
     /**
      * Set the user data field.
-     * 
+     *
      * The user data field allows for an application to associate a piece of arbitrary
      * data with a key and retrieve it later.
      * @param newData Data field to be saved.
@@ -839,11 +875,13 @@ public class OneKey {
             if (val != null) {
                 if (val.getType() != CBORType.ByteString) throw new CoseException("Malformed key structure");
                 try {
-                    
+
                     byte[] privateKeyBytes = ASN1.EncodeOctetString(val.GetByteString());
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), privateKeyBytes, null);
-                    
-                    KeyFactory fact = KeyFactory.getInstance(algName, "EdDSA");
+
+                    KeyFactory fact = cryptoContext.getProvider() != null ?
+                            KeyFactory.getInstance(algName, cryptoContext.getProvider()) :
+                            KeyFactory.getInstance(algName, "EdDSA");
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
                     privateKey = fact.generatePrivate(keyspec);
@@ -875,11 +913,13 @@ public class OneKey {
            if (spki == null) {
                 byte[] rgbKey =  this.get(KeyKeys.OKP_X).GetByteString();
 
-                
-                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(oid, null), rgbKey);        
+
+                spki = ASN1.EncodeSubjectPublicKeyInfo(ASN1.AlgorithmIdentifier(oid, null), rgbKey);
             }
-       
-            KeyFactory fact = KeyFactory.getInstance("EdDSA", "EdDSA");
+
+            KeyFactory fact = cryptoContext.getProvider() != null ?
+                    KeyFactory.getInstance("EdDSA", cryptoContext.getProvider()) :
+                    KeyFactory.getInstance("EdDSA", "EdDSA");
             KeySpec keyspec = new X509EncodedKeySpec(spki);
             publicKey = fact.generatePublic(keyspec);
         }
@@ -890,14 +930,14 @@ public class OneKey {
             throw new CoseException("Internal error on SPKI", e);
         }
     }
-    
-    static private OneKey generateOkpKey(String curveName, CBORObject curve) throws CoseException { 
-        try {            
+
+     static private OneKey generateOkpKey(String curveName, CBORObject curve, Provider provider) throws CoseException {
+        try {
             switch (curveName) {
                 case "Ed25519":
-                    
+
                     break;
-                    
+
                 case "Ed448":
                 case "X22519":
                 case "X448":
@@ -908,11 +948,13 @@ public class OneKey {
             }
 
             EdDSAGenParameterSpec paramSpec = new EdDSAGenParameterSpec(curveName);
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("EdDSA", "EdDSA");
+            KeyPairGenerator gen = provider != null ?
+                    KeyPairGenerator.getInstance("EdDSA", provider) :
+                    KeyPairGenerator.getInstance("EdDSA", "EdDSA");
             gen.initialize(paramSpec);
-            
+
             KeyPair keyPair = gen.genKeyPair();
-                                    
+
             byte[] rgbX = ((EdDSAPublicKey) keyPair.getPublic()).getAbyte();
             byte[] rgbD = ((EdDSAPrivateKey) keyPair.getPrivate()).getSeed();
 
@@ -924,7 +966,7 @@ public class OneKey {
             key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
             key.publicKey = keyPair.getPublic();
             key.privateKey = keyPair.getPrivate();
-            
+
             return key;
         }
         catch (NoSuchAlgorithmException | NoSuchProviderException e) {
@@ -933,7 +975,7 @@ public class OneKey {
         catch (InvalidAlgorithmParameterException e) {
             throw new CoseException("The curve is not supported", e);
         }
-    }    
+    }
 
     private void CheckRsaKey() throws CoseException {
         CBORObject n = this.get(KeyKeys.RSA_N);         // modulus, positive int
@@ -958,7 +1000,9 @@ public class OneKey {
             );
 
             try {
-                KeyFactory factory = KeyFactory.getInstance("RSA");
+                KeyFactory factory = cryptoContext.getProvider() != null ?
+                        KeyFactory.getInstance("RSA", cryptoContext.getProvider()) :
+                        KeyFactory.getInstance("RSA");
                 publicKey = factory.generatePublic(spec);
             } catch (NoSuchAlgorithmException ex) {
                 throw new CoseException("No provider for algorithm", ex);
@@ -1045,7 +1089,9 @@ public class OneKey {
 
 
             try {
-                KeyFactory factory = KeyFactory.getInstance("RSA");
+                KeyFactory factory = cryptoContext.getProvider() != null ?
+                        KeyFactory.getInstance("RSA", cryptoContext.getProvider()) :
+                        KeyFactory.getInstance("RSA");
                 privateKey = factory.generatePrivate(privateKeySpec);
             } catch (NoSuchAlgorithmException ex) {
                 throw new CoseException("No provider for algorithm", ex);
@@ -1055,9 +1101,11 @@ public class OneKey {
         }
     }
 
-    static private OneKey generateRSAKey(int keySize) throws CoseException {
+    static private OneKey generateRSAKey(int keySize, Provider provider) throws CoseException {
         try {
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+            KeyPairGenerator gen = provider != null ?
+                    KeyPairGenerator.getInstance("RSA", provider) :
+                    KeyPairGenerator.getInstance("RSA");
             gen.initialize(keySize);
 
             KeyPair keyPair = gen.genKeyPair();
