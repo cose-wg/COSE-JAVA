@@ -97,6 +97,24 @@ public class ASN1 {
     private static final int IntegerTag = 2;
 
     /**
+     * Determine if a specific OID is matching one used for ECDH or EdDSA.
+     * See https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
+     * 
+     * This means it is matching either Ed25519, Ed448, X25519 or X448.
+     * 
+     * @param oid the OID to check
+     * @return if it is matching Ed25519, Ed448, X25519 or X448
+     */
+    public static boolean isEcdhEddsaOid(byte[] oid) {
+        if (Arrays.equals(oid, ASN1.Oid_Ed25519) || Arrays.equals(oid, ASN1.Oid_Ed448)
+                || Arrays.equals(oid, ASN1.Oid_X25519) || Arrays.equals(oid, ASN1.Oid_X448)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Encode a subject public key info structure from an OID and the data bytes
      * for the key
      * This function assumes that we are encoding an EC Public key.d

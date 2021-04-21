@@ -108,10 +108,7 @@ public class OneKey {
 
                 keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
                 keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
-            } else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
+            } else if (ASN1.isEcdhEddsaOid(alg.get(0).value)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid SPKI structure");
@@ -189,10 +186,7 @@ public class OneKey {
                 keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
 
                 // todo multi prime keys
-            } else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
+            } else if (ASN1.isEcdhEddsaOid(alg.get(0).value)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid PKCS8 structure");
