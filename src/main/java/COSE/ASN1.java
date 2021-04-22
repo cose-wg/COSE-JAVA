@@ -97,15 +97,12 @@ public class ASN1 {
     private static final int IntegerTag = 2;
 
     /**
-     * Determine if a specific OID is matching one used for ECDH or EdDSA.
-     * See https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
-     * 
-     * This means it is matching either Ed25519, Ed448, X25519 or X448.
+     * Determine if a specific OID is matching either Ed25519, Ed448, X25519 or X448.
      * 
      * @param oid the OID to check
      * @return if it is matching Ed25519, Ed448, X25519 or X448
      */
-    public static boolean isEcdhEddsaOid(byte[] oid) {
+    public static boolean isEdXOid(byte[] oid) {
         return Arrays.equals(oid, ASN1.Oid_Ed25519) || Arrays.equals(oid, ASN1.Oid_Ed448)
                 || Arrays.equals(oid, ASN1.Oid_X25519) || Arrays.equals(oid, ASN1.Oid_X448);
     }

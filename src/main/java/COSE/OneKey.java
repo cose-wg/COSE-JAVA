@@ -108,7 +108,7 @@ public class OneKey {
 
                 keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
                 keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
-            } else if (ASN1.isEcdhEddsaOid(alg.get(0).value)) {
+            } else if (ASN1.isEdXOid(alg.get(0).value)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid SPKI structure");
@@ -186,7 +186,7 @@ public class OneKey {
                 keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
 
                 // todo multi prime keys
-            } else if (ASN1.isEcdhEddsaOid(alg.get(0).value)) {
+            } else if (ASN1.isEdXOid(alg.get(0).value)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid PKCS8 structure");
