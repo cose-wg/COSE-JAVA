@@ -97,6 +97,17 @@ public class ASN1 {
     private static final int IntegerTag = 2;
 
     /**
+     * Determine if a specific OID is matching either Ed25519, Ed448, X25519 or X448.
+     * 
+     * @param oid the OID to check
+     * @return if it is matching Ed25519, Ed448, X25519 or X448
+     */
+    public static boolean isEdXOid(byte[] oid) {
+        return Arrays.equals(oid, ASN1.Oid_Ed25519) || Arrays.equals(oid, ASN1.Oid_Ed448)
+                || Arrays.equals(oid, ASN1.Oid_X25519) || Arrays.equals(oid, ASN1.Oid_X448);
+    }
+
+    /**
      * Encode a subject public key info structure from an OID and the data bytes
      * for the key
      * This function assumes that we are encoding an EC Public key.d
@@ -252,6 +263,33 @@ public class ASN1 {
     }
     
     /**
+     * Decode an array of bytes which is supposed to be an ASN.1 encoded octet string.
+     * 
+     * @param offset - starting offset in array to begin decoding
+     * @param encoding - bytes of the ASN.1 encoded value
+     * @return Decoded structure
+     * @throws CoseException - ASN.1 encoding errors
+     */
+    public static TagValue DecodeSimple(int offset, byte[] encoding) throws CoseException {
+        ArrayList<TagValue> result = new ArrayList<TagValue>();
+        int retTag = encoding[offset];
+
+        if (encoding[offset] != 0x04)
+            throw new CoseException("Invalid structure");
+        int[] l = DecodeLength(offset + 1, encoding);
+
+        int sequenceLength = l[1];
+        if (offset + 2 + sequenceLength != encoding.length)
+            throw new CoseException("Invalid sequence");
+
+        int tag = encoding[offset];
+        offset += 1 + l[0];
+        result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset, offset + l[1])));
+
+        return new TagValue(retTag, result);
+    }
+
+    /**
      * Encode a private key into a PKCS#8 private key structure.
      * 
      * @param algorithm - EC curve OID
@@ -371,8 +409,16 @@ public class ASN1 {
         //  Decode the contents of the octet string PrivateKey
 
         byte[] pk = pkcs8.get(2).value;
+        TagValue pkd;
 
-        TagValue pkd = DecodeCompound(0, pk);
+        // First check if it can be decoded as a simple value
+        if (pk[0] == 0x04) { // ASN.1 Octet string
+            pkd = DecodeSimple(0, pk);
+            return pkd.list;
+        }
+
+        // Otherwise proceed to parse as compound value
+        pkd = DecodeCompound(0, pk);
         ArrayList<TagValue> pkdl = pkd.list;
         if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
         if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");

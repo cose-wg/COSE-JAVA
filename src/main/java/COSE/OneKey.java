@@ -108,6 +108,30 @@ public class OneKey {
 
                 keyMap.Add(KeyKeys.RSA_N.AsCBOR(), n.value);
                 keyMap.Add(KeyKeys.RSA_E.AsCBOR(), e.value);
+            } else if (ASN1.isEdXOid(alg.get(0).value)) {
+                byte[] oid = (byte[]) alg.get(0).value;
+                if (oid == null)
+                    throw new CoseException("Invalid SPKI structure");
+                
+                // OKP Key
+                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+                keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+                if (Arrays.equals(oid, ASN1.Oid_X25519))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+                else if (Arrays.equals(oid, ASN1.Oid_X448))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X448);
+                else if (Arrays.equals(oid, ASN1.Oid_Ed25519))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                else if (Arrays.equals(oid, ASN1.Oid_Ed448))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed448);
+                else
+                    throw new CoseException("Unsupported curve");
+
+                byte[] keyData = (byte[]) spki.get(1).value;
+                if (keyData[0] == 0) {
+                    keyMap.Add(KeyKeys.OKP_X.AsCBOR(), Arrays.copyOfRange(keyData, 1, keyData.length));
+                } else
+                    throw new CoseException("Invalid key data");
             }
             else {
                 throw new CoseException("Unsupported Algorithm");
@@ -162,6 +186,36 @@ public class OneKey {
                 keyMap.Add(KeyKeys.RSA_QI.AsCBOR(), pkdl.get(8).value);
 
                 // todo multi prime keys
+            } else if (ASN1.isEdXOid(alg.get(0).value)) {
+                byte[] oid = (byte[]) alg.get(0).value;
+                if (oid == null)
+                    throw new CoseException("Invalid PKCS8 structure");
+                // OKP Key
+                if (!keyMap.ContainsKey(KeyKeys.KeyType.AsCBOR())) {
+
+                    keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+                    if (Arrays.equals(oid, ASN1.Oid_X25519))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+                    else if (Arrays.equals(oid, ASN1.Oid_X448))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X448);
+                    else if (Arrays.equals(oid, ASN1.Oid_Ed25519))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                    else if (Arrays.equals(oid, ASN1.Oid_Ed448))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed448);
+                    else
+                        throw new CoseException("Unsupported curve");
+
+                } else {
+                    if (!this.get(KeyKeys.KeyType).equals(KeyKeys.KeyType_OKP)) {
+                        throw new CoseException("Public/Private key don't match");
+                    }
+                }
+
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
+                if (pkdl.get(0).tag != 4)
+                    throw new CoseException("Invalid PKCS8 structure");
+                byte[] keyData = (byte[]) (pkdl.get(0).value);
+                keyMap.Add(KeyKeys.OKP_D.AsCBOR(), keyData);
             }
             else {
                 throw new CoseException("Unsupported Algorithm");
