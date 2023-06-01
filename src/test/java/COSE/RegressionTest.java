@@ -1245,8 +1245,8 @@ public class RegressionTest extends TestBase {
 
             }
 
-            if (cnSign.ContainsKey("countersign0")) {
-                AddCounterSignature0(hSignObj, cnSign.get("countersign0"));
+            if (cnSigners.ContainsKey("countersign0")) {
+                AddCounterSignature0(hSignObj, cnSigners.get("countersign0"));
             }
 
             CBORObject cnCounterSign = cnSign.get("countersign");
