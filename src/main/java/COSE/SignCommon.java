@@ -7,6 +7,7 @@ package COSE;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Arrays;
@@ -26,9 +27,8 @@ public abstract class SignCommon extends Message {
 
     static byte[] computeSignature(AlgorithmID alg, byte[] rgbToBeSigned, OneKey cnKey) throws CoseException {
         String      algName = null;
-        String      provider = null;
         int         sigLen = 0;
-        
+
         switch (alg) {
             case ECDSA_256:
                 algName = "SHA256withECDSA";
@@ -44,35 +44,35 @@ public abstract class SignCommon extends Message {
                 break;
             case EDDSA:
                 algName = "NonewithEdDSA";
-                provider = "EdDSA";
                 break;
-                
+
             case RSA_PSS_256:
                 algName = "SHA256withRSA/PSS";
                 break;
-                
+
             case RSA_PSS_384:
                 algName = "SHA384withRSA/PSS";
                 break;
-                
+
             case RSA_PSS_512:
                 algName = "SHA512withRSA/PSS";
                 break;
-                
+
             default:
                 throw new CoseException("Unsupported Algorithm Specified");
         }
-        
+
         if (cnKey == null) {
             throw new NullPointerException();
         }
-        
+
         PrivateKey  privKey = cnKey.AsPrivateKey();
         if (privKey == null) {
             throw new CoseException("Private key required to sign");
         }
-        
+
         byte[]      result = null;
+        Provider    provider = cnKey.getCryptoContext().getProvider();
         try {
             Signature sig = provider == null ? Signature.getInstance(algName) :
                     Signature.getInstance(algName, provider);
@@ -87,10 +87,10 @@ public abstract class SignCommon extends Message {
         } catch (Exception ex) {
             throw new CoseException("Signature failure", ex);
         }
-                
+
         return result;
     }
-    
+
     private static byte[] convertDerToConcat(byte[] der, int len) throws CoseException {
         // this is far too naive
         byte[] concat = new byte[len * 2];
@@ -104,7 +104,7 @@ public abstract class SignCommon extends Message {
             // offset actually 4 + (7-bits of byte 1)
             kLen = 4 + (der[1] & 0x7f);
         }
-        
+
         // calculate start/end of R
         int rOff = kLen;
         int rLen = der[rOff - 1];
@@ -117,7 +117,7 @@ public abstract class SignCommon extends Message {
         }
         // copy R
         System.arraycopy(der, rOff, concat, rPad, rLen);
-        
+
         // calculate start/end of S
         int sOff = rOff + rLen + 2;
         int sLen = der[sOff - 1];
@@ -130,10 +130,10 @@ public abstract class SignCommon extends Message {
         }
         // copy S
         System.arraycopy(der, sOff, concat, len + sPad, sLen);
-        
+
         return concat;
     }
-    
+
     boolean validateSignature(byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         return validateSignature(alg, rgbToBeSigned, rgbSignature, cnKey);
@@ -141,7 +141,6 @@ public abstract class SignCommon extends Message {
 
     static boolean validateSignature(AlgorithmID alg, byte[] rgbToBeSigned, byte[] rgbSignature, OneKey cnKey) throws CoseException {
         String algName = null;
-        String provider = null;
         boolean convert = false;
 
         switch (alg) {
@@ -157,12 +156,11 @@ public abstract class SignCommon extends Message {
             algName = "SHA512withECDSA";
             convert = true;
             break;
-            
+
         case EDDSA:
             algName = "NonewithEdDSA";
-            provider = "EdDSA";
             break;
- 
+
         case RSA_PSS_256:
              algName = "SHA256withRSA/PSS";
              break;
@@ -187,6 +185,7 @@ public abstract class SignCommon extends Message {
         if (pubKey == null) {
             throw new CoseException("Public key required to verify");
         }
+        Provider provider = cnKey.getCryptoContext().getProvider();
 
         boolean result = false;
         try {
