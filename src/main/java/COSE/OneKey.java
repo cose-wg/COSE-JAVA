@@ -552,7 +552,7 @@ public class OneKey {
      * @throws CoseException
      */
     static public OneKey generateKey(AlgorithmID algorithm, String parameters) throws CoseException {
-        return generateKey(algorithm, null, null);
+        return generateKey(algorithm, parameters, null);
     }
 
     /**
